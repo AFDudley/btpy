@@ -1,0 +1,15 @@
+Battlefields are responsible for units' status while units are on the battlefield.
+
+What's in the battlefield object
+-the map array  done
+-units
+-turn queue 
+-DOT queue
+-temporary  data (data the battlefield needs to calculate damage in an attack, dead units, etc.)
+
+What does the battlefield object do
+-handles 'inround' events: attacks, movement(done), death
+
+Specific battlefield methods
+-attack takes self, type, and target(position)
+-move takes self and destination done.
