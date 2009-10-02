@@ -120,6 +120,9 @@ class Unit(object):
         self.m_attack = None
         self.m_defense = None
         self.age = None
+    
+   # def repr(self):
+   #     return "%s -> HP:% 5s | MP:% 5s | Element:% 5s | P Atk/Def: (% 3s,% 3s) | M Atk/Def: (% 3s,% 3s)" % (id(u), u.hp, u.mp, u.element, u.p_attack, u.p_defense, u.m_attack, u.m_defense)
 #TODO: inheriting from Unit is not buying anything for us here (in terms of Scient,
 # which just overwrites Unit's __init__ (unless you use super?))
 
@@ -138,7 +141,7 @@ class Scient(Unit):
         self.element = element
         self.comp = comp
         self.age = 16
-        self.level = 0
+        self.level = 0 # i think this needs to be removed - rix 10-2-09
         self.current_job = FT
         self.past_jobs = dict(zip(JOBS, [0, 0, 0, 0])) #set all job levels to 0
         self.skills = []
@@ -287,6 +290,6 @@ class Nescient(Unit):
         def bite(self, target):
             pass
 
-        def blow(self, target):
+        def breath(self, target):
             pass
 
