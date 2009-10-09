@@ -2,24 +2,25 @@ from comp import COMP
 
 #there is a serious problem in this logic. it assumes that units fit on one tile, nesceints do not.
 class Tile(object):
-    def __init__(self):
+    def __init__(self, location = ()):
         self.comp = COMP
         self.contents = None
+        self.location = location # makes abstraction a little easier.
         
 class Grid(object):
     def __init__(self):
-        self.tiles = {} #Tiles indexed by (x,y)
+        self.tiles = []
         self.units = {} 
     
-    def place_tiles(self, width, length):
+    def place_tiles(self, width, height):
         """Creates Tiles and places them in grid"""
         for x in range(width):
-            for y in range(length):
-                self.tiles[(x,y)] = Tile()
+            for y in range(height):
+                self.tiles = Tile((x,y))
                 
     def get_tile(self, tile):
         """Returns the object at tile location (x,y)"""
-        return self.tiles[tile]
+        return self.tiles.location
 
 #    def clear_tile(self, tile):
 #        """Clears the unit from tile (x,y)"""
