@@ -49,6 +49,7 @@ class Grid(object):
 
 class Battlefield(Grid):
     """A battlefield is a map of tiles which contains units and the logic for their movement and status."""
+    #should take two "squad" objects; if none given generate "random" squads
     def __init__(self):
         self.graveyard = []
         self.clock = 0

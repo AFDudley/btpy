@@ -1,0 +1,25 @@
+The game is designed in a heavily object orintated manner.
+The game logic is seperated from the display logic.
+The game logic has few/no dependencies.
+The display code depends on pygame.
+
+Client
+Views
+     Battlefield
+     World
+
+code layout:
+
+binary_tactics.py
+    engine _> loads units, runs AI and turns.
+    window
+      UI -> handle mouse/keyboard prepare window
+       battle_view   
+        board 
+	
+	  instaniates battlefield.py, loads user/AI info, draws display 
+	
+	left_pane -> tile properties (both sides of attack)
+	right_pane -> battlefield
+        info_pane -> engine view "so and so did so much damnage... keeps a
+log"
