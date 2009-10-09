@@ -13,6 +13,7 @@ class Board(object):
         
     class battle_pane(widgets.Pane, Battlefield):
         #contains a battlefield (kludgy?)
+        #the pane code is borked. don't know why.
         #maybe this inherit from Pane and Battlefield and overload place tiles?
         def __init__(self, surface):
             super(widgets.Pane, self).__init__()
