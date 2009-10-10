@@ -8,18 +8,17 @@ import widgets
 class Board(object):
     """displays a battlefield for user interaction"""
     def __init__(self, surface):
+        self.tilesize = 32 #size of displayed bp.Tiles
         self.surface = surface
-        
         
     class battle_pane(widgets.Pane, Battlefield):
         #contains a battlefield (kludgy?)
         #the pane code is borked. don't know why.
-        #maybe this inherit from Pane and Battlefield and overload place tiles?
         def __init__(self, surface):
             super(widgets.Pane, self).__init__()
             super(Battlefield, self).__init__()
-            self.surface = surface
-            self.rect = Rect((10,10), [512,512])
+            self.rect = Rect((0,0), [516,516])
+            self.surface = surface.subsurface(Rect((100,0),(516,516)))
             self.border_width = 2
             # Internal rectangle
             self.in_rect = Rect(
@@ -41,6 +40,7 @@ class Board(object):
                 self.image.fill([127,127,127])
                 self.rect = self.image.get_rect()
                 self.rect.topleft = location
+           
                 def update():
                     """pull tile info, push to surface"""
                     #call update on the contents. Tricky.
@@ -49,13 +49,19 @@ class Board(object):
         def place_tiles(self, width, height):
             for x in range(width):
                 for y in range(height):
-                    self.tiles.add(self.Tile([(x*32), (y*32)]))
+                    self.tiles.add(self.Tile([(x*32) + 2, (y*32) + 2]))
 
         #def populate():
            # "draws the Tiles unto the battle_pane"""
            # pass
-        
+
+           #scratch        
 pygame.init()
 screen = pygame.display.set_mode([800,600])
 test = Board(screen)
 bp = test.battle_pane(test.surface)
+bp.draw()
+bp.tiles.draw(bp.surface)
+pygame.display.update()
+
+def wipe(): pygame.display.update(screen.fill([0,0,0]))
