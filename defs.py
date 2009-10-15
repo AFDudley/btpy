@@ -129,11 +129,9 @@ class Unit(object):
 class Scient(Unit):
     """A Scient (playable character) unit.
 
-    Initializer takes element, comp, strength, and intelligence:
+    Initializer takes element and comp:
       * element - this unit's element (E, F, I, or W) aka 'suit'
       * comp - dictionary of this unit's composition on (0..255) {E: earth, F: fire, I: ice, W: wind}
-      * strength - starting strength
-      * intelligence - starting intelligence
     """
     def __init__(self, element, comp):
         if not element in ELEMENTS:

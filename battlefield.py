@@ -1,72 +1,41 @@
 from comp import COMP
-
+from defs import Scient
 #there is a serious problem in this logic. it assumes that units fit on one tile, nesceints do not.
 class Tile(object):
     def __init__(self, location = ()):
         self.comp = COMP
         self.contents = None
         self.location = location # makes abstraction a little easier.
-        
-class Grid(object):
-    def __init__(self):
-        self.tiles = []
-        self.units = {} 
-    
-    def place_tiles(self, width, height):
-        """Creates Tiles and places them in grid"""
-        for x in range(width):
-            for y in range(height):
-                self.tiles = Tile((x,y))
-                
-    def get_tile(self, tile):
-        """Returns the object at tile location (x,y)"""
-        return self.tiles.location
-
-#    def clear_tile(self, tile):
-#        """Clears the unit from tile (x,y)"""
-#        del self.units[self.tiles[tile]] #XXX: maybe just assign to None, don't delete it
-#        del self.tiles[tile]
-
-    def place_unit(self, u, tile):
-        """Places unit u at tile (x,y)"""
-        self.units[u] = tile
-        self.tiles[tile].contents = u
-
-    def move_unit(self, u, tile):
-        """Moves unit u from its current location to tile"""
-        #del self.tiles[self.units[u]]
-        #self.tiles[tile].contents = u
-        #self.units[u] = tile
-        
-    def get_unit(self, u):
-        """Returns the location of unit u"""
-        return self.units[u]
-
-    def remove_unit(self, u):
-        """Removes the unit from the tile it is on"""
-        del self.tiles[self.units[u]]
-        del self.units[u] #XXX: maybe just assign to None, don't delete it
 
 
-class Battlefield(Grid):
+class Battlefield(object):
     """A battlefield is a map of tiles which contains units and the logic for their movement and status."""
     #should take two "squad" objects; if none given generate "random" squads
     def __init__(self):
+        #grid is a tuple of tuples containing tiles
+        self.grid = ()
         self.graveyard = []
         self.clock = 0
         self.ticking = False
         self.queue = []
         self.status_effects = []
-        super(Battlefield, self).__init__()
+    
+    def make_empty_grid(self, width, length):
+        """makes a list of empty tiles"""
+        for x in range(width):
+            qui = ()
+            for y in range(length):
+                qui = qui + (Tile((x,y)),)
+            self.grid = self.grid + (qui,)
     
     def place_unit(self, unit, tile):
         """Places unit at tile (x,y), raises exception if a unit is already on that tile"""
         x,y = tile
-        if not self.tiles[tile].contents in self.tiles:
-            super(Battlefield, self).place_unit(unit, tile)
+        if not self.grid[x][y].contents:
+            self.grid[x][y].contents = unit
         else:
-            raise Exception("Unit already in place on that tile")
-
+            raise Exception("tile is already filled")
+    
     def kill_unit(self, tile):
         """Kills the unit at tile (x,y), raises exception if no unit is found"""
         #needs to check that it's actually a unit and not a stone.
@@ -75,23 +44,31 @@ class Battlefield(Grid):
             self.grid[x][y] = None #TODO: drop that unit's stone at this tile
         else:
             raise Exception("No unit found at that tile")
-
-    def move_unit(self, unit, tile):
-        x,y = tile
-        if not tile in self.tiles:
-            x0,y0 = self.get_unit(unit)
-            if abs(x-x0) + abs(y-y0) <= unit.move:
-                super(Battlefield, self).move_unit(unit, tile)
-                pass
+    
+    def move_scient(self, src, dest):
+        "move scient from a tile to another tile"
+        xs,ys = src
+        xd,yd = dest
+        if self.grid[xs][ys].contents:
+            if not self.grid[xd][yd].contents:
+                if abs(xs-xd) + abs(ys-yd) <= self.grid[xs][ys].contents.move:
+                    self.grid[xd][yd].contents = self.grid[xs][ys].contents
+                    self.grid[xs][ys].contents = None
+                    pass
+                else:
+                    raise Exception("Moved too many spaces")
             else:
-                raise Exception("Moved too many spaces")
-
+                raise Exception("There is already something at dest")
+        else:
+            raise Exception("There is nothing at src")
+    
     def process(self, command):
         """Process a battle command (move, act, or both) for unit"""
         fst_cmd, fst_args = command[0]
         snd_cmd, snd_args = command[1]
         fst_cmd(*fst_args)
         snd_cmd(*snd_args)
-
+    
     def act(self, action, args):
         action(*args)
+    
