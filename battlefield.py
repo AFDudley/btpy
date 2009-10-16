@@ -89,11 +89,18 @@ class Battlefield(object):
     
     def rand_place_squad(self, squad):
         """place the units in a squad randomly on the battlefield"""
-        #non-destructive; tricky?
+        #non-destructive; tricky? should be done with exceptions
         for scient in range(len(squad)):
-            self.place_unit(squad[scient], \
-            (random.randint(0, (self.gridx - 1)), random.randint(0, (self.gridy - 1))))
-        
+            #bullheaded
+            xpos = random.randint(0, (self.gridx - 1))
+            ypos = random.randint(0, (self.gridy - 1))
+            while self.grid[xpos][ypos].contents is not scient:
+                if self.grid[xpos][ypos].contents is not None:
+                    xpos = random.randint(0, (self.gridx - 1))
+                    ypos = random.randint(0, (self.gridy - 1))
+                    break
+                else:
+                    self.place_unit(squad[scient], (xpos, ypos))
     
     def move_scient(self, src, dest):
         """move scient from a tile to another tile"""

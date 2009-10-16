@@ -2,6 +2,13 @@
 import pygame
 import battlefield
 
+#temp colors
+Fire = [228, 20, 20]
+Earth = [20, 228, 20]
+Ice = [20, 20, 228]
+Wind = [255, 255, 30]
+COLORS = {"Earth": Earth, "Fire" : Fire, "Ice" : Ice, "Wind" :Wind}
+
 class Pane(object):
     """window Pane class"""
     def __init__(self):
@@ -90,6 +97,7 @@ class Board(object):
             self.surface = surface.subsurface(
                 pygame.Rect((242, 42), (516, 516)))
             self.tiles = pygame.sprite.RenderUpdates()
+            self.contents = pygame.sprite.RenderUpdates()
             self.load_grid()
             self.load_squads()
 
@@ -99,29 +107,51 @@ class Board(object):
             #isn't there an easier way?
             for xpos in range(len(self.grid)):
                 for ypos in range(len(self.grid[xpos])):
-                    self.tiles.add(self.Tile([(xpos*size) + 2,
-                        (ypos*size) + 2]))
+                    tile = self.Tile([(xpos*size) + 2, (ypos*size) + 2])
+                    tile.location = self.grid[xpos][ypos].location
+                    if self.grid[xpos][ypos].contents is not None:
+                        tempy = self.grid[xpos][ypos]
+                        xxx,yyy = tile.rect.topleft
+                        scient = self.Scient(COLORS[tempy.contents.element], ((xxx + 8), (yyy + 8)))
+                        self.contents.add(scient)
+                    self.tiles.add(tile)
             self.tiles.draw(self.surface)
+            self.contents.draw(self.surface)
         
-        def draw_contents(self, size):
-            """Draws the contents of the tiles, this might be kinda slow"""
-            pass
         class Tile(pygame.sprite.Sprite,  battlefield.Tile):
             """it's a battlefield tile and a pygame sprite,  yo"""
-            def __init__(self,  location):
+            #this is wrong, BattlePane.Tile is really only a sprite. Fix.
+            def __init__(self,  topleft):
                 pygame.sprite.Sprite.__init__(self)
                 battlefield.Tile.__init__(self)
                 self.image = pygame.Surface([31, 31])
                 self.image.fill([127, 127, 127])
                 self.rect = self.image.get_rect()
-                self.rect.topleft = location
-            
+                self.rect.topleft = topleft
         
-        class Scient(pygame.sprite.Sprite, defs.Scient):
+        
+        class Scient(pygame.sprite.Sprite):
             """tricky"""
-    
+            def __init__(self, color, topleft):
+                pygame.sprite.Sprite.__init__(self)
+                self.image = pygame.Surface([15, 15])
+                self.image.fill(color)
+                self.rect = self.image.get_rect()
+                self.rect.topleft = topleft
 
 #scratch
+def find_units():
+    for x in range(len(bp.grid)):
+        for y in range(len(bp.grid[x])):
+            if bp.grid[x][y].contents:
+                print bp.grid[x][y].contents
+                print x,y
+def clear_grid():
+    for x in range(len(bp.grid)):
+        for y in range(len(bp.grid[x])):
+            if bp.grid[x][y].contents:
+                bp.grid[x][y].contents = None
+
 pygame.init()
 screen = pygame.display.set_mode([800, 600])
 #put some stuff here
@@ -129,16 +159,10 @@ b = Board(screen)
 bp = Board.BattlePane(b.surface)
 bp.rand_place_squad(bp.squad1)
 bp.rand_place_squad(bp.squad2)
-bp.draw_tiles(bp.tilesize)
 bp.draw()
+bp.draw_tiles(bp.tilesize)
 #bp.tiles.draw(bp.surface)
 bp.draw_tiles(b.tilesize)
 pygame.display.update()
-def find_units():
-    for x in range(len(bp.grid)):
-        for y in range(len(bp.grid[x])):
-            if bp.grid[x][y].contents:
-                print bp.grid[x][y].contents
-                print x,y
     
 def wipe(): pygame.display.update(screen.fill([0, 0, 0]))
