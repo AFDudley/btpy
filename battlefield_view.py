@@ -1,9 +1,6 @@
 """Defines battlefield_view"""
 import pygame
-#from pygame.locals import *
 import battlefield
-
-import defs
 
 class Pane(object):
     """window Pane class"""
@@ -47,6 +44,7 @@ class Board(object):
     def __init__(self,  surface):
         self.tilesize = 32 #size of displayed bp.Tiles
         self.surface = surface
+    
         class Player(object):
             """unit container (and later ui stuffs?)"""
             #player: a dict that contains units and items at the very least.
@@ -59,6 +57,7 @@ class Board(object):
             def push_units(self, field):
                 """send units owned by self to battlefield"""
                 pass
+        
     class StatPane(Pane):
         """pane containing information about the currently selected tile"""
         def __init__(self,  surface):
@@ -82,34 +81,34 @@ class Board(object):
     
     class BattlePane(Pane,  battlefield.Battlefield):
         """Pane that displays the battlefield"""
-        #is a battlefield (kludgy?)
-        #the pane code is borked. don't know why.
         def __init__(self,  surface):
-            #should these lines work?
-            #super(battlefield.Battlefield,  self).__init__()
-            #super(Pane,  self).__init__()
             battlefield.Battlefield.__init__(self)
             Pane.__init__(self)
+            #self.tilesize should be a ratio of self.surface
+            self.tilesize = 32
+            #self.surface should be a percentage of surface not hardcoded
             self.surface = surface.subsurface(
                 pygame.Rect((242, 42), (516, 516)))
             self.tiles = pygame.sprite.RenderUpdates()
-            #self.tiles = []
-            self.place_tiles(16, 16)
+            self.load_grid()
+            self.load_squads()
+
+
+        def draw_tiles(self, size):
+            """Draws tiles and their contents onto BattlePane surface"""
+            #isn't there an easier way?
+            for xpos in range(len(self.grid)):
+                for ypos in range(len(self.grid[xpos])):
+                    self.tiles.add(self.Tile([(xpos*size) + 2,
+                        (ypos*size) + 2]))
+            self.tiles.draw(self.surface)
         
-        def place_tiles(self,  width,  height):
-            """used in the initial update"""
-            for x_coord in range(width):
-                for y_coord in range(height):
-                    tile = self.Tile([(x_coord*32) + 2,  (y_coord*32) + 2])
-                    self.tiles.add(tile)
-                    #self.tiles.append(t)
-        
+        def draw_contents(self, size):
+            """Draws the contents of the tiles, this might be kinda slow"""
+            pass
         class Tile(pygame.sprite.Sprite,  battlefield.Tile):
             """it's a battlefield tile and a pygame sprite,  yo"""
             def __init__(self,  location):
-                #Should these lines work?
-                #super(pygame.sprite.Sprite,  self).__init__()
-                #super(battlefield.Tile,  self).__init__()
                 pygame.sprite.Sprite.__init__(self)
                 battlefield.Tile.__init__(self)
                 self.image = pygame.Surface([31, 31])
@@ -117,23 +116,29 @@ class Board(object):
                 self.rect = self.image.get_rect()
                 self.rect.topleft = location
             
-            def update(self):
-                """pull tile info,  push to surface"""
-                #call update on the contents. Tricky.
-                pass
-            
         
-
+        class Scient(pygame.sprite.Sprite, defs.Scient):
+            """tricky"""
+    
 
 #scratch
 pygame.init()
 screen = pygame.display.set_mode([800, 600])
-test = Board(screen)
-bp = test.BattlePane(test.surface)
+#put some stuff here
+b = Board(screen)
+bp = Board.BattlePane(b.surface)
+bp.rand_place_squad(bp.squad1)
+bp.rand_place_squad(bp.squad2)
+bp.draw_tiles(bp.tilesize)
 bp.draw()
-st = test.StatPane(test.surface)
-#st.draw()
-bp.tiles.draw(bp.surface)
+#bp.tiles.draw(bp.surface)
+bp.draw_tiles(b.tilesize)
 pygame.display.update()
-
+def find_units():
+    for x in range(len(bp.grid)):
+        for y in range(len(bp.grid[x])):
+            if bp.grid[x][y].contents:
+                print bp.grid[x][y].contents
+                print x,y
+    
 def wipe(): pygame.display.update(screen.fill([0, 0, 0]))

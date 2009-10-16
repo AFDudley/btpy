@@ -4,6 +4,7 @@ from boxes import Box
 import random 
 from comp import *
 
+#copied to battlefield... it shouldn't be there either...
 comp = COMP
 suit = random.choice(ELEMENTS)
 comp[suit] = random.randint(1,255)
