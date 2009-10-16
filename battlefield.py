@@ -84,6 +84,7 @@ class Battlefield(object):
         xpos, ypos = tile
         if not self.grid[xpos][ypos].contents:
             self.grid[xpos][ypos].contents = unit
+            unit.location = (xpos, ypos)
         else:
             raise Exception("tile is already filled")
     
@@ -112,6 +113,7 @@ class Battlefield(object):
                 self.grid[xsrc][ysrc].contents.move:
                     self.grid[xdest][ydest].contents = \
                     self.grid[xsrc][ysrc].contents
+                    self.grid[xdest][ydest].contents.location = (xdest, ydest)
                     self.grid[xsrc][ysrc].contents = None
                 else:
                     raise Exception("Moved too many spaces")

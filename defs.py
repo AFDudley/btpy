@@ -144,7 +144,8 @@ class Scient(Unit):
         self.past_jobs = dict(zip(JOBS, [0, 0, 0, 0])) #set all job levels to 0
         self.skills = []
         self.move = 4
-
+        self.location = None
+        
         #these get set by calcstat
         self.str = 0
         self.int = 0
