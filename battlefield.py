@@ -1,5 +1,5 @@
 """contains battlefield objects"""
-from comp import COMP, ELEMENTS, ORTH
+from const import COMP, ELEMENTS, ORTH
 import random
 from defs import Scient
 def rand_scient():

@@ -1,25 +1,40 @@
 """Simulate a battle (sanity checking the Unit implementation)"""
 
-from defs import Item, Stone, Unit, Scient, Nescient, ELEMENTS, E, F, I, W
+from defs import Stone, Unit, Scient, Nescient
+from const import ELEMENTS, E, F, I, W
+from helpers import unit_repr, rand_comp, rand_squad, rand_unit
 
 import random
 
-def unit_repr(u):
-        return "%s -> HP:% 5s | MP:% 5s | Element:% 5s | P Atk/Def: (% 3s,% 3s) | M Atk/Def: (% 3s,% 3s)" % (id(u), u.hp, u.mp, u.element, u.p_attack, u.p_defense, u.m_attack, u.m_defense)
-
 def test_random_battle():
-    comps = [(random.randint(0,100), random.randint(0,100)) for _ in range(5)]
-    units = [Scient(random.choice(ELEMENTS),
-                    {E:comps[i][0],F:comps[i][1],I:100-comps[i][1],W:100-comps[i][0]},
-                   ) for i in range(5)] #create 5 units with somewhat random stats
-
+    units = rand_squad()
     for u in units:
-        print unit_repr(u)
+        print "%s \n" %unit_repr(u) 
 
     print "="*80
     print "u0 attacks u1"
-    print unit_repr(units[1])
+    print "%s \n" %unit_repr(units[1])
     units[0].phys_damage(units[1])
-    print unit_repr(units[1])
-    
+    unit_repr(units[1])
     assert units[1].hp > 0
+
+print "Making min units..."
+PATK = Scient(F, {E:0, F:1, I:0, W:0})
+PATK.name = 'PATK'
+unit_repr(PATK)
+print
+ 
+PDEF = Scient(E, {E:1, F:0, I:0, W:0})
+PDEF.name = 'PDEF'
+unit_repr(PDEF)
+print
+
+MATK = Scient(I, {E:0, F:0, I:1, W:0})
+MATK.name = 'MATK'
+unit_repr(MATK)
+print
+ 
+MDEF = Scient(W, {E:0, F:0, I:0, W:1}) 
+MDEF.name = 'MDEF'
+unit_repr(MDEF)
+
