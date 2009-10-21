@@ -136,25 +136,26 @@ class Scient(Unit):
         self.location = None
         
         #these get set by calcstat
-        self.str = 0
+        self.str = 3
         self.int = 0
-        self.p_defense = 0
-        self.p_attack = 0
+        self.p_defense = 3
+        self.p_attack = 4
         self.m_attack = 0
         self.m_defense = 0
-        self.hp = 0
+        self.hp = 9
         self.mp = 0
         self.calcstats()
     
-    def calcstats(self): #These ranges are wrong.
-        self.str = 2*(self.comp[F] + self.comp[E]) + self.comp[I] + self.comp[W] # 0..1280
-        self.int = 2*(self.comp[I] + self.comp[W]) + self.comp[F] + self.comp[E] # 0..1280
-        self.p_defense = self.comp[E] + self.str # 0..1536
-        self.p_attack = self.comp[F] + self.str # 0..1536
+    def calcstats(self): #These ranges are wrong. this function is just plain wrong
+        #CAN ONLY BE CALLED ONCE!!!
+        self.str = 3* (2*(self.comp[F] + self.comp[E]) + self.comp[I] + self.comp[W]) # 0..1280
+        self.int = 3* (2*(self.comp[I] + self.comp[W]) + self.comp[F] + self.comp[E]) # 0..1280
+        self.p_defense = 3 * (self.comp[E] + self.str) # 0..1536
+        self.p_attack = 4 * (self.comp[F] + self.str) # 0..1536
         self.m_defense = self.comp[W] + self.int # 0..1536
         self.m_attack = self.comp[I] + self.int # 0..1536
-        self.hp = int((self.str * self.p_defense)) # 0..15360 (check)
-        self.mp = int((self.int * self.m_attack) ) # 0..15360 (check)
+        self.hp = int((self.str * self.p_defense)) + int((self.int * self.m_defense))
+        self.mp = 0  # Soon to be deleted.
     
     def strikes(self, tile, level, element, battlefield):
         """Fighter's attack, short-range"""
@@ -203,17 +204,14 @@ class Scient(Unit):
         #negative values are the same as 0
         for element in damage_dealt:
             dmg = (self.str * self.p_attack * self.comp[element]) - \
-            (target.str * target.p_defense * target.comp[element])
+            (self.str * target.p_defense * target.comp[element])
             dmg = max(dmg, 0) #to set negative values to zero
             damage_dealt[element] = dmg
         print damage_dealt
         
         #for the elements orthogonal to the attacker, halve the damage
-        print "inside orth divide"
         for element in ORTH[self.element]:
             damage_dealt[element] /= 2.0
-            print element
-        print damage_dealt
         
         #i think the 512 value should be based on age/level @rix
         #for element in damage_dealt:
