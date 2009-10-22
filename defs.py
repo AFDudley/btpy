@@ -136,24 +136,24 @@ class Scient(Unit):
         self.location = None
         
         #these get set by calcstat
-        self.str = 3
+        self.str = 0
         self.int = 0
-        self.p_defense = 3
-        self.p_attack = 4
+        self.p_defense = 0
+        self.p_attack = 0
         self.m_attack = 0
         self.m_defense = 0
-        self.hp = 9
+        self.hp = 0
         self.mp = 0
         self.calcstats()
     
     def calcstats(self): #These ranges are wrong. this function is just plain wrong
         #CAN ONLY BE CALLED ONCE!!!
-        self.str = 3* (2*(self.comp[F] + self.comp[E]) + self.comp[I] + self.comp[W]) # 0..1280
-        self.int = 3* (2*(self.comp[I] + self.comp[W]) + self.comp[F] + self.comp[E]) # 0..1280
-        self.p_defense = 3 * (self.comp[E] + self.str) # 0..1536
-        self.p_attack = 4 * (self.comp[F] + self.str) # 0..1536
+        self.str = (2*(self.comp[F] + self.comp[E]) + self.comp[I] + self.comp[W]) # 0..1280
+        self.int = (2*(self.comp[I] + self.comp[W]) + self.comp[F] + self.comp[E]) # 0..1280
+        self.p_defense = (self.comp[E] + self.str) # 0..1536
+        self.p_attack  = (self.comp[F] + self.str) # 0..1536
         self.m_defense = self.comp[W] + self.int # 0..1536
-        self.m_attack = self.comp[I] + self.int # 0..1536
+        self.m_attack  = self.comp[I] + self.int # 0..1536
         self.hp = int((self.str * self.p_defense)) + int((self.int * self.m_defense))
         self.mp = 0  # Soon to be deleted.
     
