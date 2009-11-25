@@ -4,7 +4,7 @@ from const import COMP, ELEMENTS, E, F, I, W
 from constraint import *
 #tff = range(0,255)
 #tfs = range(1,256)
-ten = range(12000, 600, -1)
+ten = range(12000, 600, -1)p
 twok =range(1500000, 13800000, -1)
 ugh = Problem()
 ugh.addVariables(["E","F","I","W"], [0,127,255])
@@ -19,41 +19,41 @@ ugh.addConstraint(lambda suit, E, F, I, W: (suit == 1 and E > 0 and W < 1 and E 
 ugh.addConstraint(lambda E, F, I, W, value: value == E + F + W + I, \
                   ["E","F","I","W","value"])
 
-ugh.addVariable("str", ten)
-ugh.addConstraint(lambda E, F, I, W, str: str == (2 * (E + F)) + I + W, \
-                  ["E","F","I","W","str"])
+ugh.addVariable("p", ten)
+ugh.addConstraint(lambda E, F, I, W, p: p == (2 * (E + F)) + I + W, \
+                  ["E","F","I","W","p"])
 
-ugh.addVariable("int", ten)
-ugh.addConstraint(lambda E, F, I, W, int: int == (2 * (I + W)) + E + F, \
-                  ["E","F","I","W","int"])
+ugh.addVariable("m", ten)
+ugh.addConstraint(lambda E, F, I, W, m: m == (2 * (I + W)) + E + F, \
+                  ["E","F","I","W","m"])
 
-ugh.addVariable("PDEF", ten)
-ugh.addConstraint(lambda E, F, I, W, str, PDEF: PDEF == E + str, \
-                  ["E", "F", "I", "W", "str", "PDEF"])
+ugh.addVariable("pdef", ten)
+ugh.addConstraint(lambda E, F, I, W, p, pdef: pdef == E + p, \
+                  ["E", "F", "I", "W", "p", "pdef"])
 
-ugh.addVariable("PATK", ten)
-ugh.addConstraint(lambda E, F, I, W, str, PATK: PATK == F + str, \
-                  ["E", "F", "I", "W", "str", "PATK"])
+ugh.addVariable("patk", ten)
+ugh.addConstraint(lambda E, F, I, W, p, patk: patk == F + p, \
+                  ["E", "F", "I", "W", "p", "patk"])
 
-ugh.addVariable("MATK", ten)
-ugh.addConstraint(lambda E, F, I, W, int, MATK: MATK == I + int, 
-                  ["E", "F", "I", "W", "int", "MATK"])
+ugh.addVariable("matk", ten)
+ugh.addConstraint(lambda E, F, I, W, m, matk: matk == I + m, 
+                  ["E", "F", "I", "W", "m", "matk"])
 
-ugh.addVariable("MDEF", ten)
-ugh.addConstraint(lambda E, F, I, W, int, MDEF: MDEF == W + int, \
-                  ["E", "F", "I", "W", "int", "MDEF"])
+ugh.addVariable("mdef", ten)
+ugh.addConstraint(lambda E, F, I, W, m, mdef: mdef == W + m, \
+                  ["E", "F", "I", "W", "m", "mdef"])
 
 ugh.addVariable("HP", twok)
-ugh.addConstraint(lambda E, F, I, W, str, int, PDEF, MDEF, HP: HP ==  \
-                  (str * PDEF) + (int * MDEF), ["E","F","I","W","str", \
-                  "int", "PDEF", "MDEF", "HP"])
+ugh.addConstraint(lambda E, F, I, W, p, m, pdef, mdef, HP: HP ==  \
+                  (p * pdef) + (m * mdef), ["E","F","I","W","p", \
+                  "m", "pdef", "mdef", "HP"])
 
 #ugh.addVariable("c1", ten)
 class scient2(Scient):
-    def __init__(self, e, f, i, w, int, str, pdef, patk, matk, mdef, hp):
+    def __init__(self, e, f, i, w, m, p, pdef, patk, matk, mdef, hp):
         Scient.__init__(self, 'Fire', {E:e, F:f, I:i, W:w})
-        self.int  = int
-        self.str  = str
+        self.m  = m
+        self.p  = p
         self.pdef = pdef
         self.patk = patk
         self.matk = matk
@@ -67,8 +67,8 @@ def NMC():
     mess = []
     #there is a more clever way of doing this using .key() but whateva
     for x in yeah:
-        naked = scient2(x['E'], x['F'], x['I'], x['W'], x['int'], \
-            x['str'], x['PDEF'], x['PATK'], x['MATK'], x['MDEF'], x['HP'], )
+        naked = scient2(x['E'], x['F'], x['I'], x['W'], x['m'], \
+            x['p'], x['pdef'], x['patk'], x['matk'], x['mdef'], x['HP'], )
         naked.element = 'nope'
         mess.append(naked)
     return mess

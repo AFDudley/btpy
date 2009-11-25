@@ -27,16 +27,16 @@ def maim_leg_logic(u,t,b):
     t.move = t.move-1
 
 def maim_arm_logic(unit, target, battlefield):
-    target.p_attack = target.p_attack*(31/32.)
+    target.patk = target.patk*(31/32.)
     battlefield.status_effects.append((target, "Disable skill...")) #TODO: chance of disabling all skills for a turn.
 
 def break_armor_logic(u,target,b):
-    target.p_defense = target.p_defense*(63/64.) #TODO: need a real value
-    target.m_defense = target.m_defense*(63/64.) #TODO: need a real value
+    target.pdef = target.pdef*(63/64.) #TODO: need a real value
+    target.mdef = target.mdef*(63/64.) #TODO: need a real value
 
 def break_weapon_logic(u,target,b):
-    target.p_attack = target.p_attack*(63/64.) #TODO: need a real value
-    target.m_attack = target.m_attack*(63/64.) #TOOD: need a real value
+    target.patk = target.patk*(63/64.) #TODO: need a real value
+    target.matk = target.matk*(63/64.) #TOOD: need a real value
 
 maim_leg = Skill(E, "Maim leg", maim_leg_logic)
 maim_arm = Skill(F, "Maim arm", maim_arm_logic)
@@ -96,11 +96,11 @@ class Unit(object):
             raise Exception("Invalid element: %s, valid elements are %s" % (element, ELEMENTS))
         self.element = element
         self.comp = comp
-        
-        self.p_attack = None
-        self.p_defense = None
-        self.m_attack = None
-        self.m_defense = None
+
+        self.patk = None
+        self.pdef = None
+        self.matk = None
+        self.mdef = None
         self.age = None
         self.name = None
     
@@ -112,7 +112,7 @@ class Unit(object):
         return sum
         
     #def repr(self):
-    #    return "%s -> HP:% 5s | MP:% 5s | Element:% 5s | P Atk/Def: (% 3s,% 3s) | M Atk/Def: (% 3s,% 3s)" % (id(u), u.hp, u.mp, u.element, u.p_attack, u.p_defense, u.m_attack, u.m_defense)
+    #    return "%s -> HP:% 5s | MP:% 5s | Element:% 5s | P Atk/Def: (% 3s,% 3s) | M Atk/Def: (% 3s,% 3s)" % (id(u), u.hp, u.mp, u.element, u.patk, u.pdef, u.matk, u.mdef)
 #TODO: inheriting from Unit is not buying anything for us here (in terms of Scient,
 # which just overwrites Unit's __init__ (unless you use super?))
 
@@ -136,25 +136,33 @@ class Scient(Unit):
         self.location = None
         
         #these get set by calcstat
-        self.str = 0
-        self.int = 0
-        self.p_defense = 0
-        self.p_attack = 0
-        self.m_attack = 0
-        self.m_defense = 0
+        self.p = 0
+        self.m = 0
+        self.atk = 0
+        self.deph = 0
+        self.pdef = 0
+        self.patk = 0
+        self.matk = 0
+        self.mdef = 0
         self.hp = 0
         self.mp = 0
         self.calcstats()
     
     def calcstats(self): #These ranges are wrong. this function is just plain wrong
         #CAN ONLY BE CALLED ONCE!!!
-        self.str = (2*(self.comp[F] + self.comp[E]) + self.comp[I] + self.comp[W]) # 0..1280
-        self.int = (2*(self.comp[I] + self.comp[W]) + self.comp[F] + self.comp[E]) # 0..1280
-        self.p_defense = self.comp[E] + self.str + 0# 0..1536
-        self.p_attack  = self.comp[F] + self.str + (2 * self.value())# 0..1536
-        self.m_defense = self.comp[W] + self.int + 0# 0..1536
-        self.m_attack  = self.comp[I] + self.int + (2 * self.value())# 0..1536
-        self.hp = int((self.str + self.p_defense)) + int((self.int + self.m_defense))
+        self.p    = (2*(self.comp[F] + self.comp[E]) + self.comp[I] + \
+                    self.comp[W]) # 0..1280
+        self.m    = (2*(self.comp[I] + self.comp[W]) + self.comp[F] + \
+                    self.comp[E]) # 0..1280
+        self.atk  = (2*(self.comp[F] + self.comp[I]) + self.comp[E] + \
+                    self.comp[W])  + (2 * self.value())
+        self.deph = (2*(self.comp[E] + self.comp[W]) + self.comp[F] + \
+                    self.comp[I]) # 0..1280
+        self.pdef = self.p + self.deph
+        self.patk = self.p + self.atk
+        self.mdef = self.m + self.deph
+        self.matk = self.m + self.atk
+        self.hp   = int((self.p + self.pdef)) + int((self.m + self.mdef))
         self.mp = 0  # Soon to be deleted.
     
     def strikes(self, tile, level, element, battlefield):
@@ -203,13 +211,13 @@ class Scient(Unit):
         #xdamage is (A' times comp[X]) minus (D' times comp[X])
         #negative values are the same as 0
         for element in damage_dealt:
-            dmg = (self.str + self.p_attack + self.comp[element]) - \
-                  (target.str + target.p_defense + target.comp[element])
+            dmg = (self.p + self.patk + self.comp[element]) - \
+                  (target.p + target.pdef + target.comp[element])
             #dmg = max(dmg, 0) #to set negative values to zero
             dmg = abs(dmg)
             damage_dealt[element] = dmg
-            #print "element: %s ATKr - str: %s pATK: %s suit: %s || DEFr - str: %s pDEF: %s suit: %s | %s " \
-            #%(element, self.str, self.p_attack, self.comp[element], target.str, target.p_defense, target.comp[element], dmg,)
+            #print "element: %s ATKr - p: %s pATK: %s suit: %s || DEFr - p: %s pDEF: %s suit: %s | %s " \
+            #%(element, self.m, self.patk, self.comp[element], target.p, target.pdef, target.comp[element], dmg,)
         
         #for the elements orthogonal to the attacker, halve the damage
         #for element in ORTH[self.element]:
@@ -237,7 +245,7 @@ class Scient(Unit):
         """Calculates the damage of a magical attack"""
         damage = {E: 0, F: 0, I: 0, W: 0}
         
-        damage[element] = ((2 * self.int * self.m_attack * self.comp[element]) - (2 * target.int * target.m_defense * target.comp[element])) / 32.0
+        damage[element] = ((2 * self.m * self.matk * self.comp[element]) - (2 * target.m * target.pdef * target.comp[element])) / 32.0
         
         return damage[self.element]
     
@@ -255,21 +263,21 @@ class Scient(Unit):
         self.age += 1
         self.level += 1
         self.past_jobs[self.current_job] += 1
-        bonuses = dict(zip(["str", "int", "p_attack", "p_defense", "m_attack", "m_defense"], [2]*6))
+        bonuses = dict(zip(["p", "m", "patk", "pdef", "mdef", "mdef"], [2]*6))
         
         #set bonuses
         if self.current_job == FT:
-            bonuses["str"] = 8
-            bonuses["p_attack"] = 4
+            bonuses["p"] = 8
+            bonuses["matk"] = 4
         elif self.current_job == SH:
-            bonuses["str"] = 8
-            bonuses["p_defense"] = 4
+            bonuses["p"] = 8
+            bonuses["pdef"] = 4
         elif self.current_job == TH:
-            bonuses["int"] = 8
-            bonuses["m_attack"] = 4
+            bonuses["m"] = 8
+            bonuses["matk"] = 4
         elif self.current_job == WZ:
-            bonuses["int"] = 8
-            bonuses["m_defense"] = 4
+            bonuses["m"] = 8
+            bonuses["mdef"] = 4
         
         #calculate penalty
         for attr in bonuses:
