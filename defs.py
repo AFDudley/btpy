@@ -106,10 +106,10 @@ class Unit(object):
     
     def value(self):
         """Returns sum of comp, overload as needed"""
-        summ = 0
-        for value in self.comp:
-            summ + value
-        return summ
+        sum = 0
+        for x in self.comp.keys():
+            sum = sum + self.comp[x]
+        return sum
         
     #def repr(self):
     #    return "%s -> HP:% 5s | MP:% 5s | Element:% 5s | P Atk/Def: (% 3s,% 3s) | M Atk/Def: (% 3s,% 3s)" % (id(u), u.hp, u.mp, u.element, u.p_attack, u.p_defense, u.m_attack, u.m_defense)
@@ -150,11 +150,11 @@ class Scient(Unit):
         #CAN ONLY BE CALLED ONCE!!!
         self.str = (2*(self.comp[F] + self.comp[E]) + self.comp[I] + self.comp[W]) # 0..1280
         self.int = (2*(self.comp[I] + self.comp[W]) + self.comp[F] + self.comp[E]) # 0..1280
-        self.p_defense = (self.comp[E] + self.str) # 0..1536
-        self.p_attack  = (self.comp[F] + self.str) # 0..1536
-        self.m_defense = self.comp[W] + self.int # 0..1536
-        self.m_attack  = self.comp[I] + self.int # 0..1536
-        self.hp = int((self.str * self.p_defense)) + int((self.int * self.m_defense))
+        self.p_defense = self.comp[E] + self.str + 0# 0..1536
+        self.p_attack  = self.comp[F] + self.str + (2 * self.value())# 0..1536
+        self.m_defense = self.comp[W] + self.int + 0# 0..1536
+        self.m_attack  = self.comp[I] + self.int + (2 * self.value())# 0..1536
+        self.hp = int((self.str + self.p_defense)) + int((self.int + self.m_defense))
         self.mp = 0  # Soon to be deleted.
     
     def strikes(self, tile, level, element, battlefield):
@@ -203,21 +203,33 @@ class Scient(Unit):
         #xdamage is (A' times comp[X]) minus (D' times comp[X])
         #negative values are the same as 0
         for element in damage_dealt:
-            dmg = (self.str * self.p_attack * self.comp[element]) - \
-            (self.str * target.p_defense * target.comp[element])
-            dmg = max(dmg, 0) #to set negative values to zero
+            dmg = (self.str + self.p_attack + self.comp[element]) - \
+                  (target.str + target.p_defense + target.comp[element])
+            #dmg = max(dmg, 0) #to set negative values to zero
+            dmg = abs(dmg)
             damage_dealt[element] = dmg
-        print damage_dealt
+            #print "element: %s ATKr - str: %s pATK: %s suit: %s || DEFr - str: %s pDEF: %s suit: %s | %s " \
+            #%(element, self.str, self.p_attack, self.comp[element], target.str, target.p_defense, target.comp[element], dmg,)
         
         #for the elements orthogonal to the attacker, halve the damage
-        for element in ORTH[self.element]:
-            damage_dealt[element] /= 2.0
+        #for element in ORTH[self.element]:
+        #    damage_dealt[element] /= 2.0
+        #print damage_dealt
         
         #i think the 512 value should be based on age/level @rix
         #for element in damage_dealt:
             #damage_dealt[element] /= 2**(16+2.0/self.age)
         
         damage = sum(damage_dealt.values())
+        #print damage
+        if self.element == 'Earth':
+            damage = damage * (5/8.)
+        elif self.element == 'Fire':
+            damage = damage * (1/3.)
+        elif self.element == 'Ice':
+            damage = damage * (1/6.)
+        elif self.element == 'Wind':
+            damage = damage * (5/4.)
         
         return damage
     
