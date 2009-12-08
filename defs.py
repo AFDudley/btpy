@@ -139,7 +139,7 @@ class Scient(Unit):
         self.p = 0
         self.m = 0
         self.atk = 0
-        self.deph = 0
+        self.defe = 0
         self.pdef = 0
         self.patk = 0
         self.matk = 0
@@ -148,23 +148,29 @@ class Scient(Unit):
         self.mp = 0
         self.calcstats()
     
-    def calcstats(self): #These ranges are wrong. this function is just plain wrong
+    def calcstats(self): #This function is a work in progress
         #CAN ONLY BE CALLED ONCE!!!
         self.p    = (2*(self.comp[F] + self.comp[E]) + self.comp[I] + \
-                    self.comp[W]) # 0..1280
+                    self.comp[W]) 
         self.m    = (2*(self.comp[I] + self.comp[W]) + self.comp[F] + \
-                    self.comp[E]) # 0..1280
+                    self.comp[E]) 
         self.atk  = (2*(self.comp[F] + self.comp[I]) + self.comp[E] + \
                     self.comp[W])  + (2 * self.value())
-        self.deph = (2*(self.comp[E] + self.comp[W]) + self.comp[F] + \
-                    self.comp[I]) # 0..1280
-        self.pdef = self.p + self.deph
-        self.patk = self.p + self.atk
-        self.mdef = self.m + self.deph
-        self.matk = self.m + self.atk
-        self.hp   = int((self.p + self.pdef)) + int((self.m + self.mdef))
+        self.defe = (2*(self.comp[E] + self.comp[W]) + self.comp[F] + \
+                    self.comp[I]) 
+        self.pdef = self.p + self.defe + (2 * self.comp[E])
+        self.patk = self.p + self.atk  + (2 * self.comp[F])
+        self.mdef = self.m + self.defe + (2 * self.comp[W])
+        self.matk = self.m + self.atk  + (2 * self.comp[I])
+        self.hp   = 4 * (self.pdef + self.mdef) + self.value()
         self.mp = 0  # Soon to be deleted.
     
+    def comp_as_tuple(self):
+        tuple = ()
+        for x in ELEMENTS:
+            tuple += (self.comp[x],)
+        return tuple
+
     def strikes(self, tile, level, element, battlefield):
         """Fighter's attack, short-range"""
         target = battlefield.get_tile(tile)
@@ -208,46 +214,34 @@ class Scient(Unit):
         """Calculates the physical damage of an attack"""
         damage_dealt = {E: 0, F: 0, I: 0, W: 0}
         
-        #xdamage is (A' times comp[X]) minus (D' times comp[X])
-        #negative values are the same as 0
         for element in damage_dealt:
-            dmg = (self.p + self.patk + self.comp[element]) - \
-                  (target.p + target.pdef + target.comp[element])
-            #dmg = max(dmg, 0) #to set negative values to zero
-            dmg = abs(dmg)
+            dmg = (self.p + self.patk + (2 * self.comp[element])) - \
+                  (target.p + target.pdef + (2 * target.comp[element]))
+            #Same suit damage would otherwise be negative.
+            #dmg = abs(dmg)
+            dmg = max(dmg, 0)
             damage_dealt[element] = dmg
-            #print "element: %s ATKr - p: %s pATK: %s suit: %s || DEFr - p: %s pDEF: %s suit: %s | %s " \
-            #%(element, self.m, self.patk, self.comp[element], target.p, target.pdef, target.comp[element], dmg,)
-        
-        #for the elements orthogonal to the attacker, halve the damage
-        #for element in ORTH[self.element]:
-        #    damage_dealt[element] /= 2.0
-        #print damage_dealt
-        
-        #i think the 512 value should be based on age/level @rix
-        #for element in damage_dealt:
-            #damage_dealt[element] /= 2**(16+2.0/self.age)
-        
+                
         damage = sum(damage_dealt.values())
-        #print damage
-        if self.element == 'Earth':
-            damage = damage * (5/8.)
-        elif self.element == 'Fire':
-            damage = damage * (1/3.)
-        elif self.element == 'Ice':
-            damage = damage * (1/6.)
-        elif self.element == 'Wind':
-            damage = damage * (5/4.)
-        
         return damage
     
     def mag_damage(self, target, element):
         """Calculates the damage of a magical attack"""
         damage = {E: 0, F: 0, I: 0, W: 0}
         
-        damage[element] = ((2 * self.m * self.matk * self.comp[element]) - (2 * target.m * target.pdef * target.comp[element])) / 32.0
+        damage[element] = 4 * ((self.m + self.matk + (2 * self.comp[element])) - \
+        (2 + target.m + target.mdef + (2 * target.comp[element])))
         
-        return damage[self.element]
+
+        if target.element == element:
+            #heal instead of damage
+            #dmg = abs(damage[element])
+            dmg = 99999
+        elif damage[element] < 0:
+            dmg = 0
+        else:
+            dmg = damage[element]
+        return dmg 
     
     def change_job(self, newjob):
         if not newjob in JOBS:
