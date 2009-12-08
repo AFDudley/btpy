@@ -1,7 +1,7 @@
 """Helper functions"""
 import random
 #import const   
-from const import ELEMENTS, E, F, W, I, ORTH, KINDS
+from const import ELEMENTS, E, F, W, I, ORTH, KINDS, OPP
 from defs import Scient
 
 def unit_repr(u): #Needs work.
@@ -76,3 +76,34 @@ def print_rand_squad(suit=None):
     for unit in squad:
         print unit_repr(unit)
     return squad
+
+def show_squad(squad):
+    for unit in squad:
+        print unit.element
+        print unit_repr(unit)
+
+def max_squad_by_value(value):
+    """Takes an integer, ideally even because we round down, and returns a squad
+    such that comp[element] == value, comp[orth] == value/2, comp[opp] == 0"""
+    squad = []
+    value = value/2 #more logical, really.
+    half = value/2
+    for i in ELEMENTS:
+        unit = Scient(i,{E:half, F:half, I:half, W:half,})
+        unit.comp[unit.element] = value
+        unit.comp[OPP[unit.element]] = 0
+        unit.calcstats()
+        squad.append(unit)
+    return squad
+
+def one_three_zeros(value):
+    squad = []
+    for i in ELEMENTS:
+        unit = Scient(i,{E:0, F:0, I:0, W:0})
+        unit.comp[unit.element] = value
+        unit.calcstats()
+        squad.append(unit)
+    return squad
+
+
+    

@@ -1,39 +1,26 @@
+"""Helpers for figuring out HTK averages, does not take into account healing,
+   because it hasn't be coded properly yet."""
+
 from defs import *
 from const import *
 from helpers import *
-maxes = []
-
-for x in ELEMENTS:
-    u = Scient(x,{E:127, F:127, I:127, W:127,})
-    u.comp[u.element] = 255
-    u.comp[OPP[u.element]] = 0
-    u.calcstats()
-    maxes.append(u)
-
-#SO LAZY
-fours = []    
-for x in ELEMENTS:
-    u = Scient(x,{E:1, F:1, I:1, W:1,})
-    u.comp[u.element] = 2
-    u.comp[OPP[u.element]] = 0
-    u.calcstats()
-    fours.append(u)
     
-def show_squad(squad):
-    for u in squad:
-        print u.element
-        unit_repr(u)
-        print
-
 def pdmg_squad(unit, squad):
     print "Physical damage from:"
     avg =[]
     unit_repr(unit)
     for x in squad:
         dmg = unit.phys_damage(x)
-        htk = x.hp / (dmg + .0)
-        avg.append(htk)
-        print "target Suit/HP: %s/%s DMG: %s HTK: %s" %(x.element, x.hp, dmg, htk)
+        if dmg == 0:
+            avg.append(0)
+            htk = 0
+            print "No damage dealt"
+        else:
+            dmg = float(dmg)
+            htk = x.hp / dmg
+            avg.append(htk)
+        print "target Suit/HP: %s/%s DMG: %s HTK: %s" \
+            %(x.element, x.hp, dmg, htk)
     ans = sum(avg)/len(avg)
     print "Average HTK: %s \n" %(ans)
     return ans
@@ -52,7 +39,8 @@ def mdmg_squad(unit, squad):
             htk = x.hp / dmg
             if dmg != 99999:
                 avg.append(htk)
-            print "target Suit/HP: %s/%s DMG: %s HTK: %s" %(x.element, x.hp, dmg, htk)
+            print "target Suit/HP: %s/%s DMG: %s HTK: %s" \
+                %(x.element, x.hp, dmg, htk)
     ans = sum(avg)/len(avg)
     print "Average of HTK (of hits that actually damage): %s \n" %(ans)
     return ans
@@ -70,7 +58,8 @@ def mdmg_avg(squad):
     for x in squad:
         grand.append(mdmg_squad(x, squad))
     ans = sum(grand)/len(grand)
-    print "Average of the 16 (which excludes the 4 heals on the chart): %s" %(ans)
+    print "Average of the 16 (which excludes the 4 heals on the chart): %s" \
+        %(ans)
     return ans
     
 def better_suit(squad):
@@ -80,10 +69,41 @@ def better_suit(squad):
         avg = (pdmg_squad(x, squad) + mdmg_squad(x, squad))/2
         ans[x.element] = avg
         #print "average for %s: %s \n" %(x.element, avg)
+    print "Average of p and m HTKs for each suit/element: \n"
     for i in ans:
-        print "average for %s: %s \n" %(i, ans[i])
+        print "%s: %s" %(i, ans[i])
+    print "End of better_suit\n"
     return ans
     
-    
-    
+def drift(tuple):
+    for i in tuple:
+        for j in ELEMENTS:
+            print " %s: %s" %(j, i[j])
+        print
+            
+#Shout out to Eureka Seven
+lows  = max_squad_by_value(4)
+mids  = max_squad_by_value(255)
+highs = max_squad_by_value(510)    
+
+small  = one_three_zeros(4)
+medium = one_three_zeros(127) 
+large  = one_three_zeros(255)
+
+sounds = (lows, mids, highs)
+sizes  = (small, medium, large)
+def betters(tuple):
+    stats = ()
+    """Say Word."""
+    for i in tuple:
+        stats += (better_suit(i),)
+    return stats
+
+fullones = betters(sounds)
+notfull  = betters(sizes)
+print "Shows the variance of HTK by suit as value of (2,1,1,0) units increases:"
+drift(fullones)
+
+print "\n Shows the variance of HTK by suit as value of (1,0,0,0) units increases:"
+drift(notfull)   
     
