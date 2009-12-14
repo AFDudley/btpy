@@ -8,7 +8,7 @@ for color, location in [([255, 0, 0], [0, 0]), ([0, 255, 0], [60, 60]),
 ([0, 0, 255], [120, 120])]:
     boxes.add(UpDownBox(color, location))
 
-screen = pygame.display.set_mode([150, 150])
+screen = pygame.display.set_mode([800, 600])
 while pygame.event.poll().type != KEYDOWN:
     screen.fill([0, 0, 0])
     boxes.update(pygame.time.get_ticks(), 150)

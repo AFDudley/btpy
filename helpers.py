@@ -11,7 +11,7 @@ def unit_repr(u): #Needs work.
     else:
         title = str(id(u))
     print "%s -> suit:% 2s | comp: (%s, %s, %s, %s) | p: %s \n HP: % 7s \
-| PA/PD: (% 5s,% 5s) | MA/MD: (% 5s,% 5s)" % (title, u.element[0], \
+    | PA/PD: (% 5s,% 5s) | MA/MD: (% 5s,% 5s)" % (title, u.element[0], \
 u.comp[E], u.comp[F], u.comp[I], u.comp[W], u.p, \
 u.hp, u.patk, u.pdef, u.matk, u.mdef)
 

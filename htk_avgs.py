@@ -5,80 +5,86 @@ from defs import *
 from const import *
 from helpers import *
     
-def pdmg_squad(unit, squad):
-    print "Physical damage from:"
+def pdmg_squad(unit, squad, debug=None):
     avg =[]
-    unit_repr(unit)
+    if debug: print "Physical damage from:"; unit_repr(unit)
     for x in squad:
         dmg = unit.phys_damage(x)
         if dmg == 0:
             avg.append(0)
             htk = 0
-            print "No damage dealt"
+            if debug: print "No damage dealt"
         else:
             dmg = float(dmg)
             htk = x.hp / dmg
             avg.append(htk)
-        print "target Suit/HP: %s/%s DMG: %s HTK: %s" \
+            if debug: print "target Suit/HP: %s/%s DMG: %s HTK: %s" \
             %(x.element, x.hp, dmg, htk)
+    
     ans = sum(avg)/len(avg)
-    print "Average HTK: %s \n" %(ans)
+    if debug: print "Average HTK: %s \n" %(ans)
     return ans
     
-def mdmg_squad(unit, squad):
-    print "Magical damage from:"
+def mdmg_squad(unit, squad, debug=None):
     avg = []
-    unit_repr(unit)
+    if debug: print "Magical damage from:"; unit_repr(unit)
     for x in squad:
-        dmg = unit.mag_damage(x, unit.element)
+        dmg = abs(unit.mag_damage(x, unit.element))
         if dmg == 0:
             avg.append(0)
-            print "No damage dealt"
+            if debug: print "No damage dealt"
         else:
             dmg = float(dmg)
             htk = x.hp / dmg
             if dmg != 99999:
                 avg.append(htk)
-            print "target Suit/HP: %s/%s DMG: %s HTK: %s" \
+            if debug: print "target Suit/HP: %s/%s DMG: %s HTK: %s" \
                 %(x.element, x.hp, dmg, htk)
     ans = sum(avg)/len(avg)
-    print "Average of HTK (of hits that actually damage): %s \n" %(ans)
+    if debug: print "Average of HTK (of hits that actually damage): %s \n" \
+    %(ans)
+    
     return ans
     
-def pdmg_avg(squad):
+def pdmg_avg(squad, debug=None):
     grand = []
     for x in squad:
-        grand.append(pdmg_squad(x, squad))
+        grand.append(pdmg_squad(x, squad, debug))
     ans = sum(grand)/len(grand)
-    print "Average of the 16: %s \n" %(ans)
+    if debug: print "Average of 16 pdmgs: %s \n" %(ans)
     return ans
     
-def mdmg_avg(squad):
+def mdmg_avg(squad, debug=None):
     grand = []
     for x in squad:
-        grand.append(mdmg_squad(x, squad))
+        grand.append(mdmg_squad(x, squad, debug))
     ans = sum(grand)/len(grand)
-    print "Average of the 16 (which excludes the 4 heals on the chart): %s" \
-        %(ans)
+    if debug: print "Average of 16 mdmgs: %s" %(ans)
     return ans
     
-def better_suit(squad):
+def better_suit(squad, debug=None):
     ans = {E:0, F:0, I:0, F:0} 
     for x in squad:
-        print "Damage average for %s" %x.element
-        avg = (pdmg_squad(x, squad) + mdmg_squad(x, squad))/2
-        ans[x.element] = avg
-        #print "average for %s: %s \n" %(x.element, avg)
-    print "Average of p and m HTKs for each suit/element: \n"
-    for i in ans:
-        print "%s: %s" %(i, ans[i])
-    print "End of better_suit\n"
+        pdmg = pdmg_squad(x, squad, debug)
+        mdmg = mdmg_squad(x, squad, debug)
+        avg  = (pdmg + mdmg)/2
+        stuff = {'pdmg':pdmg, 'mdmg':mdmg, 'avg':avg }
+        ans[x.element] = stuff
+        if debug:
+            print "Damage average for %s" %x.element
+            print "average for %s: %s \n" %(x.element, avg)
+    if debug:
+        print "Average of p and m HTKs for each suit/element: \n"
+        for ele in ELEMENTS:
+            print "Attacker: %s" %ele
+            print "\tpdmg HTK average: %s\n \tmdmg HTK average: %s\n \
+\tdmg  HTK average: %s\n" %(ans[ele]['pdmg'], ans[ele]['mdmg'], ans[ele]['avg'])
+
     return ans
-    
+
 def drift(tuple):
     for i in tuple:
-        for j in ELEMENTS:
-            print " %s: %s" %(j, i[j])
+        print better_suit(i)
         print
             
 #Shout out to Eureka Seven
@@ -92,18 +98,25 @@ large  = one_three_zeros(255)
 
 sounds = (lows, mids, highs)
 sizes  = (small, medium, large)
-def betters(tuple):
-    stats = ()
-    """Say Word."""
-    for i in tuple:
-        stats += (better_suit(i),)
-    return stats
 
-fullones = betters(sounds)
-notfull  = betters(sizes)
-print "Shows the variance of HTK by suit as value of (2,1,1,0) units increases:"
-drift(fullones)
+def make_mess():
 
-print "\n Shows the variance of HTK by suit as value of (1,0,0,0) units increases:"
-drift(notfull)   
+    print "Shows the variance of HTK by suit as value of (2,1,1,0) units increases:"
+    drift(sounds)
+
+    print "\n Shows the variance of HTK by suit as value of (1,0,0,0) units increases:"
+    drift(sizes)
+
+def make_grand(squad, debug=None):
+    """grand average for squad"""
+    grand = 0
+    avgs = better_suit(squad, debug)
+    for i in ELEMENTS:
+        grand += avgs[i]['avg']
+    return grand / len(squad)
+    
+    
+    
+    
+    
     

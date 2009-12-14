@@ -153,15 +153,15 @@ class Scient(Unit):
         self.p    = (2*(self.comp[F] + self.comp[E]) + self.comp[I] + \
                     self.comp[W]) 
         self.m    = (2*(self.comp[I] + self.comp[W]) + self.comp[F] + \
-                    self.comp[E]) 
+                    self.comp[E])
         self.atk  = (2*(self.comp[F] + self.comp[I]) + self.comp[E] + \
-                    self.comp[W])  + (2 * self.value())
+                    self.comp[W]) + (2 * self.value())
         self.defe = (2*(self.comp[E] + self.comp[W]) + self.comp[F] + \
                     self.comp[I]) 
         self.pdef = self.p + self.defe + (2 * self.comp[E])
         self.patk = self.p + self.atk  + (2 * self.comp[F])
-        self.mdef = self.m + self.defe + (2 * self.comp[W])
         self.matk = self.m + self.atk  + (2 * self.comp[I])
+        self.mdef = self.m + self.defe + (2 * self.comp[W])
         self.hp   = 4 * (self.pdef + self.mdef) + self.value()
         self.mp = 0  # Soon to be deleted.
     
@@ -209,7 +209,6 @@ class Scient(Unit):
         """Wizard's attack, long-range"""
         #TODO:
         pass
-    
     def phys_damage(self, target):
         """Calculates the physical damage of an attack"""
         damage_dealt = {E: 0, F: 0, I: 0, W: 0}
@@ -217,32 +216,29 @@ class Scient(Unit):
         for element in damage_dealt:
             dmg = (self.p + self.patk + (2 * self.comp[element])) - \
                   (target.p + target.pdef + (2 * target.comp[element]))
-            #Same suit damage would otherwise be negative.
-            #dmg = abs(dmg)
             dmg = max(dmg, 0)
             damage_dealt[element] = dmg
-                
+             
         damage = sum(damage_dealt.values())
         return damage
-    
-    def mag_damage(self, target, element):
-        """Calculates the damage of a magical attack"""
-        damage = {E: 0, F: 0, I: 0, W: 0}
-        
-        damage[element] = 4 * ((self.m + self.matk + (2 * self.comp[element])) - \
-        (2 + target.m + target.mdef + (2 * target.comp[element])))
-        
 
-        if target.element == element:
-            #heal instead of damage
-            #dmg = abs(damage[element])
-            dmg = 99999
-        elif damage[element] < 0:
-            dmg = 0
-        else:
-            dmg = damage[element]
-        return dmg 
-    
+    def mag_damage(self, target, element):
+        """Calculates the magical damage of an attack"""
+        damage_dealt = {E: 0, F: 0, I: 0, W: 0}
+        
+        for ele in damage_dealt:
+                dmg = (self.m + self.matk + (2 * self.comp[ele])) - \
+                      (target.m + target.mdef + (2 * target.comp[ele]))
+                dmg = max(dmg, 0)
+                damage_dealt[ele] = dmg
+        damage = sum(damage_dealt.values())
+        
+        #turns suit damage into healing
+        if element == target.element:
+            damage = 0 - damage
+        
+        return damage
+
     def change_job(self, newjob):
         if not newjob in JOBS:
             raise Exception("%s is not a valid job" % newjob)
