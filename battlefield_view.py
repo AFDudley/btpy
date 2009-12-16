@@ -65,6 +65,7 @@ class TopPane(Pane):
         self.border_color = [255, 0, 0]
         self.bgcolor = [50, 50, 50]
         self.fps = ''
+
     def update(self, current_time, bottom):
         Pane.update(self)
         self.draw_text(self.title, [0, 0, 0])
@@ -155,8 +156,19 @@ class BattlePane(Pane, battlefield.Battlefield):
             self.image.fill(color)
             self.rect = self.image.get_rect()
             self.rect.topleft = topleft
-  
+            self.font = pygame.font.SysFont('droidsansmono',  12)
+            self.font_color = [255, 255, 255]
+
+class cast(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.Surface([600,150])
+        self.image.fill([0, 0, 0])
+        self.rect = self.image.get_rect()
+        self.rect.x, self.rect.y = (100,300)
+        
 def wipe(): pygame.display.update(screen.fill([0,0,0]))
+
 pygame.init()        
 screen = pygame.display.set_mode([800, 600])
 
@@ -170,33 +182,35 @@ battle = BattlePane((242, TOPINSET), (516, 516), two)
 stuff = pygame.sprite.RenderUpdates()
 for pane in (tp, mp, bp, battle):
     stuff.add(pane)
-    
+
+casting = cast()
+yup = pygame.sprite.RenderUpdates()
+yup.add(casting)
 #console code
-console = pyconsole.Console(screen, (0,0,600,150),)
+console = pyconsole.Console(screen, (0,0,800,600),)
 pygame.mouse.set_pos(300,240)
-vs = {"cheat":False,"a":100, "b":200, "c":300}
-console.setvars(vs)
 console.setvar("python_mode", not console.getvar("python_mode"))
 console.set_interpreter()
-
 clock = pygame.time.Clock()
+    
 while 1:
-    clock.tick()
     screen.fill([0,0,0])
+    clock.tick()
     console.process_input()
     tp.fps = clock.get_fps()
     stuff.update(pygame.time.get_ticks(), 150)
     two.update()
     two.draw(battle.image)
-    pygame.display.update(stuff.draw(screen))
+    stuff.draw(screen)
     console.draw()
     pygame.display.update()
-
+    
     for event in pygame.event.get():
         if event.type == KEYDOWN:
             if event.key == K_w and pygame.key.get_mods() & KMOD_CTRL:
                 console.set_active()
 
+#>>>> __IPYTHON__.user_ns['object']
 
 ''' old functions
 def find_units():
@@ -219,5 +233,4 @@ def draw_unit_hashes():
         l = str(scient.location)
         tp.draw_text(s + b+ l)
 '''
-    
     

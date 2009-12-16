@@ -1,21 +1,9 @@
 """contains battlefield objects"""
-from const import COMP, ELEMENTS, ORTH
+from const import COMP, ELEMENTS, E, F, I, W, ORTH
 import random
 from defs import Scient
-def rand_scient():
-    """Returns a not that random scient"""
-    comp = COMP
-    suit = random.choice(ELEMENTS)
-    comp[suit] = random.randint(1, 255)
-    for zippy in ORTH[suit]: comp[zippy] = comp[suit] / 2
-    return Scient(suit, comp)
 
-def rand_squad():
-    """Returns a squad of 5 "random" Scients"""
-    squad = []
-    for times in range(5):
-        squad.append(rand_scient())
-    return squad
+from helpers import rand_squad
 
 #there is a serious problem in this logic. it assumes that units fit on one
 #tile, nesceints do not.
@@ -122,7 +110,13 @@ class Battlefield(object):
         else:
             raise Exception("There is nothing at src")
     
-
+    def find_units(self):
+        for x in range(len(self.grid)):
+            for y in range(len(self.grid[x])):
+                if self.grid[x][y].contents:
+                    print self.grid[x][y].contents
+                    print x,y
+    
 #    def process(self, command):
 #        """Process a battle command (move, act, or both) for unit"""
 #        fst_cmd, fst_args = command[0]
@@ -132,4 +126,4 @@ class Battlefield(object):
 
 #    def act(self, action, args):
 #        action(*args)
-    
+
