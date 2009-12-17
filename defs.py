@@ -222,8 +222,8 @@ class Scient(Unit):
                     #Damage is calculated here.
                     dmg = self.pdmg(battlefield.grid[xt][yt].contents)
                     if dmg < 0:
-                        print "negative damage from a physical attack, something is \
-                        wrong."
+                        raise Exception("negative damage from a physical \
+attack, something is wrong.")
                     elif dmg == 0:
                         print "No Damage Dealt."
                     else:
@@ -231,19 +231,19 @@ class Scient(Unit):
                         if dmg >= battlefield.grid[xt][yt].contents.hp:
                             battlefield.grid[xt][yt].contents.hp = 0
                             battlefield.grid[xt][yt].contents.location = None
-                            battlefield.grid[xt][yt].contents    = None
+                            battlefield.grid[xt][yt].contents = None
                             print "%s point(s) of damage dealt, target \
 Killed." %dmg
                         else:
                             battlefield.grid[xt][yt].contents.hp -= dmg
                             print "%s point(s) of damage dealt" %dmg
                 else: 
-                    print "contents of (%s,%s) cannot take damage" %(xt,yt)
+                    raise Exception("contents of (%s,%s) cannot take damage" \
+                    %(xt,yt))
             else:
-                print "(%s,%s) is empty, nothing to hit" %(xt,yt)
+                raise Exception("(%s,%s) is empty, nothing to hit" %(xt,yt))
         else:
-            print "(%s,%s) is too far away to hit." %(xt,yt)
-        
+            raise Exception("(%s,%s) is too far away to hit." %(xt,yt))        
     
     def mhit(self, coord, battlefield, element=None):
         """Magically hit a location on the battlefield grid, defaults to element
@@ -278,11 +278,12 @@ Killed." %(dmg, element)
                             print "%s point(s) of %s damage dealt" \
                             %(dmg, element)
                 else: 
-                    print "contents of %s cannot take damage" %coord
+                    raise Exception("contents of (%s, %s) cannot take damage" \
+                    %(xt,yt))
             else:
-                print "%s is empty, nothing to hit" %coord
+                raise Exception("(%s, %s) is empty, nothing to hit" %(xt,yt))
         else:
-            print "X: %s, Y: %s is too far away to hit." %(xt,yt)
+            raise Exception( "(%s, %s) is too far away to hit." %(xt,yt))
 
     def strikes(self, tile, level, element, battlefield):
         """Fighter's attack, short-range"""

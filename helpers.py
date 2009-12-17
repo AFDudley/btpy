@@ -10,10 +10,10 @@ def unit_repr(u): #Needs work.
         title = u.name
     else:
         title = str(id(u))
-    print "%s -> suit:% 2s | val: %s | loc: %s | comp: (%s, %s, %s, %s) | \
-p: %s \nHP: % 7s | PA/PD: (% 5s,% 5s) | MA/MD: (% 5s,% 5s)" % (title, \
-    u.element[0], u.value(), u.location, u.comp[E], u.comp[F], u.comp[I], u.comp[W], u.p, \
-    u.hp, u.patk, u.pdef, u.matk, u.mdef)
+    return "%s -> suit:% 2s | val: %s | loc: %s | comp: (%s, %s, %s, %s) | \
+p: %s \nHP: % 7s | PA/PD: (% 5s,% 5s) | MA/MD: (% 5s,% 5s) \n" % (title, \
+    u.element[0], u.value(), u.location, u.comp[E], u.comp[F], u.comp[I], \
+    u.comp[W], u.p, u.hp, u.patk, u.pdef, u.matk, u.mdef)
 
 def rand_element():
     """Reuturns a random element"""
@@ -79,12 +79,12 @@ def print_rand_squad(suit=None):
 
 def show_squad(squad):
     for unit in squad:
-        print unit.element
         print unit_repr(unit)
 
 def max_squad_by_value(value):
-    """Takes an integer, ideally even because we round down, and returns a squad
-    such that comp[element] == value, comp[orth] == value/2, comp[opp] == 0"""
+    """Takes an integer, ideally even because we round down, and returns a
+    squad such that comp[element] == value, comp[orth] == value/2, comp[opp]
+    == 0"""
     squad = []
     value = value/2 #more logical, really.
     half = value/2

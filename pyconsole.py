@@ -67,10 +67,10 @@ class Writable(list):
 		self.append(str(line))
 	def reset(self):
 		self.__init__()
-#	def readline(self, size=-1):
+	def readline(self, size=-1):
 		# Python's interactive help likes to try and call this, which causes the program to crash
 		# I see no reason to implement interactive help.
-#		raise NotImplementedError
+		raise NotImplementedError
 
 class ParseError(Exception):
 	def __init__(self, token):
@@ -191,7 +191,7 @@ class Console:
 		self.ps3 = "... "
 		self.active = False
 		self.repeat_rate = [500,30]
-		self.python_mode = False
+		self.python_mode = True
 		self.preserve_events = False
 		self.motd = ["[PyConsole 0.5]"]
 	
@@ -302,7 +302,7 @@ class Console:
 		if self.python_mode:
 			self.output("Entering Python mode")
 			self.python_mode = True
-			self.python_interpreter = InteractiveConsole()
+			self.python_interpreter = InteractiveConsole(locals=__IPYTHON__.user_ns)
 			self.tmp_fds = []
 			self.py_fds = [Writable() for i in range(3)]
 			self.c_ps = self.ps2

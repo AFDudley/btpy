@@ -59,14 +59,15 @@ LEFTINSET = 42
 
 class TopPane(Pane):
     """pane on the top left"""
-    def __init__(self, position, size=PANE_SIZE, title="P1 Units | location:"):
+    def __init__(self, position, size=PANE_SIZE,
+                 title="P1 Units | location:"):
         Pane.__init__(self, size, title)
         self.rect.x, self.rect.y = position
         self.border_color = [255, 0, 0]
         self.bgcolor = [50, 50, 50]
         self.fps = ''
 
-    def update(self, current_time, bottom):
+    def update(self):
         Pane.update(self)
         self.draw_text(self.title, [0, 0, 0])
         text = "fps: " + str(self.fps)
@@ -82,7 +83,7 @@ class MiddlePane(Pane):
         self.border_color = [0, 255, 0]
         self.bgcolor = [50, 50, 50]
 
-    def update(self, current_time, bottom):
+    def update(self):
         Pane.update(self)
         self.draw_text(self.title, [0, 0, 0])
         self.texttopoffset = 2 
@@ -95,7 +96,7 @@ class BottomPane(Pane):
         self.border_color = [0, 0, 255]
         self.bgcolor = [50, 50, 50]
 
-    def update(self, current_time, bottom):
+    def update(self):
         Pane.update(self)
         self.draw_text(self.title, [0, 0, 0])
         self.texttopoffset = 2
@@ -106,8 +107,7 @@ class BattlePane(Pane, battlefield.Battlefield):
         battlefield.Battlefield.__init__(self)
         Pane.__init__(self, size, title=None)
         self.rect.x, self.rect.y = position
-        #self.tilesize should be a ratio of self.surface
-        self.tilesize = 32
+        self.tilesize = 32 #these are pixels if you're wondering.
         self.tiles = pygame.sprite.RenderUpdates()
         self.contents = group
         self.load_grid()
@@ -118,7 +118,7 @@ class BattlePane(Pane, battlefield.Battlefield):
         Pane.update(self)
         self.tiles.draw(self.image)
     
-    def update(self, current_time, bottom):
+    def update(self):
         pass
                 
     def draw_tiles(self, size):
@@ -139,7 +139,6 @@ class BattlePane(Pane, battlefield.Battlefield):
 
     class Tile(pygame.sprite.Sprite,  battlefield.Tile):
         """it's a battlefield tile and a pygame sprite,  yo"""
-        #this is wrong, BattlePane.Tile is really only a sprite. Fix.
         def __init__(self,  topleft):
             pygame.sprite.Sprite.__init__(self)
             battlefield.Tile.__init__(self)
@@ -187,23 +186,27 @@ casting = cast()
 yup = pygame.sprite.RenderUpdates()
 yup.add(casting)
 #console code
-console = pyconsole.Console(screen, (0,0,800,600),)
+console = pyconsole.Console(screen, (2,398,794,200), vars={"repeat_rate":200})
 pygame.mouse.set_pos(300,240)
 console.setvar("python_mode", not console.getvar("python_mode"))
 console.set_interpreter()
 clock = pygame.time.Clock()
-    
-while 1:
+
+def ds():
+    """hacky hacky"""
     screen.fill([0,0,0])
     clock.tick()
     console.process_input()
     tp.fps = clock.get_fps()
-    stuff.update(pygame.time.get_ticks(), 150)
+    stuff.update()
     two.update()
     two.draw(battle.image)
     stuff.draw(screen)
     console.draw()
     pygame.display.update()
+    
+while 1:
+    ds()
     
     for event in pygame.event.get():
         if event.type == KEYDOWN:
@@ -213,18 +216,6 @@ while 1:
 #>>>> __IPYTHON__.user_ns['object']
 
 ''' old functions
-def find_units():
-    for x in range(len(bp.grid)):
-        for y in range(len(bp.grid[x])):
-            if bp.grid[x][y].contents:
-                print bp.grid[x][y].contents
-                print x,y
-
-def clear_grid():
-    for x in range(len(bp.grid)):
-        for y in range(len(bp.grid[x])):
-            if bp.grid[x][y].contents:
-                bp.grid[x][y].contents = None
 
 def draw_unit_hashes():
     for scient in bp.squad1:

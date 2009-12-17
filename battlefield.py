@@ -1,4 +1,5 @@
 """contains battlefield objects"""
+from warnings import warn
 from const import COMP, ELEMENTS, E, F, I, W, ORTH
 import random
 from defs import Scient
@@ -10,21 +11,65 @@ from helpers import rand_squad, unit_repr, show_squad
 class Tile(object):
     """Tiles are contained in battlefields and hold units and stones"""
     def __init__(self, location = ()):
-        self.comp = COMP.copy()
+        self.comp = COMP.copy() #Currently any 4 values 0...255
         self.contents = None
         self.location = location # makes abstraction a little easier.
 
+class Grid(tuple):
+    """
+    Creates a grid of empty tiles sized 2-tuple
+    There is some args/kwargs magic here, one day it will be documented    
+    """
+    #boy do i ever need some type checking :D
 
+    def __new__(cls, *args, **kwargs):
+        if not args:
+            try:
+                size = kwargs['size']
+            except KeyError:
+                size = (16,16)
+        else:
+            size = args[0]
+        x,y = size
+
+        grid = ()
+        for xpos in range(x):
+            temp = ()
+            for ypos in range(y):
+                temp += Tile((xpos, ypos)),
+            grid += temp,
+        return tuple.__new__(cls, grid)
+
+    def __init__(self, *args, **kwargs):
+        # make a grid, if no size given make it (16, 16)
+        if not args:
+            try:
+                self.size = kwargs['size']
+            except KeyError:
+                self.size = (16, 16)
+        else:    
+            self.size = args[0]
+        self.x,self.y = self.size
+        try: 
+            self.comp = kwargs['comp']
+            self.make_grid(self.comp)
+        except KeyError:
+            self.comp = {E:0, F:0, I:0, W:0}
+
+    def make_grid(self, avg):
+        """
+        transforms an empty grid to one with an average composition of COMP
+        called by __init__
+        """
+        print "make_grid was called"
+ 
 class Battlefield(object):
     """A battlefield is a map of tiles which contains units and the logic for
     their movement and status."""
     #should take two "squad" objects; if none given generate "random" squads
     def __init__(self):
         #grid is a tuple of tuples containing tiles
-        self.grid = ()
-        self.gridx = None
-        self.gridy = None #is this line and 1 below confusing?
-        #self.gridsize = self.gridx*self.gridy
+        self.grid = None
         self.graveyard = []
         self.clock = 0
         self.ticking = False
@@ -34,25 +79,11 @@ class Battlefield(object):
         self.squad2 = None
         
     def make_empty_grid(self):
-        """makes a list of empty tiles"""
-        if self.gridx == None or self.gridy == None:
-            Exception("didn't set grid x and/or y")
-        else:
-            for xpos in range(self.gridx):
-                qui = ()
-                for ypos in range(self.gridy):
-                    qui = qui + (Tile((xpos, ypos)), )
-                self.grid = self.grid + (qui,)
+        self.grid = Grid()
     
-    def load_grid(self, grid=None):
+    def load_grid(self, grid=Grid()):
         """Loads grid into battlefield, otherwise loads an 'empty' grid"""
-        #should do some checking here (duh)
-        if grid is not None:
-            self.grid = grid
-        else:
-            self.gridx = 16
-            self.gridy = 16 #hope i remember this is here...
-            self.make_empty_grid()
+        self.grid = grid
     
     def load_squads(self, squad1=None, squad2=None):
         """loads squads into battlefield, uses random if none provided"""
@@ -67,32 +98,28 @@ class Battlefield(object):
             self.squad2 = rand_squad()
     
     def place_unit(self, unit, tile):
-        """Places unit at tile (x,y), raises exception if a unit is already on
-        that tile"""
-        xpos, ypos = tile
-        if not self.grid[xpos][ypos].contents:
+        """Places unit at tile, if already on grid, move_unit is called"""
+        xpos, ypos = tile 
+        if unit.location == None and self.grid[xpos][ypos].contents == None:
             self.grid[xpos][ypos].contents = unit
             unit.location = (xpos, ypos)
+            
+        elif unit.location == (xpos, ypos):
+            raise Exception("This unit is already on (%s,%s)" %(xpos, ypos))
+        
+        elif self.grid[unit.location[0]][unit.location[1]].contents != unit:
+            raise Exception(
+            "unit and battlefield do not agree on unit location")
+        
+        elif self.grid[xpos][ypos].contents != None:
+            raise Exception("(%s, %s) is not empty" %(xpos, ypos))
+        
         else:
-            raise Exception("tile is already filled")
-    
-    def rand_place_squad(self, squad):
-        """place the units in a squad randomly on the battlefield"""
-        #non-destructive; tricky? should be done with exceptions
-        for scient in range(len(squad)):
-            #bullheaded
-            xpos = random.randint(0, (self.gridx - 1))
-            ypos = random.randint(0, (self.gridy - 1))
-            while self.grid[xpos][ypos].contents is not scient:
-                if self.grid[xpos][ypos].contents is not None:
-                    xpos = random.randint(0, (self.gridx - 1))
-                    ypos = random.randint(0, (self.gridy - 1))
-                    break
-                else:
-                    self.place_unit(squad[scient], (xpos, ypos))
-    
-    def move_scient(self, src, dest):
-        """move scient from a tile to another tile"""
+            warn("Place_unit called instead of move_unit")
+            self.move_unit(unit.location, (xpos, ypos))
+
+    def move_unit(self, src, dest):
+        """move unit from src tile to dest tile"""
         xsrc, ysrc = src
         xdest, ydest = dest
         if self.grid[xsrc][ysrc].contents:
@@ -104,19 +131,45 @@ class Battlefield(object):
                     self.grid[xdest][ydest].contents.location = (xdest, ydest)
                     self.grid[xsrc][ysrc].contents = None
                 else:
-                    raise Exception("Moved too many spaces")
+                    raise Exception("tried moving too many spaces")
             else:
                 raise Exception("There is already something at dest")
         else:
             raise Exception("There is nothing at src")
     
+    def rand_place_squad(self, squad):
+        """place the units in a squad randomly on the battlefield"""
+        for unit in range(len(squad)):
+            #readable?
+            def RandPos(): return (random.randint(0, (self.grid.x - 1)),
+                random.randint(0, (self.grid.y - 1)))
+            while squad[unit].location == None:
+                try:
+                    self.place_unit(squad[unit], RandPos())
+                    break
+                except Exception:
+                    nope = RandPos()
+                    self.place_unit(squad[unit], nope)
+                    
     def find_units(self):
+        list = []
         for x in range(len(self.grid)):
             for y in range(len(self.grid[x])):
                 if self.grid[x][y].contents:
-                    print self.grid[x][y].contents
-                    print x,y
-    
+                    list.append((x,y))
+        return list
+        
+    def flush_units(self):
+        """remove all units from grid, returns number of units flushed"""
+        count = 0
+        for x in range(len(self.grid)):
+            for y in range(len(self.grid[x])):
+                if self.grid[x][y].contents:
+                    self.grid[x][y].contents.location = None
+                    self.grid[x][y].contents = None
+                    count += 1
+        return count
+
 #    def process(self, command):
 #        """Process a battle command (move, act, or both) for unit"""
 #        fst_cmd, fst_args = command[0]
