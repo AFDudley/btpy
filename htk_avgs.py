@@ -9,7 +9,7 @@ def pdmg_squad(unit, squad, debug=None):
     avg =[]
     if debug: print "Physical damage from:"; unit_repr(unit)
     for x in squad:
-        dmg = unit.phys_damage(x)
+        dmg = unit.pdmg(x)
         if dmg == 0:
             avg.append(0)
             htk = 0
@@ -29,7 +29,7 @@ def mdmg_squad(unit, squad, debug=None):
     avg = []
     if debug: print "Magical damage from:"; unit_repr(unit)
     for x in squad:
-        dmg = abs(unit.mag_damage(x, unit.element))
+        dmg = abs(unit.mdmg(x, unit.element))
         if dmg == 0:
             avg.append(0)
             if debug: print "No damage dealt"

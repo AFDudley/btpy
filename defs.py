@@ -47,9 +47,9 @@ break_weapon = Skill(W, "Break weapon", break_weapon_logic)
 
 def make_dot_logic(element):
     def inner(unit, target, battlefield):
-        dmg = unit.mag_damage(target, element)
-        battlefield.status_effects.append((target, "DOT...")) #TODO: see chat window
-        #dot: [1/(2^(turn-1)][mag_damage]
+        dmg = unit.mdmg(target, element)
+        battlefield.status_effects.append((target, "DOT...")) 
+        #dot: [1/(2^(turn-1)][mdmg]
         #1: calculate the number of DOT turns (int((log(dmg) / log(2.0)))
         #2: record the initial damage and number of terms (or just store the whole list of dmg values)
         #3: store this in status_effects
@@ -62,7 +62,7 @@ etouch, ftouch, itouch, wtouch = map(Skill, ELEMENTS, ["Blast"]*4, map(make_dot_
 ## wizard skills ###############################################################
 #def make_blast_logic(element):
 #    def inner(unit, target, battlefield):
-#        unit.mag_damage(target, element)
+#        unit.mdmg(target, element)
 #        orign = battlefield.get_unit(target)
 
 ## set up skill arrays #########################################################
@@ -111,10 +111,19 @@ class Unit(object):
             sum = sum + self.comp[x]
         return sum
         
+    
     #def repr(self):
     #    return "%s -> HP:% 5s | MP:% 5s | Element:% 5s | P Atk/Def: (% 3s,% 3s) | M Atk/Def: (% 3s,% 3s)" % (id(u), u.hp, u.mp, u.element, u.patk, u.pdef, u.matk, u.mdef)
 #TODO: inheriting from Unit is not buying anything for us here (in terms of Scient,
 # which just overwrites Unit's __init__ (unless you use super?))
+
+#needs work.
+class Squad(object):
+    """contains a number of Units. Takes a list of Units"""
+    def __init__(self, units=[]):
+        self.units = units
+        self.size = len(self.units)
+        self.value = sum([i for i in units.comp.values()])
 
 class Scient(Unit):
     """A Scient (playable character) unit.
@@ -164,52 +173,14 @@ class Scient(Unit):
         self.mdef = self.m + self.defe + (2 * self.comp[W])
         self.hp   = 4 * (self.pdef + self.mdef) + self.value()
         self.mp = 0  # Soon to be deleted.
-    
+
     def comp_as_tuple(self):
         tuple = ()
         for x in ELEMENTS:
             tuple += (self.comp[x],)
         return tuple
-
-    def strikes(self, tile, level, element, battlefield):
-        """Fighter's attack, short-range"""
-        target = battlefield.get_tile(tile)
-        damage = self.phys_damage(target)
-        chance = (1/16.) * level
-        if random.random() < chance:
-            SKILLS[FT][element].use(self, tile, battlefield)
-        
-        #apply damage
-        target.hp -= damage
     
-    def shoots(self, target, level, element): #TODO: convert target to tile (and for all other actions)
-        """Shooter's attack, long-range"""
-        #all shots go 4 squares in lines, hitting whatever is in their path.
-        #hitting the 1st square at 1.0*damage, 2nd@.75dmg, 3rd@.5dmg 4th@.25dmg
-        damage = self.phys_damage(target)
-        if self.element == E:
-            chance = (1/16.) * level
-            pass
-        if self.element == F:
-            pass
-        if self.element == I:
-            pass
-        if self.element == W:
-            pass
-    
-    def touches(self, target, level, element):
-        """Theurgist's attack, close-range"""
-        if level == 1:
-            damage = .5*(self.mag_damage(target, element))
-            pass
-        damage = (0.5+(1/16.)*level)*(self.mag_damage(target, element)) #TODO: correct?
-        pass
-    
-    def blasts(self, target, level, element):
-        """Wizard's attack, long-range"""
-        #TODO:
-        pass
-    def phys_damage(self, target):
+    def pdmg(self, target):
         """Calculates the physical damage of an attack"""
         damage_dealt = {E: 0, F: 0, I: 0, W: 0}
         
@@ -222,7 +193,7 @@ class Scient(Unit):
         damage = sum(damage_dealt.values())
         return damage
 
-    def mag_damage(self, target, element):
+    def mdmg(self, target, element):
         """Calculates the magical damage of an attack"""
         damage_dealt = {E: 0, F: 0, I: 0, W: 0}
         
@@ -238,6 +209,119 @@ class Scient(Unit):
             damage = 0 - damage
         
         return damage
+    
+    def phit(self, coord, battlefield):
+        """Physically hit a location on the battlefield grid"""
+        xa,ya = self.location
+        xt,yt = coord
+        #Are contents in range?
+        if abs(xt - xa) <= 1 and abs(yt - ya) <= 1:
+            #Can the contents be hit?
+            if battlefield.grid[xt][yt].contents != None:
+                if battlefield.grid[xt][yt].contents.hp:
+                    #Damage is calculated here.
+                    dmg = self.pdmg(battlefield.grid[xt][yt].contents)
+                    if dmg < 0:
+                        print "negative damage from a physical attack, something is \
+                        wrong."
+                    elif dmg == 0:
+                        print "No Damage Dealt."
+                    else:
+                        #Damage is applied here.
+                        if dmg >= battlefield.grid[xt][yt].contents.hp:
+                            battlefield.grid[xt][yt].contents.hp = 0
+                            battlefield.grid[xt][yt].contents.location = None
+                            battlefield.grid[xt][yt].contents    = None
+                            print "%s point(s) of damage dealt, target \
+Killed." %dmg
+                        else:
+                            battlefield.grid[xt][yt].contents.hp -= dmg
+                            print "%s point(s) of damage dealt" %dmg
+                else: 
+                    print "contents of (%s,%s) cannot take damage" %(xt,yt)
+            else:
+                print "(%s,%s) is empty, nothing to hit" %(xt,yt)
+        else:
+            print "(%s,%s) is too far away to hit." %(xt,yt)
+        
+    
+    def mhit(self, coord, battlefield, element=None):
+        """Magically hit a location on the battlefield grid, defaults to element
+        of attacker"""
+        if element == None:
+            element = self.element
+        xa,ya = self.location
+        xt,yt = coord
+        #Are contents in range?
+        if abs(xt - xa) <= 1 and abs(yt - ya) <= 1:
+            #Can the contents be hit?
+            if battlefield.grid[xt][yt].contents != None:
+                if battlefield.grid[xt][yt].contents.hp:
+                    #Damage is calculated here.
+                    dmg = self.mdmg(battlefield.grid[xt][yt].contents, element)
+                    if dmg < 0:
+                        #heal
+                        battlefield.grid[xt][yt].contents.hp += abs(dmg)
+                        print "Target healed %s point(s)" %abs(dmg)
+                    elif dmg == 0:
+                        print "No Damage Dealt."
+                    else:
+                        #Damage is applied here.
+                        if dmg >= battlefield.grid[xt][yt].contents.hp:
+                            battlefield.grid[xt][yt].contents.hp = 0
+                            battlefield.grid[xt][yt].contents.location = None
+                            battlefield.grid[xt][yt].contents = None
+                            print "%s point(s) of %s damage dealt, target \
+Killed." %(dmg, element)
+                        else:
+                            battlefield.grid[xt][yt].contents.hp -= dmg
+                            print "%s point(s) of %s damage dealt" \
+                            %(dmg, element)
+                else: 
+                    print "contents of %s cannot take damage" %coord
+            else:
+                print "%s is empty, nothing to hit" %coord
+        else:
+            print "X: %s, Y: %s is too far away to hit." %(xt,yt)
+
+    def strikes(self, tile, level, element, battlefield):
+        """Fighter's attack, short-range"""
+        target = battlefield.get_tile(tile)
+        damage = self.pdmg(target)
+        chance = (1/16.) * level
+        if random.random() < chance:
+            SKILLS[FT][element].use(self, tile, battlefield)
+        
+        #apply damage
+        target.hp -= damage
+    
+    def shoots(self, target, level, element): #TODO: convert target to tile (and for all other actions)
+        """Shooter's attack, long-range"""
+        #all shots go 4 squares in lines, hitting whatever is in their path.
+        #hitting the 1st square at 1.0*damage, 2nd@.75dmg, 3rd@.5dmg 4th@.25dmg
+        damage = self.pdmg(target)
+        if self.element == E:
+            chance = (1/16.) * level
+            pass
+        if self.element == F:
+            pass
+        if self.element == I:
+            pass
+        if self.element == W:
+            pass
+    
+    def touches(self, target, level, element):
+        """Theurgist's attack, close-range"""
+        if level == 1:
+            damage = .5*(self.mdmg(target, element))
+            pass
+        damage = (0.5+(1/16.)*level)*(self.mdmg(target, element)) #TODO: correct?
+        pass
+    
+    def blasts(self, target, level, element):
+        """Wizard's attack, long-range"""
+        #TODO:
+        pass
 
     def change_job(self, newjob):
         if not newjob in JOBS:
@@ -294,11 +378,5 @@ class Nescient(Unit):
         def breath(self, target):
             pass
 
-def Squad(object):
-    """contains a number of Units. Takes a list of Units"""
-    def __init__(self, units=[]):
-        self.units = units
-        self.size = len(self.units)
-        self.value = sum([i for i in units.comp.values()])
-    
+
 

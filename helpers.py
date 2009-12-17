@@ -10,10 +10,10 @@ def unit_repr(u): #Needs work.
         title = u.name
     else:
         title = str(id(u))
-    print "%s -> suit:% 2s | comp: (%s, %s, %s, %s) | p: %s \n HP: % 7s \
-    | PA/PD: (% 5s,% 5s) | MA/MD: (% 5s,% 5s)" % (title, u.element[0], \
-u.comp[E], u.comp[F], u.comp[I], u.comp[W], u.p, \
-u.hp, u.patk, u.pdef, u.matk, u.mdef)
+    print "%s -> suit:% 2s | val: %s | loc: %s | comp: (%s, %s, %s, %s) | \
+p: %s \nHP: % 7s | PA/PD: (% 5s,% 5s) | MA/MD: (% 5s,% 5s)" % (title, \
+    u.element[0], u.value(), u.location, u.comp[E], u.comp[F], u.comp[I], u.comp[W], u.p, \
+    u.hp, u.patk, u.pdef, u.matk, u.mdef)
 
 def rand_element():
     """Reuturns a random element"""

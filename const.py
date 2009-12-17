@@ -16,6 +16,7 @@ COMP = {E:0, F:0, I:0, W:0}
 
 KINDS = ("Stone", "Scient", "Nescient")
 
+#these need better names: Pugilist, Theurgist, Shooter, Emitter/Blaster?
 JOBS = FT, TH, SH, WZ = ("Fighter", "Theurgist", "Shooter", "Wizard")
 
 #max level is (112 years - 16 years) / 2 lvls per year = 48

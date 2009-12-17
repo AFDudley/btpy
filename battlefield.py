@@ -3,14 +3,14 @@ from const import COMP, ELEMENTS, E, F, I, W, ORTH
 import random
 from defs import Scient
 
-from helpers import rand_squad
+from helpers import rand_squad, unit_repr, show_squad
 
 #there is a serious problem in this logic. it assumes that units fit on one
 #tile, nesceints do not.
 class Tile(object):
     """Tiles are contained in battlefields and hold units and stones"""
     def __init__(self, location = ()):
-        self.comp = COMP
+        self.comp = COMP.copy()
         self.contents = None
         self.location = location # makes abstraction a little easier.
 

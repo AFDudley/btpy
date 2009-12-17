@@ -14,7 +14,7 @@ def test_random_battle():
     print "="*80
     print "u0 attacks u1"
     print "%s \n" %unit_repr(units[1])
-    units[0].phys_damage(units[1])
+    units[0].pdmg(units[1])
     unit_repr(units[1])
     assert units[1].hp > 0
 
