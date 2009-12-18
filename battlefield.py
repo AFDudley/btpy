@@ -21,7 +21,6 @@ class Grid(tuple):
     There is some args/kwargs magic here, one day it will be documented    
     """
     #boy do i ever need some type checking :D
-
     def __new__(cls, *args, **kwargs):
         if not args:
             try:
@@ -31,12 +30,11 @@ class Grid(tuple):
         else:
             size = args[0]
         x,y = size
-
         grid = ()
         for xpos in range(x):
             temp = ()
             for ypos in range(y):
-                temp += Tile((xpos, ypos)),
+                temp += Tile((xpos,ypos)),
             grid += temp,
         return tuple.__new__(cls, grid)
 
@@ -55,7 +53,7 @@ class Grid(tuple):
             self.make_grid(self.comp)
         except KeyError:
             self.comp = {E:0, F:0, I:0, W:0}
-
+                
     def make_grid(self, avg):
         """
         transforms an empty grid to one with an average composition of COMP
@@ -77,14 +75,14 @@ class Battlefield(object):
         self.status_effects = []
         self.squad1 = None
         self.squad2 = None
-        
+    '''    
     def make_empty_grid(self):
         self.grid = Grid()
     
     def load_grid(self, grid=Grid()):
         """Loads grid into battlefield, otherwise loads an 'empty' grid"""
         self.grid = grid
-    
+    '''
     def load_squads(self, squad1=None, squad2=None):
         """loads squads into battlefield, uses random if none provided"""
         #need better checks, duh

@@ -2,6 +2,9 @@ import pygame
 import battlefield
 import pyconsole
 from pygame.locals import *
+from const import E,F,I,W, ELEMENTS
+from defs import Scient, Squad
+from helpers import rand_comp, rand_element
 
 #temp colors
 Fire = [228, 20, 20]
@@ -10,6 +13,29 @@ Ice = [20, 20, 228]
 Wind = [255, 255, 30]
 COLORS = {"Earth": Earth, "Fire" : Fire, "Ice" : Ice, "Wind" :Wind}
 
+def rand_unit(suit=None): #may change to rand_unit(suit, kind)
+    """Returns a random Scient of suit. Random suit used if none given."""
+    if not suit in ELEMENTS:
+        suit = rand_element()
+    return BattlePane.Scient(suit, rand_comp(suit, 'Scient'))
+
+def rand_squad(suit=None):
+    """Returns a Squad of five random Scients of suit. Random suit used
+       if none given."""
+    
+    squad = Squad()
+    size = 5
+    if not suit in ELEMENTS:
+        for _ in range(size):
+            squad.append(rand_unit(rand_element()))
+        return squad
+    
+    else:
+        for _ in range(size):
+            squad.append(rand_unit(suit))
+        return squad
+
+    
 class Pane(pygame.sprite.Sprite):
     """window Pane class"""
     def __init__(self, size, title=None):
@@ -60,7 +86,7 @@ LEFTINSET = 42
 class TopPane(Pane):
     """pane on the top left"""
     def __init__(self, position, size=PANE_SIZE,
-                 title="P1 Units | location:"):
+                 title=None):
         Pane.__init__(self, size, title)
         self.rect.x, self.rect.y = position
         self.border_color = [255, 0, 0]
@@ -69,7 +95,7 @@ class TopPane(Pane):
 
     def update(self):
         Pane.update(self)
-        self.draw_text(self.title, [0, 0, 0])
+        #self.draw_text(self.title, [0, 0, 0])
         text = "fps: " + str(self.fps)
         self.draw_text(text, [0, 0, 0])
         self.texttopoffset = 2 
@@ -77,7 +103,7 @@ class TopPane(Pane):
         
 class MiddlePane(Pane):
     """Pane in the middle left"""
-    def __init__(self, position, size=PANE_SIZE, title="Act:"):
+    def __init__(self, position, size=PANE_SIZE, title=None):
         Pane.__init__(self, size, title)
         self.rect.x, self.rect.y = position
         self.border_color = [0, 255, 0]
@@ -90,7 +116,7 @@ class MiddlePane(Pane):
 
 class BottomPane(Pane):
     """lowest pane on the left"""
-    def __init__(self, position, size=PANE_SIZE, title="Target:"):
+    def __init__(self, position, size=PANE_SIZE, title=None):
         Pane.__init__(self, size, title)
         self.rect.x, self.rect.y = position
         self.border_color = [0, 0, 255]
@@ -103,41 +129,72 @@ class BottomPane(Pane):
 
 class BattlePane(Pane, battlefield.Battlefield):
     """Pane that displays the battlefield"""
-    def __init__(self,  position, size, group):
+    def __init__(self,  position, area):
         battlefield.Battlefield.__init__(self)
-        Pane.__init__(self, size, title=None)
+        Pane.__init__(self, area, title=None)
         self.rect.x, self.rect.y = position
-        self.tilesize = 32 #these are pixels if you're wondering.
-        self.tiles = pygame.sprite.RenderUpdates()
-        self.contents = group
-        self.load_grid()
-        self.load_squads()
+        self.grid = self.Grid()
+        self.contentimgs = pygame.sprite.RenderUpdates()
+        self.squad1 = rand_squad()
+        self.squad2 = rand_squad()
         self.rand_place_squad(self.squad1)
         self.rand_place_squad(self.squad2)
-        self.draw_tiles(self.tilesize)
-        Pane.update(self)
-        self.tiles.draw(self.image)
-    
+        self.get_contents_image()
+        
     def update(self):
-        pass
+        Pane.update(self)        
+        self.image.blit(self.grid.image, (1,1))
+        self.contentimgs.draw(self.image)
                 
-    def draw_tiles(self, size):
-        """Draws tiles and their contents onto BattlePane surface"""
-        #isn't there an easier way?
-        for xpos in range(len(self.grid)):
-            for ypos in range(len(self.grid[xpos])):
-                tile = self.Tile([(xpos*size) + 2, (ypos*size) + 2])
-                tile.location = self.grid[xpos][ypos].location
-                if self.grid[xpos][ypos].contents is not None:
-                    tempy = self.grid[xpos][ypos]
-                    xxx,yyy = tile.rect.topleft
-                    scient = self.Scient(COLORS[tempy.contents.element], \
-                        ((xxx + 8), (yyy + 8)))
-                    scient.location = self.grid[xpos][ypos].location
-                    self.contents.add(scient)
-                self.tiles.add(tile)
-
-    class Tile(pygame.sprite.Sprite,  battlefield.Tile):
+    def get_contents_image(self):
+        for x in range(self.grid.x):
+            for y in range(self.grid.y):
+                if self.grid[x][y].contents:
+                    topleft = ((self.grid[x][y].rect.x + 8), \
+                               (self.grid[x][y].rect.y + 8))
+                    self.grid[x][y].contents.rect.topleft = topleft
+                    self.contentimgs.add(self.grid[x][y].contents)
+    
+    def move_unit(self, src, dest):
+            battlefield.Battlefield.move_unit(self, src, dest)
+            xpos, ypos = dest
+            temp = self.grid[xpos][ypos].rect
+            topleft = ((temp.x + 8),(temp.y + 8))
+            self.grid[xpos][ypos].contents.rect.topleft = topleft
+            #self.contentimgs.update()
+    
+    def phit(self, src, dest):
+        atk  = self.grid[src[0]][src[1]].contents
+        deph = self.grid[dest[0]][dest[1]].contents
+        BattlePane.Scient.phit(atk, dest, self)
+        if deph.hp <=0:
+            self.grid[dest[0]][dest[1]].contents = None
+            deph.location = None
+            #might change this much later
+            deph.remove(deph.groups())
+    
+    def mhit(self, src, dest, element=None):
+        atk  = self.grid[src[0]][src[1]].contents
+        deph = self.grid[dest[0]][dest[1]].contents
+        BattlePane.Scient.mhit(atk, dest, self, element)
+        if deph.hp <=0:
+            self.grid[dest[0]][dest[1]].contents = None
+            deph.location = None
+            #might change this much later
+            deph.remove(deph.groups())
+            
+    class Scient(pygame.sprite.Sprite, Scient):
+        """tricky"""
+        def __init__(self, ele, topleft):
+            pygame.sprite.Sprite.__init__(self)
+            Scient.__init__(self,comp=rand_comp(suit=ele, kind='Scient'), element=ele) 
+            self.image = pygame.Surface([15, 15])
+            self.image.fill(COLORS[ele])
+            self.rect = self.image.get_rect()
+            self.font = pygame.font.SysFont('droidsansmono',  12)
+            self.font_color = [255, 255, 255]
+        
+    class Tile(pygame.sprite.Sprite, battlefield.Tile):
         """it's a battlefield tile and a pygame sprite,  yo"""
         def __init__(self,  topleft):
             pygame.sprite.Sprite.__init__(self)
@@ -146,17 +203,46 @@ class BattlePane(Pane, battlefield.Battlefield):
             self.image.fill([127, 127, 127])
             self.rect = self.image.get_rect()
             self.rect.topleft = topleft
+            
     
-    class Scient(pygame.sprite.Sprite):
-        """tricky"""
-        def __init__(self, color, topleft):
+    class Grid(pygame.sprite.Sprite, battlefield.Grid):
+        def __init__(self, *args, **kwargs):
             pygame.sprite.Sprite.__init__(self)
-            self.image = pygame.Surface([15, 15])
-            self.image.fill(color)
-            self.rect = self.image.get_rect()
-            self.rect.topleft = topleft
-            self.font = pygame.font.SysFont('droidsansmono',  12)
-            self.font_color = [255, 255, 255]
+            battlefield.Grid.__init__(self, *args, **kwargs)
+            self.tilesize = 32
+            self.image = pygame.Surface((512, 512))
+            self.rect  = self.image.get_rect()
+            self.rect.x, self.rect.y = (242, TOPINSET)
+            # le sigh
+            for x in range(self.x):
+                for y in range(self.y):
+                    self.image.blit(self[x][y].image, self[x][y].rect)
+            self.image.set_colorkey((0,0,0))
+            
+        #fix me
+        def __new__(cls, *args, **kwargs):
+            if not args:
+                try:
+                    size = kwargs['size']
+                except KeyError:
+                    size = (16,16)
+            else:
+                size = args[0]
+            x,y = size
+
+            grid = ()
+            tilesize = 32
+            for xpos in range(x):
+                temp = ()
+                for ypos in range(y):
+                    tile = BattlePane.Tile((xpos,ypos)),
+                    tile[0].rect.topleft = [(xpos*tilesize) + 2, (ypos*tilesize) + 2]
+                    temp += tile
+                grid += temp,
+            return tuple.__new__(cls, grid)
+            
+
+
 
 class cast(pygame.sprite.Sprite):
     def __init__(self):
@@ -175,8 +261,7 @@ tp = TopPane((LEFTINSET,TOPINSET))
 mp = MiddlePane((LEFTINSET, (TOPINSET + PANE_HEIGHT + PANE_SPACING)))
 bp = BottomPane((LEFTINSET, (TOPINSET + 2 *(PANE_HEIGHT + PANE_SPACING))))
 
-two = pygame.sprite.RenderUpdates()
-battle = BattlePane((242, TOPINSET), (516, 516), two)
+battle = BattlePane((242, TOPINSET), (516, 516))
 
 stuff = pygame.sprite.RenderUpdates()
 for pane in (tp, mp, bp, battle):
@@ -187,9 +272,10 @@ yup = pygame.sprite.RenderUpdates()
 yup.add(casting)
 #console code
 console = pyconsole.Console(screen, (2,398,794,200), vars={"repeat_rate":200})
-pygame.mouse.set_pos(300,240)
+#pygame.mouse.set_pos(300,240)
 console.setvar("python_mode", not console.getvar("python_mode"))
 console.set_interpreter()
+
 clock = pygame.time.Clock()
 
 def ds():
@@ -199,23 +285,23 @@ def ds():
     console.process_input()
     tp.fps = clock.get_fps()
     stuff.update()
-    two.update()
-    two.draw(battle.image)
     stuff.draw(screen)
     console.draw()
-    pygame.display.update()
     
 while 1:
     ds()
-    
+    '''
     for event in pygame.event.get():
         if event.type == KEYDOWN:
             if event.key == K_w and pygame.key.get_mods() & KMOD_CTRL:
                 console.set_active()
-
+    '''
+    pygame.display.update()
+    
 #>>>> __IPYTHON__.user_ns['object']
 
-''' old functions
+'''
+ old functions
 
 def draw_unit_hashes():
     for scient in bp.squad1:

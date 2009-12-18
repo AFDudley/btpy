@@ -2,7 +2,7 @@
 import random
 #import const   
 from const import ELEMENTS, E, F, W, I, ORTH, KINDS, OPP
-from defs import Scient
+from defs import Scient, Squad
 
 def unit_repr(u): #Needs work.
     """'Pretty' Scient Printer"""
@@ -59,7 +59,7 @@ def rand_squad(suit=None):
     """Returns a Squad of five random Scients of suit. Random suit used
        if none given."""
     
-    squad = []
+    squad = Squad()
     size = 5
     if not suit in ELEMENTS:
         for _ in range(size):

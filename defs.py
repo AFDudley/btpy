@@ -118,12 +118,24 @@ class Unit(object):
 # which just overwrites Unit's __init__ (unless you use super?))
 
 #needs work.
-class Squad(object):
+class Squad(list):
     """contains a number of Units. Takes a list of Units"""
-    def __init__(self, units=[]):
-        self.units = units
-        self.size = len(self.units)
-        self.value = sum([i for i in units.comp.values()])
+    def __init__(self):
+        self.value = 0
+        list.__init__(self)
+        
+    def __setitem__(self, key, val):
+        list.__setitem__(self,key, val)
+        self.value += val.value()
+    
+    def __delitem__(self, key):
+        temp = self[key].value()
+        list.__delitem__(self, key)
+        self.value -= temp
+        
+    def append(self, item):
+        list.append(self, item)
+        self.value += item.value()
 
 class Scient(Unit):
     """A Scient (playable character) unit.
@@ -212,6 +224,9 @@ class Scient(Unit):
     
     def phit(self, coord, battlefield):
         """Physically hit a location on the battlefield grid"""
+        if self.location == coord:
+            raise Exception("Stop Hitting yourself")
+            
         xa,ya = self.location
         xt,yt = coord
         #Are contents in range?
@@ -248,6 +263,9 @@ Killed." %dmg
     def mhit(self, coord, battlefield, element=None):
         """Magically hit a location on the battlefield grid, defaults to element
         of attacker"""
+        if self.location == coord:
+            raise Exception("Stop Hitting yourself")
+        
         if element == None:
             element = self.element
         xa,ya = self.location
