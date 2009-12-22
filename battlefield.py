@@ -18,7 +18,8 @@ class Tile(object):
 class Grid(tuple):
     """
     Creates a grid of empty tiles sized 2-tuple
-    There is some args/kwargs magic here, one day it will be documented    
+    There is some args/kwargs magic here, one day it will be documented or
+    removed.  
     """
     #boy do i ever need some type checking :D
     def __new__(cls, *args, **kwargs):
@@ -68,21 +69,12 @@ class Battlefield(object):
     def __init__(self):
         #grid is a tuple of tuples containing tiles
         self.grid = None
+        self.turn = 0
         self.graveyard = []
-        self.clock = 0
-        self.ticking = False
-        self.queue = []
         self.status_effects = []
         self.squad1 = None
         self.squad2 = None
-    '''    
-    def make_empty_grid(self):
-        self.grid = Grid()
-    
-    def load_grid(self, grid=Grid()):
-        """Loads grid into battlefield, otherwise loads an 'empty' grid"""
-        self.grid = grid
-    '''
+
     def load_squads(self, squad1=None, squad2=None):
         """loads squads into battlefield, uses random if none provided"""
         #need better checks, duh
@@ -90,6 +82,7 @@ class Battlefield(object):
             self.squad1 = squad1
         else:
             self.squad1 = rand_squad()
+
         if squad2 is not None:
             self.squad2 = squad2
         else:
@@ -156,9 +149,12 @@ class Battlefield(object):
                 if self.grid[x][y].contents:
                     list.append((x,y))
         return list
-        
+    
     def flush_units(self):
-        """remove all units from grid, returns number of units flushed"""
+        """
+        remove all units from grid, returns number of units flushed,
+        does not put them in the graveyard
+        """
         count = 0
         for x in range(len(self.grid)):
             for y in range(len(self.grid[x])):
@@ -167,6 +163,21 @@ class Battlefield(object):
                     self.grid[x][y].contents = None
                     count += 1
         return count
+    
+    def logger(self):
+        """Logs game and optionally stores it in data store"""
+        pass
+        
+    def config(self):
+        """Configure the battlefield"""
+        #Load Player info
+        #Create Squads
+        #Place Squads
+        #turn on logging
+    def start(self):
+        """Starts a human controlled game"""
+        pass
+
 
 #    def process(self, command):
 #        """Process a battle command (move, act, or both) for unit"""

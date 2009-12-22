@@ -17,23 +17,17 @@ def rand_unit(suit=None): #may change to rand_unit(suit, kind)
     """Returns a random Scient of suit. Random suit used if none given."""
     if not suit in ELEMENTS:
         suit = rand_element()
-    return BattlePane.Scient(suit, rand_comp(suit, 'Scient'))
+    return BattlePane.Scient(element=suit, comp=rand_comp(suit, 'Scient'))
 
 def rand_squad(suit=None):
     """Returns a Squad of five random Scients of suit. Random suit used
        if none given."""
-    
-    squad = Squad()
     size = 5
     if not suit in ELEMENTS:
-        for _ in range(size):
-            squad.append(rand_unit(rand_element()))
-        return squad
+        return Squad([rand_unit(rand_element()) for i in range(size)])
     
     else:
-        for _ in range(size):
-            squad.append(rand_unit(suit))
-        return squad
+        return Squad([rand_unit(suit) for i in range(size)])
 
     
 class Pane(pygame.sprite.Sprite):
@@ -137,6 +131,8 @@ class BattlePane(Pane, battlefield.Battlefield):
         self.contentimgs = pygame.sprite.RenderUpdates()
         self.squad1 = rand_squad()
         self.squad2 = rand_squad()
+        self.squad1.name = 'p1'
+        self.squad2.name = 'p2'
         self.rand_place_squad(self.squad1)
         self.rand_place_squad(self.squad2)
         self.get_contents_image()
@@ -163,6 +159,14 @@ class BattlePane(Pane, battlefield.Battlefield):
             self.grid[xpos][ypos].contents.rect.topleft = topleft
             #self.contentimgs.update()
     
+    def place_unit(self, unit, dest):
+        battlefield.Battlefield.place_unit(self, unit, dest)
+        xpos, ypos = dest
+        temp = self.grid[xpos][ypos].rect
+        topleft = ((temp.x + 8),(temp.y + 8))
+        self.grid[xpos][ypos].contents.rect.topleft = topleft
+        self.contentimgs.add(self.grid[xpos][ypos].contents)
+        
     def phit(self, src, dest):
         atk  = self.grid[src[0]][src[1]].contents
         deph = self.grid[dest[0]][dest[1]].contents
@@ -170,6 +174,7 @@ class BattlePane(Pane, battlefield.Battlefield):
         if deph.hp <=0:
             self.grid[dest[0]][dest[1]].contents = None
             deph.location = None
+            self.graveyard.append(deph)
             #might change this much later
             deph.remove(deph.groups())
     
@@ -180,20 +185,33 @@ class BattlePane(Pane, battlefield.Battlefield):
         if deph.hp <=0:
             self.grid[dest[0]][dest[1]].contents = None
             deph.location = None
+            self.graveyard.append(deph)
             #might change this much later
             deph.remove(deph.groups())
-            
+    
+    def flush_units(self):
+        battlefield.Battlefield.flush_units(self)
+        self.contentimgs.empty()
+        
     class Scient(pygame.sprite.Sprite, Scient):
         """tricky"""
-        def __init__(self, ele, topleft):
+        def __init__(self, element=None, comp=None):
             pygame.sprite.Sprite.__init__(self)
-            Scient.__init__(self,comp=rand_comp(suit=ele, kind='Scient'), element=ele) 
+            if element == None:
+                element = rand_element()
+            if comp == None:
+                comp = rand_comp(suit=element, kind='Scient')
+                
+            Scient.__init__(self, comp=comp, element=element) 
             self.image = pygame.Surface([15, 15])
-            self.image.fill(COLORS[ele])
+            self.image.fill(COLORS[element])
             self.rect = self.image.get_rect()
             self.font = pygame.font.SysFont('droidsansmono',  12)
             self.font_color = [255, 255, 255]
         
+        def __repr__(self):
+            return Scient.__repr__(self)
+
     class Tile(pygame.sprite.Sprite, battlefield.Tile):
         """it's a battlefield tile and a pygame sprite,  yo"""
         def __init__(self,  topleft):

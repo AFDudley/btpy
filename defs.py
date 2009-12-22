@@ -123,6 +123,8 @@ class Unit(object):
             title = self.name
         else:
             title = str(id(self))
+            
+        #There is some cleaner way to write these things...
         return "%s -> suit:% 2s | val: %s | loc: %s | comp: (%s, %s, %s, %s) \
 | p: %s \nHP: % 7s | PA/PD: (% 5s,% 5s) | MA/MD: (% 5s,% 5s) \n" % (title, \
     self.element[0], self.value(), self.location, self.comp[E], self.comp[F], \
@@ -140,9 +142,10 @@ class Squad(list):
             else:
                 return 2
                 
-    def __init__(self, lst=None):
+    def __init__(self, lst=None, name=None):
         self.value = 0
         self.free_spaces = 8
+        self.name = name
         list.__init__(self)
         if lst == None:
             return
@@ -161,8 +164,10 @@ class Squad(list):
         list.__setitem__(self, key, val)
         self.value += val.value()
         self.free_spaces -= size
+        key.squad = self
         
     def __delitem__(self, key):
+        del key.squad
         temp = self[key].value()
         self.free_spaces += self.unit_size(self[key])
         list.__delitem__(self, key)
@@ -175,7 +180,9 @@ class Squad(list):
             "There is not enough space in the squad for this unit")
         list.append(self, item)
         self.value += item.value()
-        self.free_spaces -= size        
+        self.free_spaces -= size
+        item.squad = self
+            
     def __repr__(self, more=None):
         """This could be done better..."""
         if more != None:
@@ -183,11 +190,11 @@ class Squad(list):
                 s = ''
                 for i in range(len(self)):
                     s += str(i) + ': ' + str(self[i]) + '\n'
-                return "Value: %s, Free spaces: %s \n%s" %(self.value, \
-                self.free_spaces, s)
+                return "Name: %s, Value: %s, Free spaces: %s \n%s" \
+                %(self.name, self.value, self.free_spaces, s)
         else:
-            return "Value: %s, Free spaces: %s \n" %(self.value, \
-            self.free_spaces)
+            return "Name: %s, Value: %s, Free spaces: %s \n" %(self.name, \
+            self.value, self.free_spaces)
     
     def __call__(self, more=None):
         return self.__repr__(more)
@@ -290,7 +297,7 @@ attack, something is wrong.")
                             battlefield.grid[xt][yt].contents.hp = 0
                             battlefield.grid[xt][yt].contents.location = None
                             battlefield.grid[xt][yt].contents = None
-                            print "%s point(s) of damage dealt, target \
+                            return "%s point(s) of damage dealt, target \
 Killed." %dmg
                         else:
                             battlefield.grid[xt][yt].contents.hp -= dmg
