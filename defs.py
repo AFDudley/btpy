@@ -93,17 +93,23 @@ class Stone:
 class Unit(object):
     def __init__(self, element, comp):
         if not element in ELEMENTS:
-            raise Exception("Invalid element: %s, valid elements are %s" % (element, ELEMENTS))
+            raise Exception("Invalid element: %s, valid elements are %s" \
+            % (element, ELEMENTS))
         self.element = element
         self.comp = comp
-
+        self.p    = None
+        self.m    = None
+        self.defe = None
+        self.atk  = None
         self.patk = None
         self.pdef = None
         self.matk = None
         self.mdef = None
-        self.age = None
+        self.hp   = None
+        self.age  = None
         self.name = None
-    
+        self.location = None
+        
     def value(self):
         """Returns sum of comp, overload as needed"""
         sum = 0
@@ -112,31 +118,80 @@ class Unit(object):
         return sum
         
     
-    #def repr(self):
-    #    return "%s -> HP:% 5s | MP:% 5s | Element:% 5s | P Atk/Def: (% 3s,% 3s) | M Atk/Def: (% 3s,% 3s)" % (id(u), u.hp, u.mp, u.element, u.patk, u.pdef, u.matk, u.mdef)
-#TODO: inheriting from Unit is not buying anything for us here (in terms of Scient,
-# which just overwrites Unit's __init__ (unless you use super?))
+    def __repr__(self):
+        if self.name:
+            title = self.name
+        else:
+            title = str(id(self))
+        return "%s -> suit:% 2s | val: %s | loc: %s | comp: (%s, %s, %s, %s) \
+| p: %s \nHP: % 7s | PA/PD: (% 5s,% 5s) | MA/MD: (% 5s,% 5s) \n" % (title, \
+    self.element[0], self.value(), self.location, self.comp[E], self.comp[F], \
+    self.comp[I], self.comp[W], self.p, self.hp, self.patk, self.pdef, \
+    self.matk, self.mdef) 
 
-#needs work.
 class Squad(list):
     """contains a number of Units. Takes a list of Units"""
-    def __init__(self):
+    def unit_size(self, object):
+        if isinstance(object, Unit) == False:
+            raise TypeError("Squads can contain only Units")
+        else:
+            if isinstance(object, Scient):
+                return 1
+            else:
+                return 2
+                
+    def __init__(self, lst=None):
         self.value = 0
+        self.free_spaces = 8
         list.__init__(self)
+        if lst == None:
+            return
         
+        if isinstance(lst, list):
+            for x in lst: self.append(x)
+        
+        else:
+            self.append(lst)
+            
     def __setitem__(self, key, val):
-        list.__setitem__(self,key, val)
+        size = self.unit_size(key)
+        if self.free_spaces < size:
+            raise Exception( \
+            "There is not enough space in the squad for this unit")
+        list.__setitem__(self, key, val)
         self.value += val.value()
-    
+        self.free_spaces -= size
+        
     def __delitem__(self, key):
         temp = self[key].value()
+        self.free_spaces += self.unit_size(self[key])
         list.__delitem__(self, key)
         self.value -= temp
         
     def append(self, item):
+        size = self.unit_size(item)
+        if self.free_spaces < size:
+            raise Exception( \
+            "There is not enough space in the squad for this unit")
         list.append(self, item)
         self.value += item.value()
-
+        self.free_spaces -= size        
+    def __repr__(self, more=None):
+        """This could be done better..."""
+        if more != None:
+            if self.value > 0:
+                s = ''
+                for i in range(len(self)):
+                    s += str(i) + ': ' + str(self[i]) + '\n'
+                return "Value: %s, Free spaces: %s \n%s" %(self.value, \
+                self.free_spaces, s)
+        else:
+            return "Value: %s, Free spaces: %s \n" %(self.value, \
+            self.free_spaces)
+    
+    def __call__(self, more=None):
+        return self.__repr__(more)
+        
 class Scient(Unit):
     """A Scient (playable character) unit.
     
@@ -154,19 +209,7 @@ class Scient(Unit):
         self.past_jobs = dict(zip(JOBS, [0, 0, 0, 0])) #set all job levels to 0
         self.skills = [] #Should be calculated from past_jobs and current job
         self.move = 4
-        self.location = None
-        
-        #these get set by calcstat
-        self.p = 0
-        self.m = 0
-        self.atk = 0
-        self.defe = 0
-        self.pdef = 0
-        self.patk = 0
-        self.matk = 0
-        self.mdef = 0
-        self.hp = 0
-        self.mp = 0
+
         self.calcstats()
     
     def calcstats(self): #This function is a work in progress
@@ -389,7 +432,6 @@ Killed." %(dmg, element)
         #forgot about this...)
         self.level = self.level + 1
     
-
 class Nescient(Unit):
         def bite(self, target):
             pass

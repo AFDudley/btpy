@@ -1,6 +1,6 @@
 import pygame
 import battlefield
-import pyconsole
+import new_pyconsole as pyconsole
 from pygame.locals import *
 from const import E,F,I,W, ELEMENTS
 from defs import Scient, Squad
@@ -288,17 +288,19 @@ def ds():
     stuff.draw(screen)
     console.draw()
     
-while 1:
+while pygame.key.get_pressed()[K_ESCAPE] == False:
     ds()
-    '''
-    for event in pygame.event.get():
-        if event.type == KEYDOWN:
-            if event.key == K_w and pygame.key.get_mods() & KMOD_CTRL:
-                console.set_active()
-    '''
-    pygame.display.update()
+    pygame.event.pump()
     
-#>>>> __IPYTHON__.user_ns['object']
+    if console.active == 0:
+        for event in pygame.event.get():
+            if event.type == KEYDOWN:
+                if event.key == K_w:
+                    if pygame.key.get_mods() & KMOD_CTRL:
+                        console.set_active()
+    
+    pygame.display.update()
+pygame.quit()
 
 '''
  old functions

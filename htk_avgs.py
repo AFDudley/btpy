@@ -7,7 +7,7 @@ from helpers import *
     
 def pdmg_squad(unit, squad, debug=None):
     avg =[]
-    if debug: print "Physical damage from:"; unit_repr(unit)
+    if debug: print "Physical damage from:"; unit
     for x in squad:
         dmg = unit.pdmg(x)
         if dmg == 0:
@@ -27,7 +27,7 @@ def pdmg_squad(unit, squad, debug=None):
     
 def mdmg_squad(unit, squad, debug=None):
     avg = []
-    if debug: print "Magical damage from:"; unit_repr(unit)
+    if debug: print "Magical damage from:"; unit
     for x in squad:
         dmg = abs(unit.mdmg(x, unit.element))
         if dmg == 0:

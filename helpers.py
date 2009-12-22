@@ -4,17 +4,6 @@ import random
 from const import ELEMENTS, E, F, W, I, ORTH, KINDS, OPP
 from defs import Scient, Squad
 
-def unit_repr(u): #Needs work.
-    """'Pretty' Scient Printer"""
-    if u.name:
-        title = u.name
-    else:
-        title = str(id(u))
-    return "%s -> suit:% 2s | val: %s | loc: %s | comp: (%s, %s, %s, %s) | \
-p: %s \nHP: % 7s | PA/PD: (% 5s,% 5s) | MA/MD: (% 5s,% 5s) \n" % (title, \
-    u.element[0], u.value(), u.location, u.comp[E], u.comp[F], u.comp[I], \
-    u.comp[W], u.p, u.hp, u.patk, u.pdef, u.matk, u.mdef)
-
 def rand_element():
     """Reuturns a random element"""
     return random.choice(ELEMENTS)
@@ -74,12 +63,11 @@ def rand_squad(suit=None):
 def print_rand_squad(suit=None):
     squad = rand_squad(suit)
     for unit in squad:
-        print unit_repr(unit)
+        print unit
     return squad
 
 def show_squad(squad):
-    for unit in squad:
-        print unit_repr(unit)
+    print squad(more=1)
 
 def max_squad_by_value(value):
     """Takes an integer, ideally even because we round down, and returns a

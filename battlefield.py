@@ -4,7 +4,7 @@ from const import COMP, ELEMENTS, E, F, I, W, ORTH
 import random
 from defs import Scient
 
-from helpers import rand_squad, unit_repr, show_squad
+from helpers import rand_squad
 
 #there is a serious problem in this logic. it assumes that units fit on one
 #tile, nesceints do not.
