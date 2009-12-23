@@ -132,9 +132,14 @@ class BattlePane(Pane, battlefield.Battlefield):
         self.squad1 = rand_squad()
         self.squad2 = rand_squad()
         self.squad1.name = 'p1'
+        self.squad1.num  = '1'
         self.squad2.name = 'p2'
+        self.squad2.num  = '2'
         self.rand_place_squad(self.squad1)
         self.rand_place_squad(self.squad2)
+        for s in (self.squad1, self.squad2):
+            for i in s:
+                i.draw_text()
         self.get_contents_image()
         
     def update(self):
@@ -146,9 +151,10 @@ class BattlePane(Pane, battlefield.Battlefield):
         for x in range(self.grid.x):
             for y in range(self.grid.y):
                 if self.grid[x][y].contents:
-                    topleft = ((self.grid[x][y].rect.x + 8), \
-                               (self.grid[x][y].rect.y + 8))
+                    topleft = ((self.grid[x][y].rect.x + 9), \
+                               (self.grid[x][y].rect.y + 9))
                     self.grid[x][y].contents.rect.topleft = topleft
+                    self.grid[x][y].contents.draw_text()
                     self.contentimgs.add(self.grid[x][y].contents)
     
     def move_unit(self, src, dest):
@@ -206,9 +212,15 @@ class BattlePane(Pane, battlefield.Battlefield):
             self.image = pygame.Surface([15, 15])
             self.image.fill(COLORS[element])
             self.rect = self.image.get_rect()
+            
+        def draw_text(self):
+            """a crude, crude hack."""
             self.font = pygame.font.SysFont('droidsansmono',  12)
-            self.font_color = [255, 255, 255]
-        
+            self.font_color = [0, 0, 0]
+            textrect = self.font.render(self.squad.num, True, self.font_color, \
+            COLORS[self.element])
+            self.image.blit(textrect, (3.5,0))
+            
         def __repr__(self):
             return Scient.__repr__(self)
 
