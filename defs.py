@@ -297,7 +297,7 @@ attack, something is wrong.")
                             battlefield.grid[xt][yt].contents.hp = 0
                             battlefield.grid[xt][yt].contents.location = None
                             battlefield.grid[xt][yt].contents = None
-                            return "%s point(s) of damage dealt, target \
+                            print "%s point(s) of damage dealt, target \
 Killed." %dmg
                         else:
                             battlefield.grid[xt][yt].contents.hp -= dmg

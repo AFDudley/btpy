@@ -13,6 +13,17 @@ Ice = [20, 20, 228]
 Wind = [255, 255, 30]
 COLORS = {"Earth": Earth, "Fire" : Fire, "Ice" : Ice, "Wind" :Wind}
 
+class Squad(Squad):
+    def locs(self):
+        """location of units in squad"""
+        s = ''
+        for x in range(len(self)):
+            s += str(x) + '-> ' + 'loc: ' + str(self[x].location) + ' Suit: ' \
+            + str(self[x].element) + ' HP: ' + str(self[x].hp) + ' PA/PD: ' \
+            + str(self[x].patk) + '/' + str(self[x].pdef) + ' MA/MD: ' \
+            + str(self[x].matk) + '/' + str(self[x].mdef) + '\n'
+        print s
+  
 def rand_unit(suit=None): #may change to rand_unit(suit, kind)
     """Returns a random Scient of suit. Random suit used if none given."""
     if not suit in ELEMENTS:
@@ -198,7 +209,8 @@ class BattlePane(Pane, battlefield.Battlefield):
     def flush_units(self):
         battlefield.Battlefield.flush_units(self)
         self.contentimgs.empty()
-        
+
+                
     class Scient(pygame.sprite.Sprite, Scient):
         """tricky"""
         def __init__(self, element=None, comp=None):
@@ -291,6 +303,7 @@ tp = TopPane((LEFTINSET,TOPINSET))
 mp = MiddlePane((LEFTINSET, (TOPINSET + PANE_HEIGHT + PANE_SPACING)))
 bp = BottomPane((LEFTINSET, (TOPINSET + 2 *(PANE_HEIGHT + PANE_SPACING))))
 
+#the name battle is hardcoded into pyconsole.py
 battle = BattlePane((242, TOPINSET), (516, 516))
 
 stuff = pygame.sprite.RenderUpdates()
@@ -298,8 +311,8 @@ for pane in (tp, mp, bp, battle):
     stuff.add(pane)
 
 casting = cast()
-yup = pygame.sprite.RenderUpdates()
-yup.add(casting)
+fix_me = pygame.sprite.RenderUpdates()
+fix_me.add(casting)
 #console code
 console = pyconsole.Console(screen, (2,398,794,200), vars={"repeat_rate":200})
 #pygame.mouse.set_pos(300,240)
