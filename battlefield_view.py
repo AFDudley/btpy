@@ -1,6 +1,6 @@
 import pygame
 import battlefield
-import new_pyconsole as pyconsole
+import pyconsole
 from pygame.locals import *
 from const import E,F,I,W, ELEMENTS
 from defs import Scient, Squad
