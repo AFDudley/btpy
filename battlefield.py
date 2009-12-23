@@ -132,8 +132,9 @@ class Battlefield(object):
         """place the units in a squad randomly on the battlefield"""
         for unit in range(len(squad)):
             #readable?
-            def RandPos(): return (random.randint(0, (self.grid.x - 1)),
-                random.randint(0, (self.grid.y - 1)))
+            inset = 10
+            def RandPos(): return (random.randint(0, (self.grid.x - inset)),
+                random.randint(0, (self.grid.y - inset)))
             while squad[unit].location == None:
                 try:
                     self.place_unit(squad[unit], RandPos())
