@@ -73,7 +73,7 @@ def max_squad_by_value(value):
     """Takes an integer, ideally even because we round down, and returns a
     squad such that comp[element] == value, comp[orth] == value/2, comp[opp]
     == 0"""
-    squad = []
+    squad = Squad()
     value = value/2 #more logical, really.
     half = value/2
     for i in ELEMENTS:
@@ -85,7 +85,7 @@ def max_squad_by_value(value):
     return squad
 
 def one_three_zeros(value):
-    squad = []
+    squad = Squad()
     for i in ELEMENTS:
         unit = Scient(i,{E:0, F:0, I:0, W:0})
         unit.comp[unit.element] = value

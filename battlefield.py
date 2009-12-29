@@ -1,11 +1,13 @@
 """contains battlefield objects"""
 from warnings import warn
-from const import COMP, ELEMENTS, E, F, I, W, ORTH
+from operator import contains
 import random
-from defs import Scient
 
+from const import COMP, ELEMENTS, E, F, I, W, ORTH
+from defs import Scient
 from helpers import rand_squad
 
+#Battlefield needs a coord class
 #there is a serious problem in this logic. it assumes that units fit on one
 #tile, nesceints do not.
 class Tile(object):
@@ -40,7 +42,7 @@ class Grid(tuple):
         return tuple.__new__(cls, grid)
 
     def __init__(self, *args, **kwargs):
-        # make a grid, if no size given make it (16, 16)
+        # make a grid, if no size given make it (16, 16) 
         if not args:
             try:
                 self.size = kwargs['size']
@@ -65,15 +67,14 @@ class Grid(tuple):
 class Battlefield(object):
     """A battlefield is a map of tiles which contains units and the logic for
     their movement and status."""
-    #should take two "squad" objects; if none given generate "random" squads
-    def __init__(self):
+    def __init__(self, squad1=None, squad2=None):
         #grid is a tuple of tuples containing tiles
         self.grid = None
         self.turn = 0
         self.graveyard = []
-        self.status_effects = []
-        self.squad1 = None
-        self.squad2 = None
+        self.dmg_queue = []
+        self.squad1 = squad1
+        self.squad2 = squad2
 
     def load_squads(self, squad1=None, squad2=None):
         """loads squads into battlefield, uses random if none provided"""
@@ -127,9 +128,90 @@ class Battlefield(object):
                 raise Exception("There is already something at dest")
         else:
             raise Exception("There is nothing at src")
+
+    def find_units(self):
+        list = []
+        for x in range(len(self.grid)):
+            for y in range(len(self.grid[x])):
+                if self.grid[x][y].contents:
+                    list.append((x,y))
+        return list    
+        
+    def dmg(atkr, defdr, type):
+        """Calculates the damage of an attack"""
+        damage_dealt = {E: 0, F: 0, I: 0, W: 0}
+        xdef,ydef = defdr.location
+        for element in damage_dealt:
+            dmg = (atkr.p + atkr.patk + (2 * atkr.comp[element]) \
+            + atkr.weapon.comp[element]) - (defdr.p + defdr.pdef \
+            + (2 * defdr.comp[element]) + self.grid[x][y].comp[element])
+            dmg = max(dmg, 0)
+            damage_dealt[element] = dmg
+             
+        damage = sum(damage_dealt.values())
+        if type == 'm':
+            if atkr.element == defdr.element:
+                damage = 0 - damage
+        return damage
     
+    def find_targets(self, tiles):
+        """finds valid targets on tiles. returns list of coords"""
+        return list(set(find_units()) & set(tiles))
+        
+
+    def calc_damage(self, unit, vector):
+        """Calculates damage of all units "between" unit and vector
+        Returns list of (target, dmg) tuples"""        
+        #this all happens here because the battlefield needs tile info
+        #this can be optimized, the logic is skewed toward ranged attacks.
+        atkr = unit
+        weapon = atkr.weapon
+        vecx,vecy = vector
+        dmg_list = []
+        tiles = weapon.map_to_grid(unit.location, self.grid)
+        if tiles <= 0: 
+            raise Exception("somehow the weapon attack pattern doesn't map")
+        targets = self.find_targets(tiles)
+        if targets == None: 
+            raise Exception("No Valid Targets in range")
+        for i in xrange(len(targets)): # sub-optimal, readable.
+            defdr = self.grid[targets[i][0]][targets[i][1]].contents
+            if contains(ORTH[W], weapon.type): #physical attacks
+                dmg = self.dmg(atkr, defdr, 'p')
+                if dmg != 0:
+                    if weapon.type == 'Earth':
+                        dmg_list.append(defdr, dmg)
+                    else:
+                        dmg_list.append(defdr, (dmg / 4))
+            else: #magical attacks
+                dmg = self.dmg(atkr, defdr, 'm')
+                if dmg > 0:
+                    if weapon.type == 'Wind':
+                        dmg /= 3
+                        dmg_list.append(defdr, dmg)
+                        self.dmg_queue.append(defdr, dmg, 2) 
+                    else:
+                        dmg_list.append(defdr, dmg / len(tiles))
+        return dmg_list
+
+    def apply_damage(self, dmg_list):
+        """applies damage to unit"""
+        for i in dmg_list:
+            defndr,dmg = i
+            if dmg >= defdr.hp:
+                defdr.hp = 0
+                self.grid[defdr.location[0]][defdr.location[1]].contents = None
+                defdr.location = None
+                #Do some squad stuff
+                #Do some graveyard stuff
+            else:
+                defdr.hp -= dmg
+
+    def attack(self, atkr, defdr):
+        self.apply_damage(self.calc_damage(atkr,defdr))
+        
     def rand_place_squad(self, squad):
-        """place the units in a squad randomly on the battlefield"""
+        """!!!BROKEN!!! place the units in a squad randomly on the battlefield"""
         for unit in range(len(squad)):
             #readable?
             inset = 10
@@ -143,14 +225,6 @@ class Battlefield(object):
                     nope = RandPos()
                     self.place_unit(squad[unit], nope)
                     
-    def find_units(self):
-        list = []
-        for x in range(len(self.grid)):
-            for y in range(len(self.grid[x])):
-                if self.grid[x][y].contents:
-                    list.append((x,y))
-        return list
-    
     def flush_units(self):
         """
         remove all units from grid, returns number of units flushed,
@@ -164,29 +238,22 @@ class Battlefield(object):
                     self.grid[x][y].contents = None
                     count += 1
         return count
-    
+
     def logger(self):
         """Logs game and optionally stores it in data store"""
         pass
         
     def config(self):
         """Configure the battlefield"""
-        #Load Player info
-        #Create Squads
-        #Place Squads
-        #turn on logging
+        '''
+        Load Player info
+        Create Squads
+        Place Squads
+        turn on logging
+        '''
+    
     def start(self):
         """Starts a human controlled game"""
         pass
 
-
-#    def process(self, command):
-#        """Process a battle command (move, act, or both) for unit"""
-#        fst_cmd, fst_args = command[0]
-#        snd_cmd, snd_args = command[1]
-#        fst_cmd(*fst_args)
-#        snd_cmd(*snd_args)
-
-#    def act(self, action, args):
-#        action(*args)
 
