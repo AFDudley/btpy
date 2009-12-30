@@ -6,6 +6,7 @@ import random
 from const import COMP, ELEMENTS, E, F, I, W, ORTH
 from defs import Scient
 from helpers import rand_squad
+from moves import action, ply, move
 
 #Battlefield needs a coord class
 #there is a serious problem in this logic. it assumes that units fit on one
@@ -63,14 +64,16 @@ class Grid(tuple):
         called by __init__
         """
         print "make_grid was called"
- 
+            
 class Battlefield(object):
     """A battlefield is a map of tiles which contains units and the logic for
     their movement and status."""
     def __init__(self, squad1=None, squad2=None):
         #grid is a tuple of tuples containing tiles
+        self.game_id = 0
+        
         self.grid = None
-        self.turn = 0
+        self.moves = [move(self.game_id, 1)] #attacker goes first...
         self.graveyard = []
         self.dmg_queue = []
         self.squad1 = squad1
@@ -191,9 +194,9 @@ class Battlefield(object):
                 dmg = self.dmg(atkr, defdr, 'm')
                 if dmg > 0:
                     if weapon.type == 'Wind':
-                        dmg /= 3
+                        dmg /= weapon.time
                         dmg_list.append(defdr, dmg)
-                        self.dmg_queue.append(defdr, dmg, 2) 
+                        self.dmg_queue.append(defdr, dmg, (weapon.time - 1)) 
                     else:
                         dmg_list.append(defdr, dmg / len(tiles))
         return dmg_list
@@ -259,6 +262,9 @@ class Battlefield(object):
                     count += 1
         return count
 
+
+        
+        
     def logger(self):
         """Logs game and optionally stores it in data store"""
         pass

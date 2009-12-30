@@ -29,7 +29,7 @@ class Weapon(Stone): #the names of all these functions is quite confusing; fix.
         Stone.__init__(self, comp)
         self.element = element
         self.type ='None'
-        self.attack_pattern = [(0,-1),(1,0),(0,1),(-1,0)]
+        self.attack_pattern = [(0,-1),(1,0),(0,1),(-1,0),(-1,-1),(-1,1),(1,1),(1,-1)]
     
     def map_to_grid(self, origin, grid_size):
         """maps pattern to grid centered on origin. 
@@ -48,7 +48,6 @@ class Sword(Weapon):
     def __init__(self, element, comp):
         Weapon.__init__(self, element, comp)
         self.type = 'Earth'
-        self.targets = [(0,-1),(1,0),(0,1),(-1,0)]
     
 class Bow(Weapon):
     """Long range physical weapon"""
@@ -121,7 +120,6 @@ class Glove(Weapon):
         Weapon.__init__(self, element, comp)
         self.type = 'Wind'
         self.time = 3
-        self.targets = [(0,-1),(1,0),(0,1),(-1,0)]
     
 class Unit(object):
     def __init__(self, element, comp):

@@ -203,14 +203,21 @@ class BattlePane(Pane, battlefield.Battlefield):
         self.grid.image.blit(tt.image, tt.rect)
     
     def color_tiles(self, unit):
-        area = set(unit.weapon.map_to_grid(unit.location, self.grid.size))
-        move = set(self.make_move(unit))
+        #this *_tile_color, and tile.set_color could be improved.
+        area  = set(unit.weapon.map_to_grid(unit.location, self.grid.size))
+        move  = set(self.make_move(unit))
+        units = set(self.find_units())
+        move -= units #can't moved to occupied tiles
+        loc   = set((unit.location,),)
+        targets = area & units
         for i in area:
             self.set_tile_color(i, pink)
         for i in move:
             self.set_tile_color(i, blue)
-        for i in area & move:
+        for i in area & move :
             self.set_tile_color(i, purp)
+        for i in targets:
+            self.set_tile_color(i, white)
         self.set_tile_color(unit.location, black)
             
     def get_contents_image(self):
