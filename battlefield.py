@@ -154,26 +154,30 @@ class Battlefield(object):
                 damage = 0 - damage
         return damage
     
+    def make_move(self, unit): #maybe move to defs.unit
+        m = unit.move
+        xo, yo = origin = unit.location
+        tiles = []
+        for x in range(-4,5):
+            for y in range(-4,5):
+                if abs(x) + abs(y) <= m:
+                    tile = (xo + x), (yo + y)
+                    if 0 <= tile[0] < self.grid.x:
+                        if 0 <= tile[1] < self.grid.y:
+                            tiles.append(tile)
+        return tiles
+        
     def find_targets(self, tiles):
         """finds valid targets on tiles. returns list of coords"""
         return list(set(find_units()) & set(tiles))
         
 
-    def calc_damage(self, unit, vector):
-        """Calculates damage of all units "between" unit and vector
-        Returns list of (target, dmg) tuples"""        
-        #this all happens here because the battlefield needs tile info
-        #this can be optimized, the logic is skewed toward ranged attacks.
-        atkr = unit
+    def calc_damage(self, atkr, targets):
+        """Calculates damage from atkr to targets.
+        Returns list of (target, dmg) tuples"""
         weapon = atkr.weapon
-        vecx,vecy = vector
         dmg_list = []
-        tiles = weapon.map_to_grid(unit.location, self.grid)
-        if tiles <= 0: 
-            raise Exception("somehow the weapon attack pattern doesn't map")
-        targets = self.find_targets(tiles)
-        if targets == None: 
-            raise Exception("No Valid Targets in range")
+            
         for i in xrange(len(targets)): # sub-optimal, readable.
             defdr = self.grid[targets[i][0]][targets[i][1]].contents
             if contains(ORTH[W], weapon.type): #physical attacks
@@ -197,24 +201,40 @@ class Battlefield(object):
     def apply_damage(self, dmg_list):
         """applies damage to unit"""
         for i in dmg_list:
-            defndr,dmg = i
+            defdr,dmg = i
             if dmg >= defdr.hp:
+                print "%s died" %defndr.location
                 defdr.hp = 0
                 self.grid[defdr.location[0]][defdr.location[1]].contents = None
                 defdr.location = None
                 #Do some squad stuff
                 #Do some graveyard stuff
             else:
+                temp = defdr.hp
                 defdr.hp -= dmg
-
+                print "%s had %s hit points. took %s point(s) of damage, now \
+                has %s of hp" %(defdr.name, temp, dmg, defdr.hp)
+                 
     def attack(self, atkr, defdr):
-        self.apply_damage(self.calc_damage(atkr,defdr))
-        
+        if atkr.weapon.type != 'Ice':
+            self.apply_damage(self.calc_damage(atkr,defdr))
+        else:
+            #crude
+            direction = {0:'West', 1:'North', 2:'East', 3:'South'}
+            ax,ay = aloc = atkr.location
+            maxes = (ax, ay, (self.grid.x - 1 - ax), (self.grid.y - 1 - ay),)
+            for i in direction:
+                pat = atkr.weapon.make_pattern(atkr, maxes[i], direction[i])
+                if contains(pat, defdr):
+                    self.apply_damage(self.calc_damage(set(self.find_units()) \
+                    & set(pat)))
+                    break
+                    
     def rand_place_squad(self, squad):
         """!!!BROKEN!!! place the units in a squad randomly on the battlefield"""
         for unit in range(len(squad)):
             #readable?
-            inset = 10
+            inset = 0
             def RandPos(): return (random.randint(0, (self.grid.x - inset)),
                 random.randint(0, (self.grid.y - inset)))
             while squad[unit].location == None:

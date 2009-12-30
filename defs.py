@@ -37,9 +37,10 @@ class Weapon(Stone): #the names of all these functions is quite confusing; fix.
         orix,oriy = origin
         tiles = []
         for i in self.attack_pattern:
-            if 0 <= (i[0] + origin[0]) < gridx:
-                if 0 <= (i[1] + origin[1]) < gridy:
-                    tiles.append(i)
+            x,y = (i[0] + origin[0]),(i[1] + origin[1])
+            if 0 <= x < grid_size[0]:
+                if 0 <= y < grid_size[1]:
+                    tiles.append((x,y))
         return tiles
     
 class Sword(Weapon):
