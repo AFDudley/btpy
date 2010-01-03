@@ -5,6 +5,7 @@ from pygame.locals import *
 from const import E,F,I,W, ELEMENTS
 from defs import Scient, Squad
 from helpers import rand_comp, rand_element
+from moves import action_types
 
 black = [0,0,0]
 darkg = [50, 50, 50]
@@ -80,7 +81,6 @@ class Pane(pygame.sprite.Sprite):
         self.textleftoffset = 2
         self.highlight = False
         self.line_highlight = 0
-        self.max_line = 0
         
     def draw_text(self, text, tbgcolor=[50,50,50], color=white):
         """Draws text to self.surface"""
@@ -135,32 +135,36 @@ class MiddlePane(Pane):
         self.border_color = [0, 255, 0]
         self.bgcolor = [50, 50, 50]
         self.text = None
-        
+        self.max_line = 3
+    
     def update(self):
         Pane.update(self)
         self.draw_title()
-        try:
-            for x in self.text:
-                self.draw_text(x[0], color=x[1], tbgcolor=darkg)
-            self.text = None
-        except:
-            pass
+        for x in self.text:
+            self.draw_text(x[0], color=x[1], tbgcolor=x[2])
+
         self.texttopoffset = 2
 
 class BottomPane(Pane):
     """lowest pane on the left"""
-    def __init__(self, position, size=PANE_SIZE, title=None):
+    def __init__(self, position, size=PANE_SIZE, title='Info:'):
         Pane.__init__(self, size, title)
         self.rect.x, self.rect.y = position
         self.border_color = [0, 0, 255]
         self.bgcolor = [50, 50, 50]
-        self.fps = ''
-
+        self.text = None
+        self.max_line = 0
+        
     def update(self):
         Pane.update(self)
-        self.draw_text("fps: " + str(self.fps), self.bgcolor)
-        self.texttopoffset = 2
-
+        self.draw_title()
+        '''if self.fps != None:
+            self.draw_text("fps: " + str(self.fps), self.bgcolor)
+            self.texttopoffset = 2'''
+        if self.text != None:
+            self.draw_text(self.text, darkg)
+        self.texttopoffset = 2    
+        
 class BattlePane(Pane, battlefield.Battlefield):
     """Pane that displays the battlefield"""
     def __init__(self,  position, tilesize, tiles):
@@ -202,24 +206,11 @@ class BattlePane(Pane, battlefield.Battlefield):
         tt.set_color([min(sum(a),255) for a in zip(*new)])
         self.grid.image.blit(tt.image, tt.rect)
     
-    def color_tiles(self, unit):
+    def color_tiles(self, tiles, color):
         #this *_tile_color, and tile.set_color could be improved.
-        area  = set(unit.weapon.map_to_grid(unit.location, self.grid.size))
-        move  = set(self.make_move(unit))
-        units = set(self.find_units())
-        move -= units #can't moved to occupied tiles
-        loc   = set((unit.location,),)
-        targets = area & units
-        for i in area:
-            self.set_tile_color(i, pink)
-        for i in move:
-            self.set_tile_color(i, blue)
-        for i in area & move :
-            self.set_tile_color(i, purp)
-        for i in targets:
-            self.set_tile_color(i, white)
-        self.set_tile_color(unit.location, black)
-            
+        for i in tiles:
+            self.set_tile_color(i, color)
+    
     def get_contents_image(self):
         for x in range(self.grid.x):
             for y in range(self.grid.y):
@@ -357,10 +348,11 @@ class View(object):
         self.tp = TopPane((LEFTINSET,TOPINSET))
         self.mp = MiddlePane((LEFTINSET, (TOPINSET + PANE_HEIGHT + PANE_SPACING)))
         self.bp = BottomPane((LEFTINSET, (TOPINSET + 2 *(PANE_HEIGHT + PANE_SPACING))))
-
         #the name battle is hardcoded into pyconsole.py
         self.battle = BattlePane((242, TOPINSET), tilesize=32, tiles=(16,16))
-
+        self.tp.squad = self.battle.squad1
+        self.tp.max_line = len(self.tp.squad) - 1
+        
         
         self.panes = (self.tp, self.mp, self.bp, self.battle)
         self.paneimgs = pygame.sprite.RenderUpdates()
@@ -378,75 +370,225 @@ class View(object):
         self.panes[lit].highlight  = 0
         self.panes[pane].highlight = 1
         self.lit = pane
-    
 
     def clean(self):
         """Resets the color of all tiles"""
         for x in range(self.battle.grid.x):
             for y in range(self.battle.grid.y):
-                self.battle.set_tile_color((x,y), grey)
+                self.battle.set_tile_color((x,y), grey)       
+    def coroutine(func):
+        def start(*args,**kwargs):
+            cr = func(*args,**kwargs)
+            cr.next()
+            return cr
+        return start
         
-    def draw_panes(self, lit):
-        if lit <= 2:
-            self.mp.texttopoffset = 2
-            self.mp.text = (("Move To", blue),("Attack", pink))
-            self.bp.fps = clock.get_fps()            
+    @coroutine
+    def states(self):
+        """this code is wrong, work in progress"""
+        statetuple = ('top','middle','bottom')
+        current_pane = 0
+        current_ply = 0
+        current_action = 0
+        
+        print "inside states"
+        #temp#
+        self.mp.texttopoffset = 2
+        self.mp.text = (("Move To", blue, darkg),("Attack", pink, darkg))
+        #self.bp.text = None
+        self.bp.fps = clock.get_fps()
+        ###
+        unit = self.tp.squad[self.tp.line_highlight]
+        area  = set(unit.weapon.map_to_grid(unit.location, self.battle.grid.size))
+        move  = set(self.battle.make_move(unit))
+        units = set(self.battle.find_units())
+        move -= units #can't moved to occupied tiles
+        loc   = set((unit.location,),)
+        targets = area & units
+        self.battle.color_tiles(area, pink)
+        self.battle.color_tiles(move, blue)
+        self.battle.color_tiles(area & move, purp)
+        self.battle.color_tiles(targets, white)
+        #end temp#
+        
+        while True:
+            key = (yield)
+            print key
+            if key == K_DOWN:
+                print "key down", statetuple[current_pane]
+                if self.panes[current_pane].max_line != 0:
+                        if self.panes[current_pane].line_highlight < self.panes[current_pane].max_line:
+                            self.panes[current_pane].line_highlight += 1
+                        else:
+                            self.panes[current_pane].line_highlight = 0
+            elif key == K_UP:
+                print "key up", statetuple[current_pane]
+                if self.panes[current_pane].max_line != 0:
+                    if self.panes[current_pane].line_highlight > 0:
+                        self.panes[current_pane].line_highlight -= 1
+                    else:
+                        self.panes[current_pane].line_highlight = self.panes[current_pane].max_line
+            elif key == K_RETURN:
+                print "return", statetuple[current_pane]
+                if current_pane == 0:
+                    current_pane += 1
+                    self.light(current_pane, (current_pane -1))
+                elif current_pane == 1:
+                    if self.mp.line_highlight == len(self.mp.text) -1:
+                        current_pane = 0
+                        self.light(0, 1)
+                    else:
+                        current_pane += 1
+                        self.light(current_pane, (current_pane -1))
+                   
+                    
+                elif current_pane == 2:
+                    self.mp.line_highlight = 0
+                    if current_action == 0:
+                        current_pane = 1
+                    else:
+                        current_pane = 0
+                    self.light(1, 2)
+                    #do end of ply stuff
+                    if ply_action == action_types[0]:
+                        self.battle.move_unit(unit.location, temp[self.bp.line_highlight])
+                        
+                    if ply_action == action_types[1]:
+                        
+                        self.battle.attack(unit, temp[self.bp.line_highlight])
+                    
+                    self.battle.moves[-1][current_ply]['actions'][current_action]['type'] = ply_action
+                    self.battle.moves[-1][current_ply]['actions'][current_action]['unit'] = unit
+                    self.battle.moves[-1][current_ply]['actions'][current_action]['target'] = temp[self.bp.line_highlight]
+                    
+                    if current_action == 0:
+                        current_action = 1
+
+                    else: 
+                        current_ply += 1
+                        current_action = 0 
+                        if (current_ply - 1) % 2 == 0:                            
+                            self.battle.moves.append(battlefield.move( \
+                            self.battle.game_id, self.battle.moves[-1].num + 1))
+                    
+                    
+            view.clean()
+            #from draw_colored_tiles: make tile sets
+            unit  = self.tp.squad[self.tp.line_highlight]
+            area  = set(unit.weapon.map_to_grid(unit.location, self.battle.grid.size))
+            move  = set(self.battle.make_move(unit))
+            units = set(self.battle.find_units())
+            move -= units #can't moved to occupied tiles
+            loc   = set((unit.location,),)
+            targets = area & units
+        
+            if current_pane == 0:
+                #from draw_colored_tiles
+                self.battle.color_tiles(area, pink)
+                self.battle.color_tiles(move, blue)
+                self.battle.color_tiles(area & move, purp)
+                self.battle.color_tiles(targets, white)
+            
+                #from draw_pane
+                self.mp.texttopoffset = 2
+                self.mp.text = (("Move To", blue, darkg),("Attack", pink, darkg))
+                #self.bp.text = None
+                
+        
+            elif current_pane == 1:
+                #from draw_pane (I am so sorry)
+                self.mp.texttopoffset = 2
+                text_list = ['Move To', 'Attack', 'Pass', 'Cancel']
+                color_list = [blue, pink, white, black]
+
+                #if unit has moved, remove move to from list
+                if self.battle.moves[-1][current_ply]['actions'][0]['type'] == 'move':
+                    del text_list[0]
+                    del color_list[0]
+
+                #if unit has attacked or has no targets remove attack from list
+                if self.battle.moves[-1][current_ply]['actions'][0]['type'] \
+                    == 'attack' or len(targets) == 0:
+                    del text_list[1]
+                    del color_list[1]
+                self.mp.text = []    
+                for i in xrange(len(text_list)):
+                    if self.mp.line_highlight != i:
+                        self.mp.text.append((text_list[i], color_list[i], darkg))
+                    else:
+                        self.mp.text.append((text_list[i], color_list[i], black))                               
+                self.mp.max_line = len(self.mp.text) - 1 
+                
+                #from draw_colored_tiles
+                if self.mp.text[self.mp.line_highlight][0] == 'Move To': # move to
+                    self.battle.color_tiles(move, blue)
+                    self.bp.text = None
+                    
+                if self.mp.text[self.mp.line_highlight][0] == 'Attack': # attack
+                    self.battle.color_tiles(targets,white)
+                    self.bp.text = None
+                    
+                    if len(targets) == 0:
+                        self.bp.text = "There are no targets."
+            
+                if self.mp.text[self.mp.line_highlight][0] == 'Pass': #pass
+                    self.bp.text = "Skip action?"
+                
+                if self.mp.text[self.mp.line_highlight][0] == 'Cancel': #cancel
+                    self.bp.text = "Select another unit?"
+            
+            elif current_pane == 2:
+                if self.mp.text[self.mp.line_highlight][0] == 'Move To':
+                    self.bp.text = None
+                    ply_action = action_types[0]
+                    self.bp.max_line = len(move) - 1
+                    self.battle.color_tiles(move, blue)
+                    temp = list(move)
+                    temp.sort()
+                    self.battle.set_tile_color(temp[self.bp.line_highlight], white)
+                    love = 'Move to ' + str(temp[self.bp.line_highlight]) + '?'
+                    self.bp.text = love
+                    
+                if self.mp.text[self.mp.line_highlight][0] == 'Attack':
+                    self.bp.text = None
+                    ply_action = action_types[1]
+                    self.bp.max_line = len(targets) - 1
+                    self.battle.color_tiles(targets,white)
+                    temp = list(targets)
+                    temp.sort()
+                    if self.bp.line_highlight > len(temp): # hmm...
+                        self.bp.line_highlight = 0
+                    self.battle.set_tile_color(temp[self.bp.line_highlight], pink)
+                    love = 'Attack' + str(temp[self.bp.line_highlight]) + '?'
+                    print temp[self.bp.line_highlight]
+                    self.bp.text = love
+                    
+                if self.mp.text[self.mp.line_highlight][0] == 'Pass':
+                    ply_action = action_types[2]
+                    
+            #from draw_colored_tiles
+            self.battle.set_tile_color(unit.location, black)
+        
     def go(self, screen):
         while pygame.key.get_pressed()[K_ESCAPE] == False:
             pygame.event.pump()
             screen.fill([0,0,0])
             clock.tick()
             self.console.process_input()
-            self.draw_panes(self.lit)
+            #self.bp.fps = clock.get_fps()
             self.paneimgs.update()
             self.paneimgs.draw(screen)
             self.console.draw()
-    
-            def loc(): return self.tp.squad[self.tp.line_highlight].location
-            def unit(): return self.tp.squad[self.tp.line_highlight]
+            
             if self.console.active == 0:
                 for event in pygame.event.get():
                     if event.type == KEYDOWN:
-                        if event.key == K_w:
-                            if pygame.key.get_mods() & KMOD_CTRL:
+                        if event.key != K_w:
+                            print "beep"
+                            game_state.send(event.key)
+                        elif pygame.key.get_mods() & KMOD_CTRL:
                                 self.console.set_active()
-                        if event.key == K_DOWN:
-                            if self.panes[self.lit].max_line != 0:
-                                if self.panes[self.lit].line_highlight < self.panes[self.lit].max_line:
-                                    if self.lit == 0:
-                                        view.clean()
-                                        self.panes[self.lit].line_highlight += 1
-                                        self.battle.color_tiles(unit())
-                                    else:
-                                        self.panes[self.lit].line_highlight += 1
-                                        self.battle.color_tiles(unit())
-                                else:
-                                    if self.lit == 0:
-                                        view.clean()
-                                        self.panes[self.lit].line_highlight = 0
-                                        self.battle.color_tiles(unit())
-                                    else:
-                                        self.panes[self.lit].line_highlight = 0
-                                        self.battle.color_tiles(unit())                                   
-                        if event.key == K_UP:
-                            if self.panes[self.lit].max_line != 0:
-                                if self.panes[self.lit].line_highlight > 0:
-                                    if self.lit == 0:
-                                        view.clean()
-                                        self.panes[self.lit].line_highlight -= 1
-                                        self.battle.color_tiles(unit())
-                                else:
-                                    if self.lit == 0:
-                                        view.clean()
-                                        self.panes[self.lit].line_highlight = self.panes[self.lit].max_line
-                                        self.battle.color_tiles(unit())
                                     
-                        if event.key == K_RETURN:
-                            if self.lit == 2:
-                                self.light(0, self.lit)
-                            else:
-                                self.light(self.lit + 1, self.lit)
-            
             pygame.display.update()
             pygame.event.pump()
 
@@ -458,19 +600,20 @@ if __name__ == '__main__':
     clock = pygame.time.Clock()      
     screen = pygame.display.set_mode([800, 600])
     view = View(screen)
-            
-    view.tp.squad = view.battle.squad1
-    view.tp.max_line = len(view.tp.squad) - 1
+    btl = view.battle
+    grid = view.battle.grid
+
     view.console.active = 0
     ###
-    view.battle.set_tile_color((view.tp.squad[view.tp.line_highlight].location), black)
+    
     from defs import Wand
     from const import COMP
     happy = Wand(W, COMP.copy())
     size = (16,16)
-    center = (8,8)
+    center = (7,7)
+
     ###
+    game_state = view.states()
     view.go(screen)
-   
     pygame.quit()
 

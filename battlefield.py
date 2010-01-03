@@ -6,7 +6,7 @@ import random
 from const import COMP, ELEMENTS, E, F, I, W, ORTH
 from defs import Scient
 from helpers import rand_squad
-from moves import action, ply, move
+from moves import action, ply, move, action_types
 
 #Battlefield needs a coord class
 #there is a serious problem in this logic. it assumes that units fit on one
@@ -71,14 +71,19 @@ class Battlefield(object):
     def __init__(self, squad1=None, squad2=None):
         #grid is a tuple of tuples containing tiles
         self.game_id = 0
-        
         self.grid = None
         self.moves = [move(self.game_id, 1)] #attacker goes first...
         self.graveyard = []
         self.dmg_queue = []
         self.squad1 = squad1
         self.squad2 = squad2
-
+    
+    def current_move(self, n=None): 
+        if not n:
+            return self.moves[-1]
+        else:
+            return self.moves[-1].num
+        
     def load_squads(self, squad1=None, squad2=None):
         """loads squads into battlefield, uses random if none provided"""
         #need better checks, duh
@@ -140,14 +145,14 @@ class Battlefield(object):
                     list.append((x,y))
         return list    
         
-    def dmg(atkr, defdr, type):
+    def dmg(self, atkr, defdr, type):
         """Calculates the damage of an attack"""
         damage_dealt = {E: 0, F: 0, I: 0, W: 0}
         xdef,ydef = defdr.location
         for element in damage_dealt:
             dmg = (atkr.p + atkr.patk + (2 * atkr.comp[element]) \
             + atkr.weapon.comp[element]) - (defdr.p + defdr.pdef \
-            + (2 * defdr.comp[element]) + self.grid[x][y].comp[element])
+            + (2 * defdr.comp[element]) + self.grid[xdef][ydef].comp[element])
             dmg = max(dmg, 0)
             damage_dealt[element] = dmg
              
@@ -180,25 +185,27 @@ class Battlefield(object):
         Returns list of (target, dmg) tuples"""
         weapon = atkr.weapon
         dmg_list = []
-            
+        print "Targets: ", targets
         for i in xrange(len(targets)): # sub-optimal, readable.
             defdr = self.grid[targets[i][0]][targets[i][1]].contents
+            print defdr
             if contains(ORTH[W], weapon.type): #physical attacks
                 dmg = self.dmg(atkr, defdr, 'p')
                 if dmg != 0:
                     if weapon.type == 'Earth':
-                        dmg_list.append(defdr, dmg)
+                        dmg_list.append((defdr, dmg))
                     else:
-                        dmg_list.append(defdr, (dmg / 4))
+                        dmg_list.append((defdr, (dmg / 4)))
             else: #magical attacks
                 dmg = self.dmg(atkr, defdr, 'm')
                 if dmg > 0:
                     if weapon.type == 'Wind':
                         dmg /= weapon.time
-                        dmg_list.append(defdr, dmg)
+                        dmg_list.append((defdr, dmg))
                         self.dmg_queue.append(defdr, dmg, (weapon.time - 1)) 
                     else:
-                        dmg_list.append(defdr, dmg / len(tiles))
+                        #ugh, damage divded in attack()
+                        dmg_list.append((defdr, dmg))
         return dmg_list
 
     def apply_damage(self, dmg_list):
@@ -206,7 +213,7 @@ class Battlefield(object):
         for i in dmg_list:
             defdr,dmg = i
             if dmg >= defdr.hp:
-                print "%s died" %defndr.location
+                print "%s died" %defdr.location
                 defdr.hp = 0
                 self.grid[defdr.location[0]][defdr.location[1]].contents = None
                 defdr.location = None
@@ -220,17 +227,23 @@ class Battlefield(object):
                  
     def attack(self, atkr, defdr):
         if atkr.weapon.type != 'Ice':
-            self.apply_damage(self.calc_damage(atkr,defdr))
+            self.apply_damage(self.calc_damage(atkr, (defdr,) ) )
         else:
             #crude
             direction = {0:'West', 1:'North', 2:'East', 3:'South'}
             ax,ay = aloc = atkr.location
             maxes = (ax, ay, (self.grid.x - 1 - ax), (self.grid.y - 1 - ay),)
             for i in direction:
-                pat = atkr.weapon.make_pattern(atkr, maxes[i], direction[i])
+                pat = atkr.weapon.make_pattern(aloc, maxes[i], direction[i])
                 if contains(pat, defdr):
-                    self.apply_damage(self.calc_damage(set(self.find_units()) \
-                    & set(pat)))
+                    dmg_list = self.calc_damage(atkr, list(set(self.find_units()) & set(pat)))
+                    new_list = []
+                    area = len(pat)
+                    for i in dmg_list:
+                        temp_dmg = i[1]
+                        temp_dmg /= area
+                        new_list.append((i[0], temp_dmg))
+                    self.apply_damage(tuple(new_list))
                     break
                     
     def rand_place_squad(self, squad):

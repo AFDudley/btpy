@@ -28,13 +28,12 @@ class move(tuple):
         
 class action(dict):
     """a dict of an action found inside a ply"""
-    def __init__(self):
-        dict.__init__(self, unit=None, type='pass', target=None)
+    def __init__(self, unit=None, type='pass', target=None):
+        dict.__init__(self, unit=unit, type=type, target=target)
      
 class ply(dict):
-    def __init__(self, num, actions=None):
+    def __init__(self, num):
         '''plys are numbered in the order they occur in the game, not within
         their respective move'''
-        if actions == None:
-            actions = (action(),)
+        actions = (action(),action())
         dict.__init__(self, num=num, actions=actions)
