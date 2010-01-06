@@ -238,32 +238,24 @@ class BattlePane(Pane, battlefield.Battlefield):
         self.grid[xpos][ypos].contents.rect.topleft = topleft
         self.contentimgs.add(self.grid[xpos][ypos].contents)
         
-    def phit(self, src, dest):
-        atk  = self.grid[src[0]][src[1]].contents
-        deph = self.grid[dest[0]][dest[1]].contents
-        BattlePane.Scient.phit(atk, dest, self)
-        if deph.hp <=0:
-            self.grid[dest[0]][dest[1]].contents = None
-            deph.location = None
-            self.graveyard.append(deph)
-            #might change this much later
-            deph.remove(deph.groups())
-    
-    def mhit(self, src, dest, element=None):
-        atk  = self.grid[src[0]][src[1]].contents
-        deph = self.grid[dest[0]][dest[1]].contents
-        BattlePane.Scient.mhit(atk, dest, self, element)
-        if deph.hp <=0:
-            self.grid[dest[0]][dest[1]].contents = None
-            deph.location = None
-            self.graveyard.append(deph)
-            #might change this much later
-            deph.remove(deph.groups())
-    
     def flush_units(self):
         battlefield.Battlefield.flush_units(self)
         self.contentimgs.empty()
-
+        
+    def make_move(self, unit):
+        """generates a list of tiles within the move range of unit."""
+        m = unit.move
+        xo, yo = unit.location
+        tiles = []
+        for x in range(-m,(m + 1)):
+            for y in range(-m,(m + 1)):
+                if abs(x) + abs(y) <= m:
+                    tile = (xo + x), (yo + y)
+                    if 0 <= tile[0] < self.grid.x:
+                        if 0 <= tile[1] < self.grid.y:
+                            tiles.append(tile)
+        return tiles    
+    
     class Scient(pygame.sprite.Sprite, Scient):
         """tricky"""
         def __init__(self, element=None, comp=None):
@@ -350,10 +342,6 @@ class View(object):
         self.bp = BottomPane((LEFTINSET, (TOPINSET + 2 *(PANE_HEIGHT + PANE_SPACING))))
         #the name battle is hardcoded into pyconsole.py
         self.battle = BattlePane((242, TOPINSET), tilesize=32, tiles=(16,16))
-        self.tp.squad = self.battle.squad1
-        self.tp.max_line = len(self.tp.squad) - 1
-        
-        
         self.panes = (self.tp, self.mp, self.bp, self.battle)
         self.paneimgs = pygame.sprite.RenderUpdates()
         for pane in self.panes:
@@ -376,6 +364,8 @@ class View(object):
         for x in range(self.battle.grid.x):
             for y in range(self.battle.grid.y):
                 self.battle.set_tile_color((x,y), grey)       
+    
+    #not needed.
     def coroutine(func):
         def start(*args,**kwargs):
             cr = func(*args,**kwargs)
@@ -390,13 +380,16 @@ class View(object):
         current_pane = 0
         current_ply = 0
         current_action = 0
-        
+        self.last_ply = -1
         print "inside states"
         #temp#
         self.mp.texttopoffset = 2
         self.mp.text = (("Move To", blue, darkg),("Attack", pink, darkg))
         #self.bp.text = None
-        self.bp.fps = clock.get_fps()
+        #self.bp.fps = clock.get_fps()
+        ###temp set squad
+        self.tp.squad = self.battle.squad1
+        self.tp.max_line = len(self.tp.squad) - 1
         ###
         unit = self.tp.squad[self.tp.line_highlight]
         area  = set(unit.weapon.map_to_grid(unit.location, self.battle.grid.size))
@@ -416,7 +409,7 @@ class View(object):
             print key
             if key == K_DOWN:
                 print "key down", statetuple[current_pane]
-                if self.panes[current_pane].max_line != 0:
+                if self.panes[current_pane].max_line != 0: #?
                         if self.panes[current_pane].line_highlight < self.panes[current_pane].max_line:
                             self.panes[current_pane].line_highlight += 1
                         else:
@@ -439,38 +432,38 @@ class View(object):
                         self.light(0, 1)
                     else:
                         current_pane += 1
-                        self.light(current_pane, (current_pane -1))
-                   
-                    
+                        self.light(current_pane, (current_pane -1))                    
                 elif current_pane == 2:
                     self.mp.line_highlight = 0
-                    if current_action == 0:
-                        current_pane = 1
-                    else:
-                        current_pane = 0
-                    self.light(1, 2)
                     #do end of ply stuff
                     if ply_action == action_types[0]:
                         self.battle.move_unit(unit.location, temp[self.bp.line_highlight])
                         
                     if ply_action == action_types[1]:
-                        
-                        self.battle.attack(unit, temp[self.bp.line_highlight])
-                    
+                        dx,dy = temp[self.bp.line_highlight]
+                        defdr = self.battle.grid[dx][dy].contents
+                        self.battle.attack(unit, defdr)
+                    if ply_action == action_types[2]:
+                        self.battle.moves[-1][current_ply]['actions'][current_action]['target'] = None
+                    else:
+                        self.battle.moves[-1][current_ply]['actions'][current_action]['target'] = temp[self.bp.line_highlight]
                     self.battle.moves[-1][current_ply]['actions'][current_action]['type'] = ply_action
-                    self.battle.moves[-1][current_ply]['actions'][current_action]['unit'] = unit
-                    self.battle.moves[-1][current_ply]['actions'][current_action]['target'] = temp[self.bp.line_highlight]
+                    self.battle.moves[-1][current_ply]['actions'][current_action]['unit'] = unit.__hash__()
                     
+                    #there are two actions in a ply. and two plies in a move.
                     if current_action == 0:
                         current_action = 1
-
+                        current_pane = 1
+                        self.light(current_pane, 2)
                     else: 
-                        current_ply += 1
-                        current_action = 0 
-                        if (current_ply - 1) % 2 == 0:                            
+                        current_ply = not current_ply
+                        self.last_ply += 1
+                        current_action = 0
+                        current_pane = 0
+                        if current_ply % 2 == 1:                            
                             self.battle.moves.append(battlefield.move( \
-                            self.battle.game_id, self.battle.moves[-1].num + 1))
-                    
+                            self.battle.game_id, self.battle.moves[-1].num + 1, last_ply=self.last_ply))
+                        self.light(current_pane, 2)
                     
             view.clean()
             #from draw_colored_tiles: make tile sets
@@ -483,6 +476,18 @@ class View(object):
             targets = area & units
         
             if current_pane == 0:
+                print "current_ply", current_ply
+                print "last_ply", self.last_ply
+                #need current_ply and ply_num. can't use current_ply to sent num in k-return state change
+                #or i can just change how plys and moves are instanciated.
+                if self.battle.moves[-1][current_ply]['num'] % 2 == 1:
+                    self.tp.squad = self.battle.squad1
+                    self.tp.title = self.battle.squad1.name
+                else:
+                    self.tp.squad = self.battle.squad2
+                    self.tp.title = self.battle.squad2.name
+                self.tp.max_line = len(self.tp.squad) - 1
+                unit  = self.tp.squad[self.tp.line_highlight]                
                 #from draw_colored_tiles
                 self.battle.color_tiles(area, pink)
                 self.battle.color_tiles(move, blue)
@@ -493,24 +498,24 @@ class View(object):
                 self.mp.texttopoffset = 2
                 self.mp.text = (("Move To", blue, darkg),("Attack", pink, darkg))
                 #self.bp.text = None
-                
-        
             elif current_pane == 1:
                 #from draw_pane (I am so sorry)
                 self.mp.texttopoffset = 2
                 text_list = ['Move To', 'Attack', 'Pass', 'Cancel']
                 color_list = [blue, pink, white, black]
-
                 #if unit has moved, remove move to from list
-                if self.battle.moves[-1][current_ply]['actions'][0]['type'] == 'move':
-                    del text_list[0]
-                    del color_list[0]
-
-                #if unit has attacked or has no targets remove attack from list
-                if self.battle.moves[-1][current_ply]['actions'][0]['type'] \
-                    == 'attack' or len(targets) == 0:
-                    del text_list[1]
-                    del color_list[1]
+                print "current_ply", current_ply
+                print "current_action", current_action
+                if current_action % 2 == 1:
+                    print "Last time: ", self.battle.moves[-1][current_ply]['actions'][0]['type']
+                    if self.battle.moves[-1][current_ply]['actions'][0]['type'] == 'move':
+                        del text_list[0]
+                        del color_list[0]
+                    #if unit has attacked or has no targets remove attack from list
+                    if self.battle.moves[-1][current_ply]['actions'][0]['type'] \
+                        == 'attack' or len(targets) == 0:
+                        del text_list[1]
+                        del color_list[1]
                 self.mp.text = []    
                 for i in xrange(len(text_list)):
                     if self.mp.line_highlight != i:
@@ -518,22 +523,15 @@ class View(object):
                     else:
                         self.mp.text.append((text_list[i], color_list[i], black))                               
                 self.mp.max_line = len(self.mp.text) - 1 
-                
                 #from draw_colored_tiles
                 if self.mp.text[self.mp.line_highlight][0] == 'Move To': # move to
                     self.battle.color_tiles(move, blue)
                     self.bp.text = None
-                    
                 if self.mp.text[self.mp.line_highlight][0] == 'Attack': # attack
                     self.battle.color_tiles(targets,white)
                     self.bp.text = None
-                    
-                    if len(targets) == 0:
-                        self.bp.text = "There are no targets."
-            
                 if self.mp.text[self.mp.line_highlight][0] == 'Pass': #pass
                     self.bp.text = "Skip action?"
-                
                 if self.mp.text[self.mp.line_highlight][0] == 'Cancel': #cancel
                     self.bp.text = "Select another unit?"
             
@@ -556,9 +554,9 @@ class View(object):
                     self.battle.color_tiles(targets,white)
                     temp = list(targets)
                     temp.sort()
-                    if self.bp.line_highlight > len(temp): # hmm...
+                    if self.bp.line_highlight > len(temp): # "highlight" the line with the target on it 
                         self.bp.line_highlight = 0
-                    self.battle.set_tile_color(temp[self.bp.line_highlight], pink)
+                    self.battle.set_tile_color(temp[self.bp.line_highlight], pink) 
                     love = 'Attack' + str(temp[self.bp.line_highlight]) + '?'
                     print temp[self.bp.line_highlight]
                     self.bp.text = love
@@ -573,7 +571,7 @@ class View(object):
         while pygame.key.get_pressed()[K_ESCAPE] == False:
             pygame.event.pump()
             screen.fill([0,0,0])
-            clock.tick()
+            #clock.tick()
             self.console.process_input()
             #self.bp.fps = clock.get_fps()
             self.paneimgs.update()
@@ -584,7 +582,6 @@ class View(object):
                 for event in pygame.event.get():
                     if event.type == KEYDOWN:
                         if event.key != K_w:
-                            print "beep"
                             game_state.send(event.key)
                         elif pygame.key.get_mods() & KMOD_CTRL:
                                 self.console.set_active()
@@ -594,10 +591,10 @@ class View(object):
 
 if __name__ == '__main__':
 
-    def wipe(): pygame.display.update(screen.fill([0,0,0]))
+    #def wipe(): pygame.display.update(screen.fill([0,0,0]))
     
     pygame.init()
-    clock = pygame.time.Clock()      
+    #clock = pygame.time.Clock()      
     screen = pygame.display.set_mode([800, 600])
     view = View(screen)
     btl = view.battle

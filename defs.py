@@ -56,8 +56,8 @@ class Bow(Weapon):
         self.type = 'Fire'
         def make_attack_pattern():
             no_hit = 4 #the scient move value
-            min = -8
-            max = 9
+            min = -(2 * no_hit)
+            max = -min + 1
             dist = range(min,max)
             temp = []
             [[temp.append((x,y)) for y in dist if (no_hit < (abs(x) \
@@ -71,6 +71,8 @@ class Wand(Weapon):
         Weapon.__init__(self, element, comp)
         self.type = 'Ice'
         self.targets = []
+        self.attack_pattern = []
+        
     def make_pattern(self, origin, distance, pointing):
         """generates a pattern based on an origin, distance, and
         direction. Returns a set of coords"""
@@ -139,8 +141,8 @@ class Unit(object):
         self.hp   = None
         self.age  = None
         self.name = None
-        self.location = None
-        self.weapon = None
+        self.location = (None, None)
+
         
     def value(self):
         """Returns sum of comp, overload as needed"""
@@ -155,13 +157,9 @@ class Unit(object):
         else:
             title = str(id(self))
             
-        #There is some cleaner way to write these things...
-        return "%s -> suit:% 2s | val: %s | loc: %s | comp: (%s, %s, %s, %s) \
-| p: %s \nHP: % 7s | PA/PD: (% 5s,% 5s) | MA/MD: (% 5s,% 5s) \n" % (title, \
-    self.element[0], self.value(), self.location, self.comp[E], self.comp[F], \
-    self.comp[I], self.comp[W], self.p, self.hp, self.patk, self.pdef, \
-    self.matk, self.mdef) 
-
+        #Need to write a seperate function:
+        return "%s -> suit:% 2s | val: %3s | loc: %2s, %2s | HP: %5s \n" % (title, \
+    self.element[0], self.value(), self.location[0], self.location[1], self.hp) 
 
 class Scient(Unit):
     """A Scient (playable character) unit.
@@ -174,10 +172,9 @@ class Scient(Unit):
     
     def __init__(self, element, comp):
         Unit.__init__(self, element, comp)
-        #self.element = element
-        #self.comp = comp
         self.age = 16
         self.move = 4
+        self.weapon = None
         self.weapon_bonus = COMP.copy()
         self.equip_limit = {E:1, F:1 ,I:1 ,W:1}
         for i in self.equip_limit:
@@ -185,19 +182,8 @@ class Scient(Unit):
             + self.weapon_bonus[i]            
         self.calcstats()
         self.equip()
-   
-    '''
-    def attack(self, battlefield, target):
-        "returns a list of targets damage"""
-        if self.weapon.type == 'Earth' or self.weapon.type == 'Wind':
-            return self.weapon.attack(target)
-        else:
-            self.valid_targets
-            return self.weapon.attack(battlefield, target)
-    '''
 
-    def calcstats(self): #This function is a work in progress
-        #CAN ONLY BE CALLED ONCE!!!
+    def calcstats(self):
         self.p    = (2*(self.comp[F] + self.comp[E]) + self.comp[I] + \
                     self.comp[W]) 
         self.m    = (2*(self.comp[I] + self.comp[W]) + self.comp[F] + \
@@ -211,7 +197,6 @@ class Scient(Unit):
         self.matk = self.m + self.atk  + (2 * self.comp[I])
         self.mdef = self.m + self.defe + (2 * self.comp[W])
         self.hp   = 4 * (self.pdef + self.mdef) + self.value()
-        self.mp = 0  # Soon to be deleted.
 
     def comp_as_tuple(self):
         tuple = ()
@@ -235,115 +220,10 @@ class Scient(Unit):
                 raise Exception("This unit cannot equip this weapon")
             else:
                 self.weapon = weapon
-        
-    '''
-    def phit(self, coord, battlefield):
-        """Physically hit a location on the battlefield grid"""
-        if self.location == coord:
-            raise Exception("Stop hitting yourself")
-            
-        xa,ya = self.location
-        xt,yt = coord
-        #Are contents in range?
-        if abs(xt - xa) <= 1 and abs(yt - ya) <= 1:
-            #Can the contents be hit?
-            if battlefield.grid[xt][yt].contents != None:
-                if battlefield.grid[xt][yt].contents.hp:
-                    #Damage is calculated here.
-                    dmg = Weapon.pdmg(battlefield.grid[xt][yt].contents)
-                    if dmg < 0:
-                        raise Exception("negative damage from a physical \
-attack, something is wrong.")
-                    elif dmg == 0:
-                        print "No Damage Dealt."
-                    else:
-                        #Damage is applied here.
-                        if dmg >= battlefield.grid[xt][yt].contents.hp:
-                            battlefield.grid[xt][yt].contents.hp = 0
-                            battlefield.grid[xt][yt].contents.location = None
-                            battlefield.grid[xt][yt].contents = None
-                            print "%s point(s) of damage dealt, target \
-Killed." %dmg
-                        else:
-                            battlefield.grid[xt][yt].contents.hp -= dmg
-                            print "%s point(s) of damage dealt" %dmg
-                else: 
-                    raise Exception("contents of (%s,%s) cannot take damage" \
-                    %(xt,yt))
-            else:
-                raise Exception("(%s,%s) is empty, nothing to hit" %(xt,yt))
-        else:
-            raise Exception("(%s,%s) is too far away to hit." %(xt,yt))        
-    '''
-    
-    '''
-    def mhit(self, coord, battlefield, element=None):
-        """Magically hit a location on the battlefield grid, defaults to element
-        of attacker"""
-        if self.location == coord:
-            raise Exception("Stop Hitting yourself")
-        
-        if element == None:
-            element = self.element
-        xa,ya = self.location
-        xt,yt = coord
-        #Are contents in range?
-        if abs(xt - xa) <= 1 and abs(yt - ya) <= 1:
-            #Can the contents be hit?
-            if battlefield.grid[xt][yt].contents != None:
-                if battlefield.grid[xt][yt].contents.hp:
-                    #Damage is calculated here.
-                    dmg = self.mdmg(battlefield.grid[xt][yt].contents, element)
-                    if dmg < 0:
-                        #heal
-                        battlefield.grid[xt][yt].contents.hp += abs(dmg)
-                        print "Target healed %s point(s)" %abs(dmg)
-                    elif dmg == 0:
-                        print "No Damage Dealt."
-                    else:
-                        #Damage is applied here.
-                        if dmg >= battlefield.grid[xt][yt].contents.hp:
-                            battlefield.grid[xt][yt].contents.hp = 0
-                            battlefield.grid[xt][yt].contents.location = None
-                            battlefield.grid[xt][yt].contents = None
-                            print "%s point(s) of %s damage dealt, target \
-Killed." %(dmg, element)
-                        else:
-                            battlefield.grid[xt][yt].contents.hp -= dmg
-                            print "%s point(s) of %s damage dealt" \
-                            %(dmg, element)
-                else: 
-                    raise Exception("contents of (%s, %s) cannot take damage" \
-                    %(xt,yt))
-            else:
-                raise Exception("(%s, %s) is empty, nothing to hit" %(xt,yt))
-        else:
-            raise Exception( "(%s, %s) is too far away to hit." %(xt,yt))
-    '''
-        
-    def shoots(self, target, battlefield): 
-        """Shooter's attack, long-range"""
-        if self.location == target:
-            raise Exception("Stop hitting yourself")
-        xa,ya = self.location
-        in_range = []
-        #Because list comprehension is so easy to understand.
-        [[in_range.append((x,y)) for y in range(-8,9) if (4 < (abs(x) \
-        + abs(y)) < 9) ] for x in range(-8,9)]
-        for i in range(len(in_range)):
-            in_range[i] = ((in_range[i][0] + xa), (in_range[i][1] + ya))
-            
-        if in_range.__contains__(target) == False:
-            raise Exception("Target is not in range")
-        else:
-            damage = self.pdmg(target)
-        
-        return damage/4
-    
+
 class Nescient(Unit):
         def bite(self, target):
             pass
-        
         def breath(self, target):
             pass
 

@@ -3,7 +3,7 @@ from warnings import warn
 from operator import contains
 import random
 
-from const import COMP, ELEMENTS, E, F, I, W, ORTH
+from const import COMP, ELEMENTS, E, F, I, W, ORTH, PHY, MAG
 from defs import Scient
 from helpers import rand_squad
 from moves import action, ply, move, action_types
@@ -68,10 +68,10 @@ class Grid(tuple):
 class Battlefield(object):
     """A battlefield is a map of tiles which contains units and the logic for
     their movement and status."""
-    def __init__(self, squad1=None, squad2=None):
+    def __init__(self, grid=None, squad1=None, squad2=None):
         #grid is a tuple of tuples containing tiles
         self.game_id = 0
-        self.grid = None
+        self.grid = grid
         self.moves = [move(self.game_id, 1)] #attacker goes first...
         self.graveyard = []
         self.dmg_queue = []
@@ -97,190 +97,220 @@ class Battlefield(object):
         else:
             self.squad2 = rand_squad()
     
-    def place_unit(self, unit, tile):
-        """Places unit at tile, if already on grid, move_unit is called"""
-        xpos, ypos = tile 
-        if unit.location == None and self.grid[xpos][ypos].contents == None:
-            self.grid[xpos][ypos].contents = unit
-            unit.location = (xpos, ypos)
-            
-        elif unit.location == (xpos, ypos):
-            raise Exception("This unit is already on (%s,%s)" %(xpos, ypos))
-        
-        elif self.grid[unit.location[0]][unit.location[1]].contents != unit:
-            raise Exception(
-            "unit and battlefield do not agree on unit location")
-        
-        elif self.grid[xpos][ypos].contents != None:
-            raise Exception("(%s, %s) is not empty" %(xpos, ypos))
-        
-        else:
-            warn("Place_unit called instead of move_unit")
-            self.move_unit(unit.location, (xpos, ypos))
-
     def move_unit(self, src, dest):
         """move unit from src tile to dest tile"""
-        xsrc, ysrc = src
-        xdest, ydest = dest
+        if 0 <= src[0] < self.grid.x:
+            if 0 <= src[1] < self.grid.y:
+                xsrc, ysrc = src
+            else:
+                raise Exception("source y (src[1]: %s) is out of range" %src[1])
+        else:
+            raise Exception("source x (src[0]: %s) is out of range" %src[0])
+        
+        if 0 <= dest[0] < self.grid.x:
+            if 0 <= dest[1] < self.grid.y:
+                xdest, ydest = dest
+            else:
+                raise Exception("Destination y (dest[1]: %s) is out of range" %dest[1])
+        else:
+            raise Exception("Destination x (dest[0]: %s) is out of range" %dest[0])
+            
         if self.grid[xsrc][ysrc].contents:
             if not self.grid[xdest][ydest].contents:
-                if abs(xsrc-xdest) + abs(ysrc-ydest) <= \
-                self.grid[xsrc][ysrc].contents.move:
+                move = self.grid[xsrc][ysrc].contents.move
+                if abs(xsrc-xdest) + abs(ysrc-ydest) <= move:
                     self.grid[xdest][ydest].contents = \
                     self.grid[xsrc][ysrc].contents
                     self.grid[xdest][ydest].contents.location = (xdest, ydest)
                     self.grid[xsrc][ysrc].contents = None
                 else:
-                    raise Exception("tried moving too many spaces")
+                    raise Exception("tried moving more than %s tiles" %move)
             else:
-                raise Exception("There is already something at dest")
+                raise Exception("There is already something at %s" %str(dest))
         else:
-            raise Exception("There is nothing at src")
-
+            raise Exception("There is nothing at %s" %str(src))
+    
+    def place_unit(self, unit, tile):
+        """Places unit at tile, if already on grid, move_unit is called"""
+        if 0 <= tile[0] < self.grid.x:
+            if 0 <= tile[1] < self.grid.y:
+                xpos,ypos = tile
+            else:
+                raise Exception("Tile y (tile[1]: %s) is out of range" %tile[1])
+        else:
+            raise Exception("Tile x (tile[0]: %s) is out of range" %tile[0])
+        
+        if unit.location == (None, None):
+            if self.grid[xpos][ypos].contents == None:
+                self.grid[xpos][ypos].contents = unit
+                unit.location = (xpos, ypos)
+            
+            elif unit.location == (xpos, ypos):
+                raise Exception("This unit is already on (%s,%s)" %(xpos, ypos))
+        
+            elif self.grid[xpos][ypos].contents != None:
+                raise Exception("(%s, %s) is not empty" %(xpos, ypos))
+        else:
+            self.move_unit(unit.location, tile)
+        '''
+        if self.grid[unit.location[0]][unit.location[1]].contents != unit:
+            raise Exception( \
+            "grid, unit disagreement: grid[%s][%s] contains %s, not %s." \
+            %(unit.location[0], unit.location[1], \
+            self.grid[unit.location[0]][unit.location[1]].contents, unit))
+        '''
+        
     def find_units(self):
         list = []
-        for x in range(len(self.grid)):
+        for x in range(len(self.grid)): #maybe using .x and .y would be faster?
             for y in range(len(self.grid[x])):
                 if self.grid[x][y].contents:
                     list.append((x,y))
         return list    
-        
-    def dmg(self, atkr, defdr, type):
-        """Calculates the damage of an attack"""
-        damage_dealt = {E: 0, F: 0, I: 0, W: 0}
-        xdef,ydef = defdr.location
-        for element in damage_dealt:
-            dmg = (atkr.p + atkr.patk + (2 * atkr.comp[element]) \
-            + atkr.weapon.comp[element]) - (defdr.p + defdr.pdef \
-            + (2 * defdr.comp[element]) + self.grid[xdef][ydef].comp[element])
-            dmg = max(dmg, 0)
-            damage_dealt[element] = dmg
-             
-        damage = sum(damage_dealt.values())
-        if type == 'm':
-            if atkr.element == defdr.element:
-                damage = 0 - damage
-        return damage
     
-    def make_move(self, unit): #maybe move to defs.unit
-        m = unit.move
-        xo, yo = origin = unit.location
-        tiles = []
-        for x in range(-4,5):
-            for y in range(-4,5):
-                if abs(x) + abs(y) <= m:
-                    tile = (xo + x), (yo + y)
-                    if 0 <= tile[0] < self.grid.x:
-                        if 0 <= tile[1] < self.grid.y:
-                            tiles.append(tile)
-        return tiles
-        
-    def find_targets(self, tiles):
-        """finds valid targets on tiles. returns list of coords"""
-        return list(set(find_units()) & set(tiles))
-        
-
-    def calc_damage(self, atkr, targets):
-        """Calculates damage from atkr to targets.
-        Returns list of (target, dmg) tuples"""
-        weapon = atkr.weapon
-        dmg_list = []
-        print "Targets: ", targets
-        for i in xrange(len(targets)): # sub-optimal, readable.
-            defdr = self.grid[targets[i][0]][targets[i][1]].contents
-            print defdr
-            if contains(ORTH[W], weapon.type): #physical attacks
-                dmg = self.dmg(atkr, defdr, 'p')
-                if dmg != 0:
-                    if weapon.type == 'Earth':
-                        dmg_list.append((defdr, dmg))
-                    else:
-                        dmg_list.append((defdr, (dmg / 4)))
-            else: #magical attacks
-                dmg = self.dmg(atkr, defdr, 'm')
-                if dmg > 0:
-                    if weapon.type == 'Wind':
-                        dmg /= weapon.time
-                        dmg_list.append((defdr, dmg))
-                        self.dmg_queue.append(defdr, dmg, (weapon.time - 1)) 
-                    else:
-                        #ugh, damage divded in attack()
-                        dmg_list.append((defdr, dmg))
-        return dmg_list
-
-    def apply_damage(self, dmg_list):
-        """applies damage to unit"""
-        for i in dmg_list:
-            defdr,dmg = i
-            if dmg >= defdr.hp:
-                print "%s died" %defdr.location
-                defdr.hp = 0
-                self.grid[defdr.location[0]][defdr.location[1]].contents = None
-                defdr.location = None
-                #Do some squad stuff
-                #Do some graveyard stuff
-            else:
-                temp = defdr.hp
-                defdr.hp -= dmg
-                print "%s had %s hit points. took %s point(s) of damage, now \
-                has %s of hp" %(defdr.name, temp, dmg, defdr.hp)
-                 
-    def attack(self, atkr, defdr):
-        if atkr.weapon.type != 'Ice':
-            self.apply_damage(self.calc_damage(atkr, (defdr,) ) )
-        else:
-            #crude
-            direction = {0:'West', 1:'North', 2:'East', 3:'South'}
-            ax,ay = aloc = atkr.location
-            maxes = (ax, ay, (self.grid.x - 1 - ax), (self.grid.y - 1 - ay),)
-            for i in direction:
-                pat = atkr.weapon.make_pattern(aloc, maxes[i], direction[i])
-                if contains(pat, defdr):
-                    dmg_list = self.calc_damage(atkr, list(set(self.find_units()) & set(pat)))
-                    new_list = []
-                    area = len(pat)
-                    for i in dmg_list:
-                        temp_dmg = i[1]
-                        temp_dmg /= area
-                        new_list.append((i[0], temp_dmg))
-                    self.apply_damage(tuple(new_list))
-                    break
-                    
     def rand_place_squad(self, squad):
-        """!!!BROKEN!!! place the units in a squad randomly on the battlefield"""
+        """place the units in a squad randomly on the battlefield"""
         for unit in range(len(squad)):
             #readable?
-            inset = 0
-            def RandPos(): return (random.randint(0, (self.grid.x - inset)),
-                random.randint(0, (self.grid.y - inset)))
-            while squad[unit].location == None:
-                try:
-                    self.place_unit(squad[unit], RandPos())
-                    break
-                except Exception:
-                    nope = RandPos()
-                    self.place_unit(squad[unit], nope)
-                    
+            inset = 0 #place units in a smaller area, for testing.
+            def RandPos(): return (random.randint(0, ((self.grid.x - 1) - inset)),
+                random.randint(0, ((self.grid.y - 1) - inset)))
+            if len(self.find_units()) == (self.grid.x * self.grid.y):
+                raise Exception("Grid is full")
+            else:
+                while squad[unit].location == (None, None):
+                    try:
+                        self.place_unit(squad[unit], RandPos())
+                    except: 
+                        pass
+    
     def flush_units(self):
         """
         remove all units from grid, returns number of units flushed,
-        does not put them in the graveyard
+        does not put them in the graveyard. (for testing)
         """
+        #maybe find_unit should be used here...
         count = 0
         for x in range(len(self.grid)):
             for y in range(len(self.grid[x])):
                 if self.grid[x][y].contents:
-                    self.grid[x][y].contents.location = None
+                    self.grid[x][y].contents.location = (None, None)
                     self.grid[x][y].contents = None
                     count += 1
         return count
 
+    #Attack/Damage stuff
+    def dmg(self, atkr, defdr, type):
+        """Calculates the damage of an attack"""
+        #healing is kinda broked. :/
+        dx,dy = defdr.location
+        damage_dealt = {E: 0, F: 0, I: 0, W: 0}
+        if 0 <= dx < self.grid.x:
+            if 0 <= dy < self.grid.y:
+                if contains(PHY,type) == True:
+                    for element in damage_dealt:
+                        dmg = (atkr.p + atkr.patk + (2 * atkr.comp[element]) \
+                        + atkr.weapon.comp[element]) - (defdr.p + defdr.pdef \
+                        + (2 * defdr.comp[element]) + self.grid[dx][dy].comp[element])
+                        dmg = max(dmg, 0)
+                        damage_dealt[element] = dmg
+                    damage = sum(damage_dealt.values())
+                    return damage
+                else:
+                    for element in damage_dealt:
+                        dmg = (atkr.m + atkr.matk + (2 * atkr.comp[element]) \
+                        + atkr.weapon.comp[element]) - (defdr.m + defdr.mdef \
+                        + (2 * defdr.comp[element]) + self.grid[dx][dy].comp[element])
+                        dmg = max(dmg, 0)
+                        damage_dealt[element] = dmg
+             
+                    damage = sum(damage_dealt.values())
+                    if atkr.element == defdr.element:
+                        return 0 - damage
+                    else:
+                        return damage
+            else:
+                raise Exception("Defender's y coord  %s is off grid" %dy)
+        else:
+            raise Exception("Defender's x coord %s is off grid" %dx)
 
+    def calc_damage(self, atkr, defdr):
+        """Calcuate damage delt to defdr from atkr. Also calculates the damage of 
+        all units within a blast range. if weapon has a blast range list of
+        (target, dmg) is returned. otherwise just dmg is returned"""
+        weapon = atkr.weapon
+        ax,ay = aloc = atkr.location
+        dx,dy = dloc = defdr.location
+        in_range = weapon.map_to_grid(aloc, self.grid.size)
+        if not contains(in_range, dloc):
+            raise Exception( \
+            "Defender's location: %s is outside of attacker's range" %str(dloc))
+        else:
+            if weapon.type != I:
+                dmg = self.dmg(atkr, defdr, weapon.type)
+                if weapon.type == E:
+                    return dmg
+                if dmg != 0:
+                    if weapon.type == F: 
+                        return dmg / 4            
+                    else:
+                        return dmg / weapon.time #assumes weapon.type == W
+                else:
+                    return 0
+            
+            else:
+                direction = {0:'West', 1:'North', 2:'East', 3:'South'}
+                maxes = (ax, ay, (self.grid.x - 1 - ax), (self.grid.y - 1 - ay),)
+                for i in direction:
+                    pat = atkr.weapon.make_pattern(aloc, maxes[i], direction[i])
+                    if contains(pat, dloc):
+                        #ranges = (dx, dy, (self.grid.x - 1 - dx), (self.grid.y - 1 - dy),)
+                        #need to check ranges
+                        ranges  = (abs(dx - ax), abs(dy - ay), abs(dx - ay), abs(dy - ay))
+                        new_pat = atkr.weapon.make_pattern(aloc, ranges[i], direction[i])
+                        targets = list(set(self.find_units()) & set(new_pat))
+                        dmg_list = []
+                        area = len(new_pat)
+                        for i in targets:
+                            defdr = self.grid[i[0]][i[1]].contents
+                            temp_dmg = self.dmg(atkr, defdr, weapon.type)
+                            if temp_dmg != 0:
+                                temp_dmg /= area
+                                dmg_list.append((defdr, temp_dmg))
+                            else:
+                                return 0
+                        if len(dmg_list) == 0:
+                            return 0
+                        else:
+                            return dmg_list
+    def attack(self, atkr, defdr):
+        """calls calc_damage, applies result. Handles death, game state changes"""
+        def bury(unit):
+            """moves unit to graveyard"""
+            x,y = unit.location
+            unit.hp = 0
+            self.grid[x][y].contents = None
+            unit.location = (-1,-1) #'graveyard'
+            self.graveyard.append(unit)
         
-        
-    def logger(self):
-        """Logs game and optionally stores it in data store"""
-        pass
+        def apply_dmg(target, damage):
+            if damage != 0:
+                if damage >= target.hp:
+                    bury(target)
+                else:
+                    target.hp -= damage
+                if atkr.weapon.type == W:
+                    self.dmg_queue.append(((target, dmg), atkr.weapon.time - 1 ))
+            
+        dmg = self.calc_damage(atkr, defdr)
+        if isinstance(dmg, int) == True:
+            apply_dmg(defdr, dmg)
+        else:
+            for i in dmg:
+                apply_dmg(i[0], i[1])
+                
+        #append log (by calling state)
+            
         
     def config(self):
         """Configure the battlefield"""
@@ -291,8 +321,6 @@ class Battlefield(object):
         turn on logging
         '''
     
-    def start(self):
-        """Starts a human controlled game"""
-        pass
+
 
 

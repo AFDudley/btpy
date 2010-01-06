@@ -1,13 +1,48 @@
 """Helper functions"""
 import random
 #import const   
-from const import ELEMENTS, E, F, W, I, ORTH, KINDS, OPP
+from const import ELEMENTS, E, F, W, I, ORTH, KINDS, OPP, COMP
 from defs import Scient, Squad
 
+def t2c(tup):
+    """Converts a tuple to a comp"""
+    if len(tup) != 4: raise Exception("Incorrect number of values in tuple")
+    comp = COMP.copy()
+    for i in range(4):
+        comp[ELEMENTS[i]] = tup[i]
+    return comp
+    
 def rand_element():
     """Reuturns a random element"""
     return random.choice(ELEMENTS)
-
+    
+def max_comp(suit, kind='Scient'):
+    """Returns the maximum composition of 'kind' of element 'suit'"""
+    comp = COMP.copy()
+    if kind == 'Scient':
+        comp[suit] = 255
+        comp[OPP[suit]] = 0
+        comp[ORTH[suit][0]] = comp[ORTH[suit][1]] = 127
+        return comp
+    if kind == 'Weapon':
+        comp2 = comp.copy()
+        comp2[suit]          = comp[suit] = 63
+        comp2[OPP[suit]]     = comp[OPP[suit]] = 0
+        comp2[ORTH[suit][0]] = comp[ORTH[suit][1]] = 0
+        comp2[ORTH[suit][1]] = comp[ORTH[suit][0]] = 63
+        return (comp, comp2)
+    if kind == 'Nescient':
+        comp2 = comp.copy()
+        comp2[suit]          = comp[suit] = 255
+        comp2[OPP[suit]]     = comp[OPP[suit]] = 0
+        comp2[ORTH[suit][0]] = comp[ORTH[suit][1]] = 0
+        comp2[ORTH[suit][1]] = comp[ORTH[suit][0]] = 254
+        return (comp, comp2)    
+    if kind == 'Stone':
+        for i in comp: comp[i] = 255
+        return comp
+        
+    
 def rand_comp(suit=None, kind=None):
     """Returns a random comp in 'suit' for use instaniating 'kind'
        If 'suit' is not valid, random element used.
@@ -16,7 +51,7 @@ def rand_comp(suit=None, kind=None):
     if not suit in ELEMENTS:
         suit = rand_element()
     
-    comp = {E:0, F:0, I:0, W:0}
+    comp = COMP.copy()
     if kind is None or kind not in KINDS:
         kind = 'Stone'
     

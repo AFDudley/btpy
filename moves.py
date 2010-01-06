@@ -10,19 +10,26 @@ move[n] returns ply n (which has a num of n + 1, for the sake of the people)
 
 action_types = ('move','attack','pass')
 
+class log(object):
+        """Logs game events"""
+        pass
+
 class move(tuple):
     """fix me"""
     def __new__(cls, *args, **kwargs):
-        
+        try:
+            last_ply = kwargs['last_ply']
+        except:
+            last_ply = 0
         try:
             tup = []
             for i in range(kwargs['players']):
                 tuple.append(ply(num=i+1))
             return tuple.__new__(cls, tuple(tup))
         except KeyError:
-            return tuple.__new__(cls, (ply(num=1), ply(num=2)))
+            return tuple.__new__(cls, (ply(num=(last_ply + 1)), ply(num=(last_ply + 2))))
     
-    def __init__(self, game_id, num):
+    def __init__(self, game_id, num, last_ply=0):
         self.game_id = game_id
         self.num = num
         
