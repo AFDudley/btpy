@@ -6,7 +6,6 @@ import random
 from const import COMP, ELEMENTS, E, F, I, W, ORTH, PHY, MAG
 from defs import Scient
 from helpers import rand_squad
-from moves import action, ply, move, action_types
 
 #Battlefield needs a coord class
 #there is a serious problem in this logic. it assumes that units fit on one
@@ -70,20 +69,13 @@ class Battlefield(object):
     their movement and status."""
     def __init__(self, grid=None, squad1=None, squad2=None):
         #grid is a tuple of tuples containing tiles
-        self.game_id = 0
+        self.game_id = 0 #?
         self.grid = grid
-        self.moves = [move(self.game_id, 1)] #attacker goes first...
         self.graveyard = []
-        self.dmg_queue = []
         self.squad1 = squad1
         self.squad2 = squad2
-    
-    def current_move(self, n=None): 
-        if not n:
-            return self.moves[-1]
-        else:
-            return self.moves[-1].num
-        
+        self.dmg_queue = {}
+
     def load_squads(self, squad1=None, squad2=None):
         """loads squads into battlefield, uses random if none provided"""
         #need better checks, duh
@@ -144,7 +136,8 @@ class Battlefield(object):
             if self.grid[xpos][ypos].contents == None:
                 self.grid[xpos][ypos].contents = unit
                 unit.location = (xpos, ypos)
-            
+                self.dmg_queue[unit] = [] #append unit to dmg_queue
+                
             elif unit.location == (xpos, ypos):
                 raise Exception("This unit is already on (%s,%s)" %(xpos, ypos))
         
@@ -202,7 +195,6 @@ class Battlefield(object):
     #Attack/Damage stuff
     def dmg(self, atkr, defdr, type):
         """Calculates the damage of an attack"""
-        #healing is kinda broked. :/
         dx,dy = defdr.location
         damage_dealt = {E: 0, F: 0, I: 0, W: 0}
         if 0 <= dx < self.grid.x:
@@ -233,7 +225,6 @@ class Battlefield(object):
                 raise Exception("Defender's y coord  %s is off grid" %dy)
         else:
             raise Exception("Defender's x coord %s is off grid" %dx)
-
     def calc_damage(self, atkr, defdr):
         """Calcuate damage delt to defdr from atkr. Also calculates the damage of 
         all units within a blast range. if weapon has a blast range list of
@@ -256,8 +247,7 @@ class Battlefield(object):
                     else:
                         return dmg / weapon.time #assumes weapon.type == W
                 else:
-                    return 0
-            
+                    return None #No damage.
             else:
                 direction = {0:'West', 1:'North', 2:'East', 3:'South'}
                 maxes = (ax, ay, (self.grid.x - 1 - ax), (self.grid.y - 1 - ay),)
@@ -278,49 +268,53 @@ class Battlefield(object):
                                 temp_dmg /= area
                                 dmg_list.append((defdr, temp_dmg))
                             else:
-                                return 0
+                                pass # no damage was dealt, don't append anything.
                         if len(dmg_list) == 0:
-                            return 0
+                            return None #No damage.
                         else:
                             return dmg_list
-    def attack(self, atkr, defdr):
-        """calls calc_damage, applies result. Handles death, game state changes"""
-        def bury(unit):
+
+    def apply_dmg(self, target, damage):
+        """applies damage to target, called by attack() and \
+        apply_queued()"""
+        if damage != 0:
+            if damage >= target.hp:
+                self.bury(target)
+            else:
+                target.hp -= damage
+
+    def bury(self, unit):
             """moves unit to graveyard"""
             x,y = unit.location
             unit.hp = 0
             self.grid[x][y].contents = None
-            unit.location = (-1,-1) #'graveyard'
+            unit.location = (-1,-1) 
+            del self.dmg_queue[unit] 
             self.graveyard.append(unit)
-        
-        def apply_dmg(target, damage):
-            if damage != 0:
-                if damage >= target.hp:
-                    bury(target)
-                else:
-                    target.hp -= damage
-                if atkr.weapon.type == W:
-                    self.dmg_queue.append(((target, dmg), atkr.weapon.time - 1 ))
-            
+
+    def attack(self, atkr, target):
+        """calls calc_damage, applies result, Handles death."""
+        defdr = self.grid[target[0]][target[1]].contents
         dmg = self.calc_damage(atkr, defdr)
-        if isinstance(dmg, int) == True:
-            apply_dmg(defdr, dmg)
-        else:
-            for i in dmg:
-                apply_dmg(i[0], i[1])
-                
-        #append log (by calling state)
-            
-        
-    def config(self):
-        """Configure the battlefield"""
-        '''
-        Load Player info
-        Create Squads
-        Place Squads
-        turn on logging
-        '''
-    
+        if dmg != None:
+            if isinstance(dmg, int) == True:
+                self.apply_dmg(defdr, dmg)
+                if defdr.hp > 0:
+                    if atkr.weapon.type == W:
+                        self.dmg_queue[defdr].append([dmg, atkr.weapon.time - 1])
+            else:
+                for i in dmg:
+                    self.apply_dmg(i[0], i[1])
 
-
-
+    def apply_queued(self):
+        """applies damage to targets stored in dmg_queue"""
+        for i in self.dmg_queue.keys():
+            udmg = []
+            for dmg_lst in reversed(xrange(len(self.dmg_queue[i]))):
+                udmg.append(self.dmg_queue[i][dmg_lst][0])
+                self.dmg_queue[i][dmg_lst][1] -= 1
+                if self.dmg_queue[i][dmg_lst][1] == 0:
+                    del self.dmg_queue[i][dmg_lst]
+            udmg = sum(udmg)
+            if udmg != 0:
+                self.apply_dmg(i, udmg)                    

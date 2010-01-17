@@ -5,7 +5,7 @@ from pygame.locals import *
 from const import E,F,I,W, ELEMENTS
 from defs import Scient, Squad
 from helpers import rand_comp, rand_element
-from moves import action_types
+from moves import action, action_types
 
 black = [0,0,0]
 darkg = [50, 50, 50]
@@ -436,6 +436,7 @@ class View(object):
                 elif current_pane == 2:
                     self.mp.line_highlight = 0
                     #do end of ply stuff
+                    '''
                     if ply_action == action_types[0]:
                         self.battle.move_unit(unit.location, temp[self.bp.line_highlight])
                         
@@ -447,9 +448,9 @@ class View(object):
                         self.battle.moves[-1][current_ply]['actions'][current_action]['target'] = None
                     else:
                         self.battle.moves[-1][current_ply]['actions'][current_action]['target'] = temp[self.bp.line_highlight]
-                    self.battle.moves[-1][current_ply]['actions'][current_action]['type'] = ply_action
+                    self.battle.moves[-1][current_ply]['actions'][current_action]['type'] = #ply_action
                     self.battle.moves[-1][current_ply]['actions'][current_action]['unit'] = unit.__hash__()
-                    
+                    '''
                     #there are two actions in a ply. and two plies in a move.
                     if current_action == 0:
                         current_action = 1
@@ -538,7 +539,8 @@ class View(object):
             elif current_pane == 2:
                 if self.mp.text[self.mp.line_highlight][0] == 'Move To':
                     self.bp.text = None
-                    ply_action = action_types[0]
+                    #ply_action = action_types[0]
+                    ply_action = action(type=action_types[0],unit=unit,target=temp[self.bp.line_highlight])
                     self.bp.max_line = len(move) - 1
                     self.battle.color_tiles(move, blue)
                     temp = list(move)
@@ -549,7 +551,8 @@ class View(object):
                     
                 if self.mp.text[self.mp.line_highlight][0] == 'Attack':
                     self.bp.text = None
-                    ply_action = action_types[1]
+                    #ply_action = action_types[1]
+                    ply_action = action(type=action_types[1],unit=unit,target=temp[self.bp.line_highlight])
                     self.bp.max_line = len(targets) - 1
                     self.battle.color_tiles(targets,white)
                     temp = list(targets)
@@ -562,8 +565,8 @@ class View(object):
                     self.bp.text = love
                     
                 if self.mp.text[self.mp.line_highlight][0] == 'Pass':
-                    ply_action = action_types[2]
-                    
+                    #ply_action = action_types[2]
+                    ply_action = action(type=action_types[2],unit=unit,target=temp[self.bp.line_highlight])
             #from draw_colored_tiles
             self.battle.set_tile_color(unit.location, black)
         

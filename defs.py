@@ -76,7 +76,7 @@ class Wand(Weapon):
     def make_pattern(self, origin, distance, pointing):
         """generates a pattern based on an origin, distance, and
         direction. Returns a set of coords"""
-        
+        #TODO: use inversion to create wand attack pattern.
         #needs lots o checking
         src = origin
         sid = 2 * distance
@@ -158,7 +158,7 @@ class Unit(object):
             title = str(id(self))
             
         #Need to write a seperate function:
-        return "%s -> suit:% 2s | val: %3s | loc: %2s, %2s | HP: %5s \n" % (title, \
+        return "%s -> suit: %2s | val: %3s | loc: %2s, %2s | HP: %5s \n" % (title, \
     self.element[0], self.value(), self.location[0], self.location[1], self.hp) 
 
 class Scient(Unit):
