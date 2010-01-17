@@ -22,13 +22,12 @@
 import pygame, os, sys 
 from pygame.locals import *
 
-import re         # Python's Regexp library. Used in pyconsole for parsing
 import textwrap # Used for proper word wrapping
 from string import ascii_letters
 from code import InteractiveConsole        # Gives us access to the python interpreter
-
+import readline
 from IPython.Shell import IPShellEmbed
-
+import pdb
 __version__ = "0.7"
 
 WIDTH=0
@@ -38,28 +37,10 @@ OUT = 0
 IN = 1
 ERR = 2
 
-PYCONSOLE = 1
 PYTHON = 2 
 
 path = os.path.abspath(os.path.dirname(__file__))
 font_path = os.path.join(path, "fonts")
-img_path = os.path.join(path, "images")
-cfg_path = os.path.join(path, "pyconsole.cfg")
-
-
-re_token = re.compile(r"""[\"].*?[\"]|[\{].*?[\}]|[\(].*?[\)]|[\[].*?[\]]|\S+""")
-re_is_list = re.compile(r'^[{\[(]')
-re_is_number = re.compile(r"""
-                        (?x)
-                        [-]?[0][x][0-9a-fA-F]+[lLjJ]? |     #  Hexadecimal
-                        [-]?[0][0-7]+[lLjJ]? |              #  Octal
-                        [-]?[\d]+(?:[.][\d]*)?[lLjJ]?       #  Decimal (Int or float)
-                        """)
-re_is_assign = re.compile(r'[$](?P<name>[a-zA-Z_]+\S*)\s*[=]\s*(?P<value>.+)')
-re_is_comment =  re.compile(r'\s*#.*')
-re_is_var = re.compile(r'^[$][a-zA-Z_]+\w*\Z')
-
-
 
 class Writable(list):
     line_pointer = -1
@@ -67,27 +48,15 @@ class Writable(list):
         self.append(str(line))
     def reset(self):
         self.__init__()
+    """
     def readline(self, size=-1):
         # Python's interactive help likes to try and call this, which causes the program to crash
         # I see no reason to implement interactive help.
         raise NotImplementedError
+    """
+    def readline(self):
+        raise
 
-class ParseError(Exception):
-    def __init__(self, token):
-        self.token = token
-    def at_token(self):
-        return self.token
-
-def balanced(t):
-    stack = []
-    pairs = {"\'":"\'", '\"':'\"', "{":"}", "[":"]", "(":")"}
-    for char in t:
-        if stack and char == pairs[stack[-1]]:
-            stack.pop()
-        elif char in pairs:
-            stack.append(char)
-    return not bool(stack)
-    
 class Console:
     def __init__(self, screen, rect, functions={}, key_calls={}, vars={}, syntax={}):
         if not pygame.display.get_init():
@@ -119,9 +88,8 @@ class Console:
                 "motd":list
                 }
         
-        self.load_cfg()
+        self.init_default_cfg()
         
-        self.set_interpreter()
         
         pygame.key.set_repeat(*self.repeat_rate)
             
@@ -131,10 +99,7 @@ class Console:
         self.txt_layer = pygame.Surface(self.size)
         self.txt_layer.set_colorkey(self.bg_color)
         
-        try:
-            self.font = pygame.font.Font(os.path.join(font_path,"default.ttf"), 14)
-        except IOError:
-            self.font = pygame.font.SysFont("monospace", 14)
+        self.font = pygame.font.SysFont("monospace", 14)
         
         self.font_height = self.font.get_linesize()
         self.max_lines = (self.size[HEIGHT] / self.font_height) - 1
@@ -150,7 +115,6 @@ class Console:
         self.c_draw_pos = 0
         self.c_scroll = 0
         
-        
         self.changed = True
         
         self.func_calls = {}
@@ -161,48 +125,24 @@ class Console:
         
         self.add_key_calls({"l":self.clear, "c":self.clear_input, "w":self.set_active})
         self.add_key_calls(key_calls)
-        
+        self.set_interpreter()
 
     ##################
     #-Initialization-#
-    def load_cfg(self):
-        '''\
-        Loads the config file path/pygame-console.cfg\
-        All variables are initialized to their defaults,\
-        then new values will be loaded from the config file if it exists.
-        '''
-        self.init_default_cfg()
-        if os.path.exists(cfg_path):
-            for line in file(cfg_path):
-                tokens = self.tokenize(line)
-                if re_is_comment.match(line):
-                    continue
-                elif len(tokens) != 2:
-                    continue
-                self.safe_set_attr(tokens[0],tokens[1])
-    
     def init_default_cfg(self):
-        self.bg_alpha = 255
-        self.bg_color = [0x0,0x0,0x0]
+        self.bg_alpha = 175
+        self.bg_color = [0x0,0x44,0xAA]
         self.txt_color_i = [0xFF,0xFF,0xFF]
-        self.txt_color_o = [0xCC,0xCC,0xCC]
+        self.txt_color_o = [0xEE,0xEE,0xEE]
         self.ps1 = "] "
         self.ps2 = ">>> "
         self.ps3 = "... "
-        self.active = False
+        self.active = True
         self.repeat_rate = [500,30]
-        self.python_mode = True
+        self.python_mode = False
         self.preserve_events = False
-        self.motd = ["[PyConsole 0.5]"]
-    
-    def safe_set_attr(self, name, value):
-        '''\
-        Safely set the console variables
-        '''
-        if name in self.variables:
-            if isinstance(value, self.variables[name]) or not self.variables[name]:
-                self.__dict__[name] = value
-    
+        self.motd = ["Press Ctrl_w to hide the console","One day this will have more to say"]
+
     def add_func_calls(self, functions):
         '''\
         Add functions to the func_calls dictionary.
@@ -242,7 +182,7 @@ class Console:
                 for w in self.txt_wrapper.wrap(line):
                     self.c_out.append(w)
         except:
-            pass
+            raise
     
     def set_active(self,b=None):
         '''\
@@ -254,8 +194,7 @@ class Console:
             self.active = not self.active
         else:
             self.active = b
-    
-    
+        
     def format_input_line(self):
         '''\
         Format input line to be displayed
@@ -292,25 +231,18 @@ class Console:
             self.bg_layer.blit(self.txt_layer,(0,0,0,0))
         
         # Draw console to parent screen
-        # self.parent_screen.fill(self.txt_color_i, (self.rect.x-1, self.rect.y-1, self.size[WIDTH]+2, self.size[HEIGHT]+2))
         pygame.draw.rect(self.parent_screen, self.txt_color_i, (self.rect.x-1, self.rect.y-1, self.size[WIDTH]+2, self.size[HEIGHT]+2), 1)
         self.parent_screen.blit(self.bg_layer,self.rect)
 
     #######################################################################
     # Functions to communicate with the console and the python interpreter#
     def set_interpreter(self):
-        if self.python_mode:
-            self.output("Entering Python mode")
-            self.python_mode = True
-            #self.python_interpreter = IPShellEmbed(['-quick','-noreadline'])
-            self.python_interpreter = InteractiveConsole(locals=__IPYTHON__.user_ns)
-            self.tmp_fds = []
-            self.py_fds = [Writable() for i in range(3)]
-            self.c_ps = self.ps2
-        else:
-            self.output("Entering Pyconsole mode")
-            self.python_mode = False
-            self.c_ps = self.ps1
+        self.output("Entering Python mode")
+        #self.python_interpreter = IPShellEmbed(['-quick','-noreadline'])
+        self.python_interpreter = InteractiveConsole(locals=__IPYTHON__.user_ns)
+        self.tmp_fds = []
+        self.py_fds = [Writable() for i in range(3)]
+        self.c_ps = self.ps2
     
     def catch_output(self):
         if not self.tmp_fds:
@@ -334,11 +266,8 @@ class Console:
         self.clear_input()
         self.output(self.c_ps + text)
         self.c_scroll = 0
-        if self.python_mode:
-            self.send_python(text)
-        else:
-            self.send_pyconsole(text)
-        
+        self.send_python(text)
+
     def send_python(self, text):
         '''\
         Sends input the the python interpreter in effect giving the user the ability to do anything python can.
@@ -357,54 +286,6 @@ class Console:
         for i in self.py_fds[OUT]+self.py_fds[ERR]:
             self.output(i)
         self.release_output()
-    
-    def send_pyconsole(self, text):
-        '''\
-        Sends input to pyconsole to be interpreted
-        '''
-        if not text:    # Output a blank row if nothing is entered
-            self.output("")
-            return;
-        
-        self.add_to_history(text)
-        
-        #Determine if the statement is an assignment
-        assign = re_is_assign.match(text)
-        try:
-            #If it is tokenize only the "value" part of $name = value
-            if assign:
-                tokens = self.tokenize(assign.group('value'))
-            else:
-                tokens = self.tokenize(text)
-        except ParseError, e:
-            self.output(r'At Token: "%s"' % e.at_token())
-            return;
-        
-        if tokens == None:
-            return
-        
-        #Evaluate
-        try:
-            out = None
-            # A variable alone on a line
-            if (len(tokens) is 1) and re_is_var.match(text) and not assign:
-                out = tokens[0]
-            # Statement in the form $name = value    
-            elif (len(tokens) is 1) and assign:
-                self.setvar(assign.group('name'), tokens[0])
-            else:
-                # Function
-                out = self.func_calls[tokens[0]](*tokens[1:])
-                # Assignment from function's return value
-                if assign:
-                    self.setvar(assign.group('name'), out)
-                    
-            if not out == None:
-                self.output(out)
-        except (KeyError,TypeError):
-            self.output("Unknown Command: " + str(tokens[0]))
-            self.output(r'Type "help" for a list of commands.')
-            
     
     
     ####################################################
@@ -440,7 +321,6 @@ class Console:
             opt_dict.update(self.user_vars)
         else:
             return self.user_vars
-    
     
     def add_to_history(self, text):
         '''\
@@ -545,71 +425,6 @@ class Console:
                     else:
                         char = str(event.unicode)
                         self.c_in = self.str_insert(self.c_in, char)
-    
-    def convert_token(self, tok):
-        '''\
-        Convert a token to its proper type 
-        '''
-        tok = tok.strip("$")
-        try:
-            tmp = eval(tok, self.__dict__, self.user_namespace)
-        except SyntaxError, strerror:
-            self.output("SyntaxError: " + str(strerror))
-            raise ParseError, tok
-        except TypeError, strerror:
-            self.output("TypeError: " + str(strerror))
-            raise ParseError, tok
-        except NameError, strerror:
-            self.output("NameError: " + str(strerror))
-        except:
-            self.output("Error:")
-            raise ParseError, tok
-        else:
-            return tmp
-    
-    def tokenize(self, s):
-        '''\
-        Tokenize input line, convert tokens to proper types
-        '''
-        if re_is_comment.match(s):
-            return [s]
-        
-        for re in self.user_syntax:
-            group = re.match(s)
-            if group:
-                self.user_syntax[re](self, group)
-                return
-        
-        tokens = re_token.findall(s)
-        tokens = [i.strip("\"") for i in tokens]
-        cmd = []
-        i = 0
-        while i < len(tokens):
-            t_count = 0
-            val = tokens[i]
-            
-            if re_is_number.match(val):
-                cmd.append(self.convert_token(val))
-            elif re_is_var.match(val):
-                cmd.append(self.convert_token(val))
-            elif val == "True":
-                cmd.append(True)
-            elif val == "False":
-                cmd.append(False)
-            elif re_is_list.match(val):
-                while not balanced(val) and (i + t_count) < len(tokens)-1:
-                    t_count += 1
-                    val += tokens[i+t_count]
-                else:
-                    if (i + t_count) < len(tokens):
-                        cmd.append(self.convert_token(val))
-                    else:
-                        raise ParseError, val
-            else:
-                cmd.append(val)
-            i += t_count + 1
-        return cmd
-    
 
     ##########################
     #-Some Builtin functions-#

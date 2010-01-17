@@ -29,24 +29,32 @@ for color, location in [([255, 0, 0], [0, 0]), ([0, 255, 0], [60, 60]),
     boxes.add(UpDownBox(color, location))
 
 screen = pygame.display.set_mode([800, 600])
-console = pyconsole.Console(screen, (2,400,796,198),)
+#console = pyconsole.Console(screen, (2,400,796,198),)
+console = pyconsole.Console(screen, (2,0,796,596),)
 pygame.mouse.set_pos(300,240)
 vs = {"cheat":False,"a":100, "b":200, "c":300}
 console.setvars(vs)
 console.setvar("python_mode", not console.getvar("python_mode"))
 console.set_interpreter()
 
-while 1:
+while pygame.key.get_pressed()[K_ESCAPE] == False:
+    pygame.event.pump()
     screen.fill([0, 0, 0])
     console.process_input()
     boxes.update(pygame.time.get_ticks(), 150)
     for b in boxes: screen.blit(b.image, b.rect)
     console.draw()
+
+    if console.active == 0:    
+        for event in pygame.event.get():
+            if event.type == KEYDOWN:
+                if event.key == K_w:
+                    if pygame.key.get_mods() & KMOD_CTRL:
+                        console.set_active()
+        
+        
+                                
     pygame.display.update()
-
-
-    for event in pygame.event.get():
-        if event.type == KEYDOWN:
-            if event.key == K_w and pygame.key.get_mods() & KMOD_CTRL:
-                console.set_active()
-#    pygame.time.wait(10)
+    pygame.event.pump()
+        
+pygame.quit()
