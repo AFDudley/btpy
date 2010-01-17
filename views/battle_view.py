@@ -5,12 +5,13 @@
 #  Created by AFD on 1/12/10.
 #  Copyright (c) 2010 A. Frederick Dudley. All rights reserved.
 #
+from operator import contains
 import pygame
 import battlefield
 import battle
 import pyconsole
 from pygame.locals import *
-from const import E,F,I,W, ELEMENTS, OPP, ORTH
+from const import E,F,I,W, ELEMENTS, OPP, ORTH, PHY
 from defs import Scient, Squad
 from helpers import rand_comp, rand_element
 
@@ -165,7 +166,6 @@ class TopPane(Pane):
         view.middle.cursor_pos = -1
         view.bottom.title = "Info:"
         view.bottom.text = []
-        #check for squads don't assume they are there.
         if view.battle_state.current_ply.num % 2 == 1:
             self.squad = view.battle.squad1
         else:
@@ -180,40 +180,35 @@ class TopPane(Pane):
             self.cursor_pos = -1
         else:
             self.text = []
-            self.title = self.squad.name + " IV: " + str(self.squad.value)
+            self.title = self.squad.name + " Inital Value: " + str(self.squad.value)
             self.last_line = - 1
-            '''
-            for i in xrange(len(self.squad)):
-                if self.squad[i].hp != 0:
-                    temp = str(self.squad[i].location) + " HP: " + str(self.squad[i].hp)
-                    self.text.append((temp, darkg, white))
-                    self.last_line += 1
-            '''
             #cpu time < human time:
             self.squad.text = []
             for i in reversed(xrange(len(self.squad))):
                 if self.squad[i].hp == 0:
                     self.squad.pop(i)
                 else:
+                    unit = self.squad[i]
                     if self.squad[i].name == None:
                         name = str(self.squad[i].location)
-                    temp = name + " V: " + str(self.squad[i].value())
-                    self.text.append((temp, darkg, white))
+                    squ_txt = name + " V: " + str(self.squad[i].value())
+                    self.text.append((squ_txt, darkg, white))
+                    unit.text.append("HP: " + str(unit.hp))
+                    unit.text.append("E, F, I, W")
+                    unit.text.append(str(unit.comp[E]) + ", " + str(unit.comp[F]) + ", " + str(unit.comp[I]) +  ", " + str(unit.comp[W]))
+                    if contains(PHY, unit.weapon.type):
+                        atk = "PA: " + str(unit.patk)
+                    else:
+                        atk = "MA: " + str(unit.matk)
+                    unit.text.append("Weapon: " + unit.weapon.type)
+                    unit.text.append(atk)
+                    unit.text.append("PD: " + str(unit.pdef) + " MD: " + str(unit.mdef))
+                    unit.text.append("Location: " + str(unit.location))
             self.text.reverse()
             self.last_line = len(self.squad) - 1
             
     def draw_other_panes(self):
         if len(self.squad) != 0:
-            '''
-            #oops
-            chop_me = self.text[self.cursor_pos][0]
-            chop_me = chop_me.split(')')[0]
-            x,y = chop_me.split(',')
-            y = int(y)
-            x = int(x.split('(')[1])
-            self.unit = view.grid[x][y].contents
-            #back to not the-worst-coding-ever...
-            '''
             self.unit = self.squad[self.cursor_pos]
             view.make_tile_sets(self.unit)
             view.draw_grid(None)
@@ -222,12 +217,15 @@ class TopPane(Pane):
             if len(view.move) == 0 and len(view.targets) == 0:
                 view.middle.title = "Unit cannot act."
             else:
-                view.middle.title = "Unit can:"
+                view.middle.title = "Unit can: "
                 if len(view.move) != 0:
-                    view.middle.text.append(("Move", darkg, blue))
+                    view.middle.title += "Move "
                 if len(view.targets) != 0:
-                    view.middle.text.append(("Attack", darkg, pink))
-                view.middle.text.append(("Pass", darkg, white))
+                    view.middle.title += "Attack "
+            for i in view.unit.text:
+                view.middle.text.append((i, darkg, white))
+            view.bottom.title = "Enemy Info:"
+            
         else:
             view.middle.title = None
             view.bottom.title = None
@@ -245,6 +243,7 @@ class TopPane(Pane):
             view.current_state.draw_other_panes()
             #TODO: Flush or Write Log
             view.transition(view.top)
+            
 class MiddlePane(Pane):
     """Pane in the middle left"""
     def __init__(self, position, size=PANE_SIZE, title=None):
@@ -334,11 +333,14 @@ class BottomPane(Pane):
             self.last_line = len(self.move) - 1 
             if self.confirm == False:
                 self.text = []
-                #need to overload update.
                 self.text.append((str(self.cursor_pos) + ": " + str(self.move[self.cursor_pos]) + "?", black, white))
                 #I don't know which arrow key was pressed:
                 view.draw_grid('Move')
                 view.battle.set_tile_color(self.move[self.cursor_pos], white)
+                area  = set(view.unit.weapon.map_to_grid(self.move[self.cursor_pos], view.grid.size))
+                area -= view.loc
+                view.battle.color_tiles(area - view.move, pink)
+                view.battle.color_tiles(area & view.move, purp)
             else:
                 pass
         if self.action == 'attack':
@@ -354,6 +356,7 @@ class BottomPane(Pane):
             pass
     def process_return(self):
         #the trickist
+        
         if self.action == 'attack':
             if self.confirm == False:
                 self.confirm = True
@@ -408,7 +411,9 @@ class BottomPane(Pane):
             else:
                 view.set_action(view.current_action[0], view.current_action[1], None)
                 view.send_action()
-                                
+        '''
+        if self.confirm == True:
+        '''    
 class BattlePane(Pane, battlefield.Battlefield):
     """Pane that displays the battlefield"""
     def __init__(self,  position, grid, tilesize, tiles):
@@ -523,6 +528,7 @@ class BattlePane(Pane, battlefield.Battlefield):
             self.image = pygame.Surface([15, 15])
             self.image.fill(COLORS[element])
             self.rect = self.image.get_rect()
+            self.text = []
             
         def draw_text(self):
             """a crude, crude hack."""
