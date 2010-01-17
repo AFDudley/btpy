@@ -189,6 +189,7 @@ class TopPane(Pane):
                     self.squad.pop(i)
                 else:
                     unit = self.squad[i]
+                    unit.text = [] #oops...
                     if self.squad[i].name == None:
                         name = str(self.squad[i].location)
                     squ_txt = name + " V: " + str(self.squad[i].value())
@@ -255,18 +256,17 @@ class MiddlePane(Pane):
         
     def set_state(self):
         self.cursor_pos = 0
+        self.text = []
+        if len(view.move) != 0 and view.last_action_type != 'move':
+            view.middle.text.append(("Move", darkg, blue))
+        if len(view.targets) != 0 and view.last_action_type != 'attack':
+            view.middle.text.append(("Attack", darkg, pink))
+        view.middle.text.append(("Pass", darkg, white))
+    
         if view.battle_state.current_ply[0] == None:
-            if self.text[-1][0] != "Cancel":
-                self.text.append(("Cancel", darkg, red))
-        else:
-            self.text = []
-            if len(view.move) != 0 and view.current_action[1] != 'move':
-                view.middle.text.append(("Move", darkg, blue))
-            if len(view.targets) != 0 and view.current_action[1] != 'attack':
-                view.middle.text.append(("Attack", darkg, pink))
-            view.middle.text.append(("Pass", darkg, white))
-            #del self.text[2]
+            self.text.append(("Cancel", darkg, red))
         self.last_line = len(self.text) - 1
+        
     def draw_other_panes(self):
         view.draw_grid(self.text[self.cursor_pos][0])
         view.bottom.text = []
@@ -300,7 +300,9 @@ class MiddlePane(Pane):
             view.set_action(view.current_action[0], type, view.current_action[2])
             view.transition(view.bottom)
         else:
+            #TODO: keep the privous view.top.cursor_pos; harder than it sounds.
             view.transition(view.top)
+            
 class BottomPane(Pane):
     """lowest pane on the left"""
     def __init__(self, position, size=PANE_SIZE, title='Info:'):
@@ -309,12 +311,11 @@ class BottomPane(Pane):
         self.border_color = [0, 0, 255]
         self.bgcolor = [50, 50, 50]
         self.text = []
-        self.confirm = False
+        self.inside_confirm = False
     #need to overload update.
     def set_state(self):
         self.last_line = len(self.text) - 1
         self.cursor_pos = 0
-        self.confirm = False
         if view.middle.text[view.middle.cursor_pos][0] == 'Attack':
             self.action = 'attack'
             self.targets = list(view.targets)
@@ -327,14 +328,14 @@ class BottomPane(Pane):
             self.move.sort()            
         else:
             self.action = 'pass'
-            self.cursor_pos = 0
+            self.inside_confirm = True
+            
     def draw_other_panes(self):
         if self.action == 'move':
             self.last_line = len(self.move) - 1 
-            if self.confirm == False:
+            if self.inside_confirm == False:
                 self.text = []
                 self.text.append((str(self.cursor_pos) + ": " + str(self.move[self.cursor_pos]) + "?", black, white))
-                #I don't know which arrow key was pressed:
                 view.draw_grid('Move')
                 view.battle.set_tile_color(self.move[self.cursor_pos], white)
                 area  = set(view.unit.weapon.map_to_grid(self.move[self.cursor_pos], view.grid.size))
@@ -344,7 +345,7 @@ class BottomPane(Pane):
             else:
                 pass
         if self.action == 'attack':
-            if self.confirm == False:
+            if self.inside_confirm == False:
                 '''
                 At some point, it would be nice if this showed all the units
                 effected by the attack. It would also be nice to see damages 
@@ -352,68 +353,44 @@ class BottomPane(Pane):
                 '''
                 view.draw_grid('Targets')
                 view.battle.set_tile_color(self.targets[self.cursor_pos], red)
+                
         if self.action == 'pass':
             pass
     def process_return(self):
         #the trickist
-        
-        if self.action == 'attack':
-            if self.confirm == False:
-                self.confirm = True
-                self.old_pos = self.cursor_pos
-                self.title = "Attack " + str(self.targets[self.cursor_pos]) + "?"
-                self.old_text = self.text
-                self.text = []
-                self.text.append(("Cancel", darkg, red))
-                self.text.append(("Confirm", darkg, green))
-                self.cursor_pos = 0
-                self.last_line = len(self.text) - 1
-                self.draw_other_panes()
-            else:
-                if self.text[self.cursor_pos][0] == 'Cancel':
-                    self.confirm = False
-                    self.title = "Targets:"
-                    self.cursor_pos = self.old_pos
-                    self.text = self.old_text
-                    self.last_line = len(self.text) - 1
-                    view.transition(view.middle)
+        if self.inside_confirm == True:
+            if self.text[self.cursor_pos][0] != 'Cancel':
+                self.inside_confirm = False
+                if self.action == 'move':
+                    dest = self.move[self.old_cursor]
+                elif self.action == 'attack':
+                    dest = self.targets[self.old_cursor]
                 else:
-                    view.set_action(view.current_action[0], view.current_action[1], self.targets[self.old_pos])
-                    view.send_action()
-
-        if self.action == 'move':
-            if self.confirm == False:
-                self.confirm = True
-                self.old_pos = self.cursor_pos
-                self.title = "Move to " + str(self.move[self.cursor_pos]) + "?"
-                del self.text[0]
-                self.text.append(("Cancel", darkg, red))
-                self.text.append(("Confirm", darkg, green))
-                self.cursor_pos = 0
-                self.last_line = len(self.text) - 1
-                self.draw_other_panes()
-            else:
-                if self.text[self.cursor_pos][0] == 'Cancel':
-                    self.confirm = False
-                    self.title = "Move to:"
-                    self.cursor_pos = self.old_pos
-                    self.text = []
-                    self.text.append((str(self.cursor_pos) + ": " + str(self.move[self.cursor_pos]) + "?", black, white))
-                    self.last_line = len(self.move) - 1
-                    view.transition(view.middle)
-                else:
-                    view.set_action(view.current_action[0], view.current_action[1], self.move[self.old_pos])
-                    view.send_action()
-        
-        if self.action == 'pass':
-            if self.text[self.cursor_pos][0] == 'Cancel':
-                view.transition(view.middle)
-            else:
-                view.set_action(view.current_action[0], view.current_action[1], None)
+                    dest = None
+                view.set_action(view.current_action[0], view.current_action[1], dest)
                 view.send_action()
-        '''
-        if self.confirm == True:
-        '''    
+                ###
+            else:
+                self.text = self.old_text
+                self.cursor_pos = self.old_cursor
+                self.last_line  = self.old_last_line
+                self.inside_confirm = False
+                #self.last_action_type = None
+                #view.transition(self)
+                self.draw_other_panes()
+        else:
+            self.old_text      = self.text
+            self.old_cursor    = self.cursor_pos
+            self.old_last_line = self.last_line
+            self.inside_confirm = True
+            self.title = "Are you sure?"
+            self.text = []
+            self.text.append(("Cancel", darkg, red))
+            self.text.append(("Confirm", darkg, green))                
+            self.cursor_pos = 0
+            self.last_line = 1
+            view.transition(self)       
+                
 class BattlePane(Pane, battlefield.Battlefield):
     """Pane that displays the battlefield"""
     def __init__(self,  position, grid, tilesize, tiles):
@@ -625,6 +602,7 @@ class View:
         self.current_state.set_state()
         self.current_state.draw_other_panes()
         self.current_action = battle.action()
+        self.last_action_type = None
         while True:
             key = (yield)
             self.current_state.process_key(key)
@@ -665,15 +643,17 @@ class View:
             pass
     def set_action(self, unit, type, target):
         """sets the properties of the current action"""
+        self.last_action_type = self.current_action[1]
         self.current_action = battle.action(unit, type, target)
             
     def send_action(self):
         """sends the current action to the battle_state"""
         #if first action in ply is pass, set second to same
+        text = []
         if self.current_action[1] == 'pass':
             if self.battle_state.current_ply[0] == None:
-                self.battle_state.process_action(self.current_action)
-        self.battle_state.process_action(self.current_action)
+                text += self.battle_state.process_action(self.current_action)
+        text += self.battle_state.process_action(self.current_action)
         '''
         send_action is only called from the bottom pane and we should move to
         the top pane only when the ply is full, otherwise, move to the middle.
@@ -683,7 +663,9 @@ class View:
         else:
             self.make_tile_sets(self.unit)
             self.transition(view.middle)
-        
+        for i in text:
+            print i
+            view.console.output(i)
     def transition(self, dest_state):
         """transitions from current_state to dest_state"""
         self.current_state.active = False
@@ -691,6 +673,7 @@ class View:
         self.current_state.active = True
         self.current_state.set_state()
         self.current_state.draw_other_panes()
+    
     def print_log(self):
         print self.battle_state.log.moves
 

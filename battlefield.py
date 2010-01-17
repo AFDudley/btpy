@@ -324,17 +324,29 @@ class Battlefield(object):
         defdr = self.grid[target[0]][target[1]].contents
         dmg = self.calc_damage(atkr, defdr)
         if dmg != None:
+            message = [] # A list of strings
             if isinstance(dmg, int) == True:
-                self.apply_dmg(defdr, dmg)
+                if dmg != 0:
+                    self.apply_dmg(defdr, dmg)
                 if defdr.hp > 0:
-                    if atkr.weapon.type == W:
+                    if atkr.weapon.type == 'Wind':
                         self.dmg_queue[defdr].append([dmg, atkr.weapon.time - 1])
+                return ["%s did %s points of damage to %s" %(atkr.__repr__().split(" ")[0], dmg, defdr.__repr__().split(" ")[0])]
+
             else:
+                message = []
                 for i in dmg:
                     self.apply_dmg(i[0], i[1])
+                    message.append("%s did %s points of damage to %s" %(atkr.__repr__().split(" ")[0], i[1], i[0].__repr__().split(" ")[0]))
+                return message
+                    
+        else:
+            return ["%s did no damage by attacking %s" %(atkr.__repr__().split(" ")[0], defdr.__repr__().split(" ")[0])]
 
     def apply_queued(self):
         """applies damage to targets stored in dmg_queue"""
+        message = []
+        message.append("Damage from dmg_queue:")
         for i in self.dmg_queue.keys():
             udmg = []
             for dmg_lst in reversed(xrange(len(self.dmg_queue[i]))):
@@ -344,4 +356,6 @@ class Battlefield(object):
                     del self.dmg_queue[i][dmg_lst]
             udmg = sum(udmg)
             if udmg != 0:
-                self.apply_dmg(i, udmg)                    
+                self.apply_dmg(i, udmg)
+                message.append("%s recieved %s points of damage from the queue" %(i.__repr__().split(" ")[0], udmg))           
+        return message
