@@ -179,18 +179,32 @@ class TopPane(Pane):
             self.last_line = 0
             self.cursor_pos = -1
         else:
-            self.last_line = (len(self.squad) - 1)
             self.text = []
-            self.title = self.squad.name
+            self.title = self.squad.name + " IV: " + str(self.squad.value)
             self.last_line = - 1
+            '''
             for i in xrange(len(self.squad)):
                 if self.squad[i].hp != 0:
                     temp = str(self.squad[i].location) + " HP: " + str(self.squad[i].hp)
                     self.text.append((temp, darkg, white))
                     self.last_line += 1
-        
+            '''
+            #cpu time < human time:
+            self.squad.text = []
+            for i in reversed(xrange(len(self.squad))):
+                if self.squad[i].hp == 0:
+                    self.squad.pop(i)
+                else:
+                    if self.squad[i].name == None:
+                        name = str(self.squad[i].location)
+                    temp = name + " V: " + str(self.squad[i].value())
+                    self.text.append((temp, darkg, white))
+            self.text.reverse()
+            self.last_line = len(self.squad) - 1
+            
     def draw_other_panes(self):
         if len(self.squad) != 0:
+            '''
             #oops
             chop_me = self.text[self.cursor_pos][0]
             chop_me = chop_me.split(')')[0]
@@ -199,6 +213,8 @@ class TopPane(Pane):
             x = int(x.split('(')[1])
             self.unit = view.grid[x][y].contents
             #back to not the-worst-coding-ever...
+            '''
+            self.unit = self.squad[self.cursor_pos]
             view.make_tile_sets(self.unit)
             view.draw_grid(None)
             view.middle.text = []
