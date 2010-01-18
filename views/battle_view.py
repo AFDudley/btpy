@@ -275,7 +275,8 @@ class MiddlePane(Pane):
         if self.text[self.cursor_pos][0] == 'Attack':
             view.draw_grid('Targets')
             view.bottom.title = "Targets:"
-            targets = tuple(view.targets)
+            targets = list(view.targets)
+            targets.sort()
             #The panes can only hold 10 lines.
             for i in xrange(len(targets)):
                 text = str(i) + ": " + str(targets[i]) + " HP: " + \
@@ -375,8 +376,6 @@ class BottomPane(Pane):
                 self.cursor_pos = self.old_cursor
                 self.last_line  = self.old_last_line
                 self.inside_confirm = False
-                #self.last_action_type = None
-                #view.transition(self)
                 self.draw_other_panes()
         else:
             self.old_text      = self.text
@@ -580,8 +579,6 @@ class View:
         self.battle = BattlePane((242, TOPINSET), self.grid, tilesize=32, tiles=(16,16))
         self.battle_state = battle.state(grid=self.grid, battlefield=self.battle)
         #console code
-        #self.console = pyconsole.Console(screen, (2,398,794,200), vars={"repeat_rate":200})
-        #self.console.setvar("python_mode", not self.console.getvar("python_mode"))
         self.console = pyconsole.Console(screen, (2,398,794,200))
         self.console.set_interpreter()
         
@@ -666,6 +663,7 @@ class View:
         for i in text:
             print i
             view.console.output(i)
+            
     def transition(self, dest_state):
         """transitions from current_state to dest_state"""
         self.current_state.active = False
