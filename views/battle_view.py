@@ -332,9 +332,9 @@ class BottomPane(Pane):
                 self.inside_confirm = True
             
     def draw_other_panes(self):
-        if self.action == 'move':
-            self.last_line = len(self.move) - 1 
-            if self.inside_confirm == False:
+        if self.inside_confirm == False:
+            if self.action == 'move':
+                self.last_line = len(self.move) - 1 
                 self.text = []
                 self.text.append((str(self.cursor_pos) + ": " + str(self.move[self.cursor_pos]) + "?", black, white))
                 view.draw_grid('Move')
@@ -343,22 +343,15 @@ class BottomPane(Pane):
                 area -= view.loc
                 view.battle.color_tiles(area - view.move, pink)
                 view.battle.color_tiles(area & view.move, purp)
-            else:
-                pass
-        if self.action == 'attack':
-            if self.inside_confirm == False:
-                '''
-                At some point, it would be nice if this showed all the units
-                effected by the attack. It would also be nice to see damages 
-                that's a ways off.
-                '''
+            if self.action == 'attack':
                 view.draw_grid('Targets')
                 if view.unit.weapon.type == 'Ice':
                     area = view.battle.calc_wand_area(view.unit, self.targets[self.cursor_pos])
                     view.battle.color_tiles(area, black)
+                    print "area:", len(area)
                 view.battle.set_tile_color(self.targets[self.cursor_pos], red)
-        if self.action == 'pass':
-            pass
+            if self.action == 'pass':
+                pass
     def process_return(self):
         #the trickist
         if self.inside_confirm == True:

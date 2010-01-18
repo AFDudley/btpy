@@ -247,6 +247,7 @@ class Battlefield(object):
         """Calcuate damage delt to defdr from atkr. Also calculates the damage of 
         all units within a blast range. if weapon has a blast range list of
         (target, dmg) is returned. otherwise just dmg is returned"""
+        #Broken!!!
         weapon = atkr.weapon
         ax,ay = aloc = atkr.location
         dx,dy = dloc = defdr.location
