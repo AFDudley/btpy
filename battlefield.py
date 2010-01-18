@@ -275,7 +275,7 @@ class Battlefield(object):
                     if contains(pat, dloc):
                         #ranges = (dx, dy, (self.grid.x - 1 - dx), (self.grid.y - 1 - dy),)
                         #need to check ranges
-                        ranges  = (abs(dx - ax), abs(dy - ay), abs(dx - ay), abs(dy - ay))
+                        ranges  = (abs(dx - ax), abs(dy - ay), abs(dx - ax), abs(dy - ay))
                         new_pat = atkr.weapon.make_pattern(aloc, ranges[i], direction[i])
                         targets = list(set(self.find_units()) & set(new_pat))
                         dmg_list = []
