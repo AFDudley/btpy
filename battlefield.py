@@ -225,7 +225,7 @@ class Battlefield(object):
                 raise Exception("Defender's y coord  %s is off grid" %dy)
         else:
             raise Exception("Defender's x coord %s is off grid" %dx)
-    '''
+    
     def calc_wand_dmg(self, atkr, defdr):
         direction = {0:'West', 1:'North', 2:'East', 3:'South'}
         maxes = (ax, ay, (self.grid.x - 1 - ax), (self.grid.y - 1 - ay),)
@@ -234,24 +234,14 @@ class Battlefield(object):
             if contains(pat, dloc):
                 #ranges = (dx, dy, (self.grid.x - 1 - dx), (self.grid.y - 1 - dy),)
                 #need to check ranges
-                ranges  = (abs(dx - ax), abs(dy - ay), abs(dx - ay), abs(dy - ay))
+                ranges  = (abs(dx - ax), abs(dy - ay), abs(dx - ax), abs(dy - ay))
                 new_pat = atkr.weapon.make_pattern(aloc, ranges[i], direction[i])
                 targets = list(set(self.find_units()) & set(new_pat))
                 dmg_list = []
                 area = len(new_pat)
-                for i in targets:
-                    defdr = self.grid[i[0]][i[1]].contents
-                    temp_dmg = self.dmg(atkr, defdr, weapon.type)
-                    if temp_dmg != 0:
-                        temp_dmg /= area
-                    dmg_list.append((defdr, temp_dmg))
-                    else:
-                        pass # no damage was dealt, don't append anything.
-                if len(dmg_list) == 0:
-                    return None #No damage.
-                else:
-                    return dmg_list
-    '''
+                
+
+    
     def calc_damage(self, atkr, defdr):
         """Calcuate damage delt to defdr from atkr. Also calculates the damage of 
         all units within a blast range. if weapon has a blast range list of
@@ -283,7 +273,7 @@ class Battlefield(object):
                     if contains(pat, dloc):
                         #ranges = (dx, dy, (self.grid.x - 1 - dx), (self.grid.y - 1 - dy),)
                         #need to check ranges
-                        ranges  = (abs(dx - ax), abs(dy - ay), abs(dx - ay), abs(dy - ay))
+                        ranges  = (abs(dx - ax), abs(dy - ay), abs(dx - ax), abs(dy - ay))
                         new_pat = atkr.weapon.make_pattern(aloc, ranges[i], direction[i])
                         targets = list(set(self.find_units()) & set(new_pat))
                         dmg_list = []
