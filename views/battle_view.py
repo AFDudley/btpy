@@ -170,15 +170,7 @@ class TopPane(Pane):
             self.squad = view.battle.squad1
         else:
             self.squad = view.battle.squad2
-        if len(self.squad) == 0:
-            self.text = []
-            self.title = "There is no other"
-            self.text.append(("squad.", darkg, white))
-            self.text.append(("Press Esc to quit or", darkg, white))
-            self.text.append(("ctrl-w for the console.", darkg, white))
-            self.last_line = 0
-            self.cursor_pos = -1
-        else:
+        if len(self.squad) > 0:
             self.text = []
             self.title = self.squad.name + " Inital Value: " + str(self.squad.value)
             self.last_line = - 1
@@ -219,15 +211,22 @@ class TopPane(Pane):
                 view.middle.title = "Unit cannot act."
             else:
                 view.middle.title = "Unit can: "
-                if len(view.move) != 0:
+                if len(view.move) != 0 and view.last_action_type != 'move':
                     view.middle.title += "Move "
-                if len(view.targets) != 0:
+                if len(view.targets) != 0 and view.last_action_type != 'attack':
                     view.middle.title += "Attack "
             for i in view.unit.text:
                 view.middle.text.append((i, darkg, white))
             view.bottom.title = "Enemy Info:"
             
         else:
+            self.text = []
+            self.title = "There is no other"
+            self.text.append(("squad.", darkg, white))
+            self.text.append(("Press Esc to quit or", darkg, white))
+            self.text.append(("ctrl-w for console.", darkg, white))
+            self.last_line = 0
+            self.cursor_pos = -1
             view.middle.title = None
             view.bottom.title = None
             view.middle.text = []
@@ -317,19 +316,20 @@ class BottomPane(Pane):
     def set_state(self):
         self.last_line = len(self.text) - 1
         self.cursor_pos = 0
-        if view.middle.text[view.middle.cursor_pos][0] == 'Attack':
-            self.action = 'attack'
-            self.targets = list(view.targets)
-            self.targets.sort()
-            view.battle.set_tile_color(self.targets[self.cursor_pos], red)
-        elif view.middle.text[view.middle.cursor_pos][0] == 'Move':
-            self.action = 'move'
-            self.title = "Move to:"
-            self.move = list(view.move)
-            self.move.sort()            
-        else:
-            self.action = 'pass'
-            self.inside_confirm = True
+        if self.inside_confirm == False:
+            if view.middle.text[view.middle.cursor_pos][0] == 'Attack':
+                self.action = 'attack'
+                self.targets = list(view.targets)
+                self.targets.sort()
+                view.battle.set_tile_color(self.targets[self.cursor_pos], red)
+            elif view.middle.text[view.middle.cursor_pos][0] == 'Move':
+                self.action = 'move'
+                self.title = "Move to:"
+                self.move = list(view.move)
+                self.move.sort()            
+            else:
+                self.action = 'pass'
+                self.inside_confirm = True
             
     def draw_other_panes(self):
         if self.action == 'move':
@@ -353,8 +353,10 @@ class BottomPane(Pane):
                 that's a ways off.
                 '''
                 view.draw_grid('Targets')
+                if view.unit.weapon.type == 'Ice':
+                    area = view.battle.calc_wand_area(view.unit, self.targets[self.cursor_pos])
+                    view.battle.color_tiles(area, black)
                 view.battle.set_tile_color(self.targets[self.cursor_pos], red)
-                
         if self.action == 'pass':
             pass
     def process_return(self):
@@ -372,15 +374,21 @@ class BottomPane(Pane):
                 view.send_action()
                 ###
             else:
-                self.text = self.old_text
-                self.cursor_pos = self.old_cursor
-                self.last_line  = self.old_last_line
-                self.inside_confirm = False
-                self.draw_other_panes()
+                if self.action != 'pass':
+                    self.text           = self.old_text
+                    self.title          = self.old_title
+                    self.cursor_pos     = self.old_cursor
+                    self.last_line      = self.old_last_line
+                    self.inside_confirm = False
+                    self.draw_other_panes()
+                else:
+                    view.middle.title = "berries"
+                    view.transition(view.middle)
         else:
-            self.old_text      = self.text
-            self.old_cursor    = self.cursor_pos
-            self.old_last_line = self.last_line
+            self.old_text       = self.text
+            self.old_title      = self.title
+            self.old_cursor     = self.cursor_pos
+            self.old_last_line  = self.last_line
             self.inside_confirm = True
             self.title = "Are you sure?"
             self.text = []
@@ -581,6 +589,7 @@ class View:
         #console code
         self.console = pyconsole.Console(screen, (2,398,794,200))
         self.console.set_interpreter()
+        self.last_action_type = None
         
     #not needed.
     def coroutine(func):
@@ -640,7 +649,6 @@ class View:
             pass
     def set_action(self, unit, type, target):
         """sets the properties of the current action"""
-        self.last_action_type = self.current_action[1]
         self.current_action = battle.action(unit, type, target)
             
     def send_action(self):
@@ -656,9 +664,11 @@ class View:
         the top pane only when the ply is full, otherwise, move to the middle.
         '''
         if self.battle_state.current_ply[0] == None:
+            self.last_action_type = None
             self.transition(view.top)
         else:
             self.make_tile_sets(self.unit)
+            self.last_action_type = self.current_action[1]
             self.transition(view.middle)
         for i in text:
             print i

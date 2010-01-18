@@ -226,21 +226,22 @@ class Battlefield(object):
         else:
             raise Exception("Defender's x coord %s is off grid" %dx)
     
-    def calc_wand_dmg(self, atkr, defdr):
+    def calc_wand_area(self, atkr, target):
+        ax,ay = aloc = atkr.location
+        dx,dy = dloc = target
         direction = {0:'West', 1:'North', 2:'East', 3:'South'}
         maxes = (ax, ay, (self.grid.x - 1 - ax), (self.grid.y - 1 - ay),)
         for i in direction:
             pat = atkr.weapon.make_pattern(aloc, maxes[i], direction[i])
             if contains(pat, dloc):
-                #ranges = (dx, dy, (self.grid.x - 1 - dx), (self.grid.y - 1 - dy),)
-                #need to check ranges
                 ranges  = (abs(dx - ax), abs(dy - ay), abs(dx - ax), abs(dy - ay))
-                new_pat = atkr.weapon.make_pattern(aloc, ranges[i], direction[i])
-                targets = list(set(self.find_units()) & set(new_pat))
-                dmg_list = []
-                area = len(new_pat)
-                
-
+                pat_ = atkr.weapon.make_pattern(aloc, ranges[i], direction[i])                
+                new_pat = []
+                for i in pat_:
+                    if 0 <= i[0] < self.grid.x:
+                        if 0 <= i[1] < self.grid.y:
+                            new_pat.append(i)
+                return new_pat
     
     def calc_damage(self, atkr, defdr):
         """Calcuate damage delt to defdr from atkr. Also calculates the damage of 
@@ -273,7 +274,7 @@ class Battlefield(object):
                     if contains(pat, dloc):
                         #ranges = (dx, dy, (self.grid.x - 1 - dx), (self.grid.y - 1 - dy),)
                         #need to check ranges
-                        ranges  = (abs(dx - ax), abs(dy - ay), abs(dx - ax), abs(dy - ay))
+                        ranges  = (abs(dx - ax), abs(dy - ay), abs(dx - ay), abs(dy - ay))
                         new_pat = atkr.weapon.make_pattern(aloc, ranges[i], direction[i])
                         targets = list(set(self.find_units()) & set(new_pat))
                         dmg_list = []
@@ -336,7 +337,6 @@ class Battlefield(object):
     def apply_queued(self):
         """applies damage to targets stored in dmg_queue"""
         message = []
-        message.append("Damage from dmg_queue:")
         for i in self.dmg_queue.keys():
             udmg = []
             for dmg_lst in reversed(xrange(len(self.dmg_queue[i]))):
