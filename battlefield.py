@@ -273,7 +273,6 @@ class Battlefield(object):
                 for i in direction:
                     pat = atkr.weapon.make_pattern(aloc, maxes[i], direction[i])
                     if contains(pat, dloc):
-                        #ranges = (dx, dy, (self.grid.x - 1 - dx), (self.grid.y - 1 - dy),)
                         #need to check ranges
                         ranges  = (abs(dx - ax), abs(dy - ay), abs(dx - ax), abs(dy - ay))
                         new_pat = atkr.weapon.make_pattern(aloc, ranges[i], direction[i])
@@ -307,10 +306,11 @@ class Battlefield(object):
             x,y = unit.location
             unit.hp = 0
             self.grid[x][y].contents = None
-            unit.location = (-1,-1) 
+            unit.location = (-1,-1)
+            unit.squad.remove(unit)
             del self.dmg_queue[unit] 
             self.graveyard.append(unit)
-
+            
     def attack(self, atkr, target):
         """calls calc_damage, applies result, Handles death."""
         defdr = self.grid[target[0]][target[1]].contents

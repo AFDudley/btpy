@@ -177,26 +177,25 @@ class TopPane(Pane):
             #cpu time < human time:
             self.squad.text = []
             for i in reversed(xrange(len(self.squad))):
-                if self.squad[i].hp == 0:
-                    self.squad.pop(i)
+                #Some of these values only need to be computed once.
+                #This should really be done by a function in battlepane.scient
+                unit = self.squad[i]
+                unit.text = [] #oops...
+                if self.squad[i].name == None:
+                    name = str(self.squad[i].location)
+                squ_txt = name + " V: " + str(self.squad[i].value())
+                self.text.append((squ_txt, darkg, white))
+                unit.text.append("HP: " + str(unit.hp))
+                unit.text.append("E, F, I, W")
+                unit.text.append(str(unit.comp[E]) + ", " + str(unit.comp[F]) + ", " + str(unit.comp[I]) +  ", " + str(unit.comp[W]))
+                if contains(PHY, unit.weapon.type):
+                    atk = "PA: " + str(unit.patk)
                 else:
-                    unit = self.squad[i]
-                    unit.text = [] #oops...
-                    if self.squad[i].name == None:
-                        name = str(self.squad[i].location)
-                    squ_txt = name + " V: " + str(self.squad[i].value())
-                    self.text.append((squ_txt, darkg, white))
-                    unit.text.append("HP: " + str(unit.hp))
-                    unit.text.append("E, F, I, W")
-                    unit.text.append(str(unit.comp[E]) + ", " + str(unit.comp[F]) + ", " + str(unit.comp[I]) +  ", " + str(unit.comp[W]))
-                    if contains(PHY, unit.weapon.type):
-                        atk = "PA: " + str(unit.patk)
-                    else:
-                        atk = "MA: " + str(unit.matk)
-                    unit.text.append("Weapon: " + unit.weapon.type)
-                    unit.text.append(atk)
-                    unit.text.append("PD: " + str(unit.pdef) + " MD: " + str(unit.mdef))
-                    unit.text.append("Location: " + str(unit.location))
+                    atk = "MA: " + str(unit.matk)
+                unit.text.append("Weapon: " + unit.weapon.type)
+                unit.text.append(atk)
+                unit.text.append("PD: " + str(unit.pdef) + " MD: " + str(unit.mdef))
+                unit.text.append("Location: " + str(unit.location))
             self.text.reverse()
             self.last_line = len(self.squad) - 1
             
