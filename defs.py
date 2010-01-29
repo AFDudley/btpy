@@ -263,7 +263,7 @@ class Squad(list):
         key.squad = self
         
     def __delitem__(self, key):
-        del key.squad
+        del self[key].squad
         temp = self[key].value()
         self.free_spaces += self.unit_size(self[key])
         list.__delitem__(self, key)

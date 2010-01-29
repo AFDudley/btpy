@@ -198,7 +198,13 @@ class TopPane(Pane):
                 unit.text.append("Location: " + str(unit.location))
             self.text.reverse()
             self.last_line = len(self.squad) - 1
+        else:
+            #set next move to pass; send to battle_state; which should end the game.
             
+            view.set_action(None, 'pass', None)
+            view.send_action()
+            print "Game Over."
+
     def draw_other_panes(self):
         if len(self.squad) != 0:
             self.unit = self.squad[self.cursor_pos]
@@ -217,6 +223,8 @@ class TopPane(Pane):
             for i in view.unit.text:
                 view.middle.text.append((i, darkg, white))
             view.bottom.title = "Enemy Info:"
+            #enemies in range
+            #
             
         else:
             self.text = []
@@ -406,7 +414,7 @@ class BattlePane(Pane, battlefield.Battlefield):
         self.player2.squad_list = [rand_squad()]
         self.squad1 = self.player1.squad_list[0]
         self.squad2 = self.player2.squad_list[0]
-    
+        
         self.squad1.name = 'p1'
         self.squad1.num  = '1'
         self.squad2.name = 'p2'
@@ -684,7 +692,8 @@ if __name__ == '__main__':
     grid = BattlePane.Grid(tiles=(16,16), tilesize=32)
     view = View(screen, grid)
     view.state = view.get_key()
-    
+    view.battle_state.player1.name = "Player 1"
+    view.battle_state.player2.name = "Player 2"
     view.console.active = 0
     paneimgs = pygame.sprite.RenderUpdates()
     for pane in (view.top, view.middle, view.bottom, view.battle):
