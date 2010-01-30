@@ -39,6 +39,7 @@ PANE_SIZE = (160, 160)
 PANE_HEIGHT, PANE_WIDTH = PANE_SIZE
 TOPINSET = 42
 LEFTINSET = 42
+#FONT =  pygame.font.Font('DroidSansMono.ttf', 12)
 
 def rand_unit(suit=None): #may change to rand_unit(suit, kind)
     """Returns a random Scient of suit. Random suit used if none given."""
@@ -87,7 +88,7 @@ class Pane(pygame.sprite.Sprite):
             self.rect.top + self.border_width,
             self.rect.width - self.border_width * 2,
             self.rect.height - self.border_width * 2)
-        self.font = pygame.font.SysFont('droidsansmono',  12)
+        self.font = FONT
         self.font_color = [255, 255, 255]
         self.title = title
         self.text = []
@@ -516,7 +517,7 @@ class BattlePane(Pane, battlefield.Battlefield):
             
         def draw_text(self):
             """a crude, crude hack."""
-            self.font = pygame.font.SysFont('droidsansmono',  12)
+            self.font = FONT
             self.font_color = [0, 0, 0]
             textrect = self.font.render(self.squad.num, True, self.font_color, \
             COLORS[self.element])
@@ -688,6 +689,7 @@ class View:
 ###
 if __name__ == '__main__':
     pygame.init()
+    FONT =  pygame.font.Font('DroidSansMono.ttf', 12)
     screen = pygame.display.set_mode([800, 600])
     grid = BattlePane.Grid(tiles=(16,16), tilesize=32)
     view = View(screen, grid)
