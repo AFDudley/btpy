@@ -25,9 +25,7 @@ from pygame.locals import *
 import textwrap # Used for proper word wrapping
 from string import ascii_letters
 from code import InteractiveConsole        # Gives us access to the python interpreter
-import readline
-from IPython.Shell import IPShellEmbed
-import pdb
+#from IPython.Shell import IPShellEmbed
 __version__ = "0.7"
 
 WIDTH=0
@@ -40,7 +38,7 @@ ERR = 2
 PYTHON = 2 
 
 path = os.path.abspath(os.path.dirname(__file__))
-font_path = os.path.join(path, "fonts")
+#font_path = os.path.join(path, "fonts")
 
 class Writable(list):
     line_pointer = -1
@@ -99,7 +97,7 @@ class Console:
         self.txt_layer = pygame.Surface(self.size)
         self.txt_layer.set_colorkey(self.bg_color)
         
-        self.font = pygame.font.SysFont("monospace", 14)
+        self.font = pygame.font.Font('DroidSansMono.ttf', 12)
         
         self.font_height = self.font.get_linesize()
         self.max_lines = (self.size[HEIGHT] / self.font_height) - 1
@@ -238,8 +236,8 @@ class Console:
     # Functions to communicate with the console and the python interpreter#
     def set_interpreter(self):
         self.output("Entering Python mode")
-        #self.python_interpreter = IPShellEmbed(['-quick','-noreadline'])
-        self.python_interpreter = InteractiveConsole(locals=__IPYTHON__.user_ns)
+        #self.python_interpreter = InteractiveConsole(locals=__IPYTHON__.user_ns)
+        self.python_interpreter = InteractiveConsole()
         self.tmp_fds = []
         self.py_fds = [Writable() for i in range(3)]
         self.c_ps = self.ps2

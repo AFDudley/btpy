@@ -688,6 +688,7 @@ class View:
 
 ###
 if __name__ == '__main__':
+    print "Copyright (c) 2010 A. Frederick Dudley. All rights reserved. PLEASE DO NOT REDISTRIBUTE"
     pygame.init()
     FONT =  pygame.font.Font('DroidSansMono.ttf', 12)
     screen = pygame.display.set_mode([800, 600])
