@@ -1,5 +1,5 @@
 """Helpers for figuring out HTK averages, does not take into account healing,
-   because it hasn't be coded properly yet."""
+"""
 
 from defs import *
 from const import *
