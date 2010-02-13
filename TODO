@@ -1,0 +1,16 @@
+Add unit tests.
+Add Nescients to defs.py
+Add move and place logic for Nescients into battlefield.py
+After process_action battle.py should return an error, the game state after
+the processed action or a changeset.
+Add support for hexgonal grid.
+
+---
+Develop django/ajax version of battle_view.
+included user registration, profiles, accounts, etc.
+Add a NDA.
+
+---
+Use mongodb to create and store the matrix of game prototypes. 
+---
+Design the world, world view, and asset management.

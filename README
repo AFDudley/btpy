@@ -1,0 +1,4 @@
+views/battle_view.py is the working demo, run it with:
+$ ipython views/battle_view.py
+
+tests/ provides some simple examples... 
