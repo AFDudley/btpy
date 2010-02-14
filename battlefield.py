@@ -4,15 +4,14 @@ from operator import contains
 import random
 
 from const import COMP, ELEMENTS, E, F, I, W, ORTH, PHY, MAG
-from defs import Scient
+from defs import Scient, loc, noloc
 from helpers import rand_squad
 
-#Battlefield needs a coord class
-#there is a serious problem in this logic. it assumes that units fit on one
+#There is a serious problem in this logic. it assumes that units fit on one
 #tile, nesceints do not.
 class Tile(object):
     """Tiles are contained in battlefields and hold units and stones"""
-    def __init__(self, location = ()):
+    def __init__(self, location = noloc):
         self.comp = COMP.copy() #Currently any 4 values 0...255
         self.contents = None
         self.location = location # makes abstraction a little easier.
@@ -37,7 +36,7 @@ class Grid(tuple):
         for xpos in range(x):
             temp = ()
             for ypos in range(y):
-                temp += Tile((xpos,ypos)),
+                temp += Tile(loc(xpos,ypos)),
             grid += temp,
         return tuple.__new__(cls, grid)
 
@@ -113,7 +112,7 @@ class Battlefield(object):
                 if abs(xsrc-xdest) + abs(ysrc-ydest) <= move:
                     self.grid[xdest][ydest].contents = \
                     self.grid[xsrc][ysrc].contents
-                    self.grid[xdest][ydest].contents.location = (xdest, ydest)
+                    self.grid[xdest][ydest].contents.location = loc(xdest, ydest)
                     self.grid[xsrc][ysrc].contents = None
                 else:
                     raise Exception("tried moving more than %s tiles" %move)
@@ -132,13 +131,13 @@ class Battlefield(object):
         else:
             raise Exception("Tile x (tile[0]: %s) is out of range" %tile[0])
         
-        if unit.location == (None, None):
+        if unit.location == noloc:
             if self.grid[xpos][ypos].contents == None:
                 self.grid[xpos][ypos].contents = unit
-                unit.location = (xpos, ypos)
+                unit.location = loc(xpos, ypos)
                 self.dmg_queue[unit] = [] #append unit to dmg_queue
                 
-            elif unit.location == (xpos, ypos):
+            elif unit.location == loc(xpos, ypos):
                 raise Exception("This unit is already on (%s,%s)" %(xpos, ypos))
         
             elif self.grid[xpos][ypos].contents != None:
@@ -158,7 +157,7 @@ class Battlefield(object):
         for x in range(len(self.grid)): #maybe using .x and .y would be faster?
             for y in range(len(self.grid[x])):
                 if self.grid[x][y].contents:
-                    list.append((x,y))
+                    list.append((x,y)) #maybe this should be a loc?
         return list    
     
     def rand_place_squad(self, squad):
@@ -171,7 +170,7 @@ class Battlefield(object):
             if len(self.find_units()) == (self.grid.x * self.grid.y):
                 raise Exception("Grid is full")
             else:
-                while squad[unit].location == (None, None):
+                while squad[unit].location == noloc:
                     try:
                         self.place_unit(squad[unit], RandPos())
                     except: 
@@ -187,7 +186,7 @@ class Battlefield(object):
         for x in range(len(self.grid)):
             for y in range(len(self.grid[x])):
                 if self.grid[x][y].contents:
-                    self.grid[x][y].contents.location = (None, None)
+                    self.grid[x][y].contents.location = noloc
                     self.grid[x][y].contents = None
                     count += 1
         return count
@@ -195,15 +194,15 @@ class Battlefield(object):
     #Attack/Damage stuff
     def dmg(self, atkr, defdr, type):
         """Calculates the damage of an attack"""
-        dx,dy = defdr.location
+        dloc = defdr.location
         damage_dealt = {E: 0, F: 0, I: 0, W: 0}
-        if 0 <= dx < self.grid.x:
-            if 0 <= dy < self.grid.y:
+        if 0 <= dloc.x < self.grid.x:
+            if 0 <= dloc.y < self.grid.y:
                 if contains(PHY,type) == True:
                     for element in damage_dealt:
                         dmg = (atkr.p + atkr.patk + (2 * atkr.comp[element]) \
                         + atkr.weapon.comp[element]) - (defdr.p + defdr.pdef \
-                        + (2 * defdr.comp[element]) + self.grid[dx][dy].comp[element])
+                        + (2 * defdr.comp[element]) + self.grid[dloc.x][dloc.y].comp[element])
                         dmg = max(dmg, 0)
                         damage_dealt[element] = dmg
                     damage = sum(damage_dealt.values())
@@ -212,7 +211,7 @@ class Battlefield(object):
                     for element in damage_dealt:
                         dmg = (atkr.m + atkr.matk + (2 * atkr.comp[element]) \
                         + atkr.weapon.comp[element]) - (defdr.m + defdr.mdef \
-                        + (2 * defdr.comp[element]) + self.grid[dx][dy].comp[element])
+                        + (2 * defdr.comp[element]) + self.grid[dloc.x][dloc.y].comp[element])
                         dmg = max(dmg, 0)
                         damage_dealt[element] = dmg
              
@@ -228,7 +227,7 @@ class Battlefield(object):
     
     def calc_wand_area(self, atkr, target):
         ax,ay = aloc = atkr.location
-        dx,dy = dloc = target
+        dx,dy = dloc = loc._make(target)
         direction = {0:'West', 1:'North', 2:'East', 3:'South'}
         maxes = (ax, ay, (self.grid.x - 1 - ax), (self.grid.y - 1 - ay),)
         for i in direction:
@@ -249,8 +248,8 @@ class Battlefield(object):
         (target, dmg) is returned. otherwise just dmg is returned"""
         #Broken!!!
         weapon = atkr.weapon
-        ax,ay = aloc = atkr.location
-        dx,dy = dloc = defdr.location
+        aloc = atkr.location
+        dloc = defdr.location
         in_range = weapon.map_to_grid(aloc, self.grid.size)
         if not contains(in_range, dloc):
             raise Exception( \
@@ -269,12 +268,12 @@ class Battlefield(object):
                     return None #No damage.
             else:
                 direction = {0:'West', 1:'North', 2:'East', 3:'South'}
-                maxes = (ax, ay, (self.grid.x - 1 - ax), (self.grid.y - 1 - ay),)
+                maxes = (aloc.x, aloc.y, (self.grid.x - 1 - aloc.x), (self.grid.y - 1 - aloc.y),)
                 for i in direction:
                     pat = atkr.weapon.make_pattern(aloc, maxes[i], direction[i])
                     if contains(pat, dloc):
                         #need to check ranges
-                        ranges  = (abs(dx - ax), abs(dy - ay), abs(dx - ax), abs(dy - ay))
+                        ranges  = (abs(dloc.x - aloc.x), abs(dloc.y - aloc.y), abs(dloc.x - aloc.x), abs(dloc.y - aloc.y))
                         new_pat = atkr.weapon.make_pattern(aloc, ranges[i], direction[i])
                         targets = list(set(self.find_units()) & set(new_pat))
                         dmg_list = []
@@ -306,7 +305,7 @@ class Battlefield(object):
             x,y = unit.location
             unit.hp = 0
             self.grid[x][y].contents = None
-            unit.location = (-1,-1)
+            unit.location = loc(-1,-1)
             unit.squad.remove(unit)
             del self.dmg_queue[unit] 
             self.graveyard.append(unit)

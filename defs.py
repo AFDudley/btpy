@@ -1,11 +1,17 @@
 """Definitions for game units and unit interaction"""
-
+from collections import namedtuple
 import random
 from math import log
 
 from const import * #needs fix, maybe whole file needs rewrite
                     #why aren't there constants in python?
-                    
+
+class loc(namedtuple('loc', 'x y')):
+    __slots__ = ()
+    def __repr__(self):
+        return '(%r, %r)' % self
+noloc = loc(None,None)                    
+
 class Stone(object):
     def __init__(self, comp):
         self.comp = comp
@@ -29,20 +35,65 @@ class Weapon(Stone): #the names of all these functions is quite confusing; fix.
         Stone.__init__(self, comp)
         self.element = element
         self.type ='None'
-        self.attack_pattern = [(0,-1),(1,0),(0,1),(-1,0),(-1,-1),(-1,1),(1,1),(1,-1)]
+        #self.attack_pattern = [(0,-1),(1,0),(0,1),(-1,0),(-1,-1),(-1,1),(1,1),(1,-1)]
     
     def map_to_grid(self, origin, grid_size):
         """maps pattern to grid centered on origin. 
-        Returns list of tiles on grid."""
+        Returns list of tiles on grid. (Lots of room for optimization)"""
         orix,oriy = origin
         tiles = []
-        for i in self.attack_pattern:
-            x,y = (i[0] + origin[0]),(i[1] + origin[1])
-            if 0 <= x < grid_size[0]:
-                if 0 <= y < grid_size[1]:
-                    tiles.append((x,y))
-        return tiles
-    
+        if self.type != 'Ice':
+            if self.type == 'Fire':
+                no_hit = 4 #the scient move value
+                min = -(2 * no_hit)
+                max = -min + 1
+                dist = range(min,max)
+                attack_pattern = []
+                [[attack_pattern.append((x,y)) for y in dist if (no_hit < (abs(x) + abs(y)) < max) ] for x in dist]
+            else:
+                attack_pattern = [(0,-1),(1,0),(0,1),(-1,0),(-1,-1),(-1,1),(1,1),(1,-1)]
+
+            for i in attack_pattern:
+                x,y = (i[0] + origin[0]),(i[1] + origin[1])
+                if 0 <= x < grid_size[0]:
+                    if 0 <= y < grid_size[1]:
+                        tiles.append((x,y))
+            return tiles
+        else:
+            def make_pattern(self, origin, distance, pointing):
+                """generates a pattern based on an origin, distance, and
+                direction. Returns a set of coords"""
+                #TODO: use inversion to create Wand/Ice attack pattern.
+                #needs lots o checking
+                src = origin
+                sid = 2 * distance
+                pattern = []
+                tiles = []
+                for i in xrange(sid): #generate pattern based on distance from origin
+                    if i % 2:
+                        in_range = xrange(-(i/2),((i/2)+1))
+                        #rotate pattern based on direction
+                        for j in xrange(len(in_range)): 
+                            if pointing == 'North':
+                                pattern.append((src[0] + in_range[j], (src[1] - (1 +(i/2)))))
+                            elif pointing =='South':
+                                pattern.append((src[0] + in_range[j], (src[1] + (1 +(i/2)))))
+                            elif pointing =='East':
+                                pattern.append((src[0] +  (1 +(i/2)), (src[1] - in_range[j])))
+                            elif pointing =='West':
+                                pattern.append((src[0] -  (1 +(i/2)), (src[1] - in_range[j])))
+                
+                return pattern
+            direction = {0:'West', 1:'North', 2:'East', 3:'South'}
+            maxes = (origin[0], origin[1], (grid_size[0] - 1 - origin[0]), \
+            (grid_size[1] - 1 - origin[1]),)
+            tiles = []
+            for i in direction:
+                for j in  self.make_pattern(origin, maxes[i], direction[i]):
+                    if 0 <= j[0] < grid_size[0]:
+                        if 0 <= j[1] < grid_size[1]:
+                            tiles.append(j)
+            return tiles
 class Sword(Weapon):
     """Close range physial weapon"""
     def __init__(self, element, comp):
@@ -63,16 +114,14 @@ class Bow(Weapon):
             [[temp.append((x,y)) for y in dist if (no_hit < (abs(x) \
             + abs(y)) < max) ] for x in dist]
             return temp
-        self.attack_pattern = make_attack_pattern()
+        #self.attack_pattern = make_attack_pattern()
     
 class Wand(Weapon):
     """Long range magical weapon"""
     def __init__(self, element, comp):
         Weapon.__init__(self, element, comp)
         self.type = 'Ice'
-        self.targets = []
-        self.attack_pattern = []
-        
+        #self.attack_pattern = []
     def make_pattern(self, origin, distance, pointing):
         """generates a pattern based on an origin, distance, and
         direction. Returns a set of coords"""
@@ -97,7 +146,7 @@ class Wand(Weapon):
                         pattern.append((src[0] -  (1 +(i/2)), (src[1] - in_range[j])))
         
         return pattern
-        
+    '''    
     def map_to_grid(self, origin, grid_size):
         """Maps pattern to grid centered on origin.
         Returns list of tiles on grid.
@@ -115,7 +164,7 @@ class Wand(Weapon):
                     if 0 <= j[1] < grid_size[1]:
                         tiles.append(j)
         return tiles
-
+    '''
 class Glove(Weapon):
     """Close range magical weapon"""
     def __init__(self, element, comp):
@@ -141,7 +190,7 @@ class Unit(object):
         self.hp   = None
         self.age  = None
         self.name = None
-        self.location = (None, None)
+        self.location = noloc
 
         
     def value(self):
@@ -159,7 +208,7 @@ class Unit(object):
             
         #Need to write a seperate function:
         return "%s -> suit: %2s | val: %3s | loc: %2s, %2s | HP: %5s \n" % (title, \
-    self.element[0], self.value(), self.location[0], self.location[1], self.hp) 
+    self.element[0], self.value(), self.location.x, self.location.y, self.hp) 
 
 class Scient(Unit):
     """A Scient (playable character) unit.

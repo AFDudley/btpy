@@ -1,4 +1,10 @@
 views/battle_view.py is the working demo, run it with:
 $ ipython views/battle_view.py
 
+Use the up and down arrows to highlight an item in a pane.
+Use the return key to select an item in a pane.
+Red tiles are tiles the unit can attack
+Blue tiles are tiles the unit can move to
+Purple tiles are tiles that the unit can move to or attack
+
 tests/ provides some simple examples... 
