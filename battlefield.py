@@ -160,22 +160,26 @@ class Battlefield(object):
                     list.append((x,y)) #maybe this should be a loc?
         return list    
     
+    def rand_place_unit(self, unit):
+        #readable?
+        inset = 0 #place units in a smaller area, for testing.
+        def RandPos(): return (random.randint(0, ((self.grid.x - 1) - inset)),
+            random.randint(0, ((self.grid.y - 1) - inset)))
+        if len(self.find_units()) == (self.grid.x * self.grid.y):
+            raise Exception("Grid is full")
+        else:
+            while unit.location == noloc:
+                try:
+                    self.place_unit(unit, RandPos())
+                    break
+                except Exception:
+                    pass
+    
     def rand_place_squad(self, squad):
         """place the units in a squad randomly on the battlefield"""
         for unit in range(len(squad)):
-            #readable?
-            inset = 0 #place units in a smaller area, for testing.
-            def RandPos(): return (random.randint(0, ((self.grid.x - 1) - inset)),
-                random.randint(0, ((self.grid.y - 1) - inset)))
-            if len(self.find_units()) == (self.grid.x * self.grid.y):
-                raise Exception("Grid is full")
-            else:
-                while squad[unit].location == noloc:
-                    try:
-                        self.place_unit(squad[unit], RandPos())
-                    except: 
-                        pass
-    
+            self.rand_place_unit(squad[unit])
+
     def flush_units(self):
         """
         remove all units from grid, returns number of units flushed,

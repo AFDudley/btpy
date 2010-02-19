@@ -151,7 +151,6 @@ class state():
                 self.log.moves.append(self.current_move)
                 #if time is up on the battle, attacker loses/bounces.
                 self.current_move = move(num=self.current_move.num + 1)
-                print "in battle transition"
                 print "squad1: ", len(self.battlefield.squad1)
                 print "squad2: ", len(self.battlefield.squad2)
                 print "pass count: ", self.pass_count 

@@ -15,7 +15,8 @@ noloc = loc(None,None)
 class Stone(object):
     def __init__(self, comp):
         self.comp = comp
-    
+        self.val = self.value()
+
     def value(self):
         """Returns sum of comp, overload as needed"""
         sum = 0
@@ -31,10 +32,12 @@ attack = ('phit','mhit','Pugil','Shoot','Blast','Theurge')
 
 class Weapon(Stone): #the names of all these functions is quite confusing; fix.
     """Scients Equip weapons to do damage"""
-    def __init__(self, element, comp):
+    def __init__(self, element, comp, type=None):
+        #this should return the correct weapon based on type. (?)
+        self.type ='None'
         Stone.__init__(self, comp)
         self.element = element
-        self.type ='None'
+
         #self.attack_pattern = [(0,-1),(1,0),(0,1),(-1,0),(-1,-1),(-1,1),(1,1),(1,-1)]
     
     def map_to_grid(self, origin, grid_size):
@@ -94,6 +97,7 @@ class Weapon(Stone): #the names of all these functions is quite confusing; fix.
                         if 0 <= j[1] < grid_size[1]:
                             tiles.append(j)
             return tiles
+
 class Sword(Weapon):
     """Close range physial weapon"""
     def __init__(self, element, comp):
@@ -105,6 +109,7 @@ class Bow(Weapon):
     def __init__(self, element, comp):
         Weapon.__init__(self, element, comp)
         self.type = 'Fire'
+        '''
         def make_attack_pattern():
             no_hit = 4 #the scient move value
             min = -(2 * no_hit)
@@ -114,8 +119,9 @@ class Bow(Weapon):
             [[temp.append((x,y)) for y in dist if (no_hit < (abs(x) \
             + abs(y)) < max) ] for x in dist]
             return temp
-        #self.attack_pattern = make_attack_pattern()
-    
+        self.attack_pattern = make_attack_pattern()
+        '''
+        
 class Wand(Weapon):
     """Long range magical weapon"""
     def __init__(self, element, comp):
@@ -146,25 +152,7 @@ class Wand(Weapon):
                         pattern.append((src[0] -  (1 +(i/2)), (src[1] - in_range[j])))
         
         return pattern
-    '''    
-    def map_to_grid(self, origin, grid_size):
-        """Maps pattern to grid centered on origin.
-        Returns list of tiles on grid.
-        
-        (This is much more complex than default function because in the case 
-        of Wands the attack_pattern is based on the origin in relation to the 
-        parimiter of the grid)"""
-        direction = {0:'West', 1:'North', 2:'East', 3:'South'}
-        maxes = (origin[0], origin[1], (grid_size[0] - 1 - origin[0]), \
-        (grid_size[1] - 1 - origin[1]),)
-        tiles = []
-        for i in direction:
-            for j in  self.make_pattern(origin, maxes[i], direction[i]):
-                if 0 <= j[0] < grid_size[0]:
-                    if 0 <= j[1] < grid_size[1]:
-                        tiles.append(j)
-        return tiles
-    '''
+
 class Glove(Weapon):
     """Close range magical weapon"""
     def __init__(self, element, comp):
@@ -172,26 +160,17 @@ class Glove(Weapon):
         self.type = 'Wind'
         self.time = 3
     
-class Unit(object):
-    def __init__(self, element, comp):
+class Unit(Stone):
+    def __init__(self, element, comp, name=None):
         if not element in ELEMENTS:
             raise Exception("Invalid element: %s, valid elements are %s" \
             % (element, ELEMENTS))
         self.element = element
         self.comp = comp
-        self.p    = None
-        self.m    = None
-        self.defe = None
-        self.atk  = None
-        self.patk = None
-        self.pdef = None
-        self.matk = None
-        self.mdef = None
-        self.hp   = None
-        self.age  = None
         self.name = None
         self.location = noloc
-
+        self.val = self.value()
+        
         
     def value(self):
         """Returns sum of comp, overload as needed"""
@@ -219,18 +198,19 @@ class Scient(Unit):
       F: fire, I: ice, W: wind}
     """
     
-    def __init__(self, element, comp):
-        Unit.__init__(self, element, comp)
-        self.age = 16
+    def __init__(self, element, comp, name=None, weapon=None,
+                 weapon_bonus=COMP.copy(), location=noloc):
+        Unit.__init__(self, element, comp, name)
         self.move = 4
-        self.weapon = None
-        self.weapon_bonus = COMP.copy()
+        self.weapon = weapon
+        self.weapon_bonus = weapon_bonus
+        self.location = location
         self.equip_limit = {E:1, F:1 ,I:1 ,W:1}
         for i in self.equip_limit:
             self.equip_limit[i] = self.equip_limit[i] + self.comp[i] \
             + self.weapon_bonus[i]            
         self.calcstats()
-        self.equip()
+        self.equip(self.weapon)
 
     def calcstats(self):
         self.p    = (2*(self.comp[F] + self.comp[E]) + self.comp[I] + \
@@ -253,7 +233,11 @@ class Scient(Unit):
             tuple += (self.comp[x],)
         return tuple
     
-    def equip(self, weapon=None):
+    def equip(self, weapon):
+        """
+        A function that automatically equips items based on element.
+        should be moved someplace else.
+        """
         if weapon == None:
             if self.element == 'Earth':
                 self.weapon = Sword(self.element, COMP.copy())
@@ -265,11 +249,13 @@ class Scient(Unit):
                 self.weapon = Glove(self.element, COMP.copy())
             
         else:
+            '''
             if weapon.value() > self.equip_limit[weapon.type]:
                 raise Exception("This unit cannot equip this weapon")
             else:
                 self.weapon = weapon
-
+            '''
+            self.weapon = weapon
 class Nescient(Unit):
         def bite(self, target):
             pass
@@ -302,6 +288,9 @@ class Squad(list):
             self.append(lst)
             
     def __setitem__(self, key, val):
+        #need to change how value of a squad is calculated.
+        #does the value of a squad go down when a unit dies?
+        #how do survival bonuses change squad values?
         size = self.unit_size(key)
         if self.free_spaces < size:
             raise Exception( \

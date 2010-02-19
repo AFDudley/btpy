@@ -1,0 +1,67 @@
+--- !Squad {free_spaces: 3, name: null, value: 1041}
+...
+--- !Scient
+comp: {Earth: 18, Fire: 0, Ice: 99, Wind: 42}
+element: Ice
+location: (1,0)
+name: null
+weapon: '--- !Weapon
+
+  comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+
+  element: Ice
+
+  type: Ice
+
+  '
+weapon_bonus: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+...
+--- !Scient
+comp: {Earth: 235, Fire: 103, Ice: 59, Wind: 0}
+element: Earth
+location: (2,0)
+name: null
+weapon: '--- !Weapon
+
+  comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+
+  element: Earth
+
+  type: Earth
+
+  '
+weapon_bonus: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+...
+--- !Scient
+comp: {Earth: 0, Fire: 12, Ice: 8, Wind: 139}
+element: Wind
+location: (3,0)
+name: null
+weapon: '--- !Weapon
+
+  comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+
+  element: Wind
+
+  type: Wind
+
+  '
+weapon_bonus: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+...
+--- !Scient
+comp: {Earth: 104, Fire: 29, Ice: 10, Wind: 0}
+element: Earth
+location: (4,0)
+name: null
+weapon: '--- !Weapon
+
+  comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+
+  element: Earth
+
+  type: Earth
+
+  '
+weapon_bonus: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+...
+

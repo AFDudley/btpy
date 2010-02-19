@@ -12,8 +12,9 @@ import battle
 import pyconsole
 from pygame.locals import *
 from const import E,F,I,W, ELEMENTS, OPP, ORTH, PHY
-from defs import Scient, Squad
+from defs import Scient, Squad, loc, noloc
 from helpers import rand_comp, rand_element
+import yaml_store
 
 black = [0,0,0]
 darkg = [50, 50, 50]
@@ -179,7 +180,7 @@ class TopPane(Pane):
             self.squad.text = []
             for i in reversed(xrange(len(self.squad))):
                 #Some of these values only need to be computed once.
-                #This should really be done by a function in battlepane.scient
+                #This should really be done by a function in battlepane.Scient
                 unit = self.squad[i]
                 unit.text = [] #oops...
                 if self.squad[i].name == None:
@@ -411,19 +412,21 @@ class BattlePane(Pane, battlefield.Battlefield):
         self.contentimgs = pygame.sprite.RenderUpdates()
         self.player1 = battle.Player()
         self.player2 = battle.Player()
-        self.player1.squad_list = [rand_squad()]
-        self.player2.squad_list = [rand_squad()]
+        self.player1.squad_list = [self.trans_squad(yaml_store.load_squad('squad1.yaml'))]
+        self.player2.squad_list = [self.trans_squad(yaml_store.load_squad('squad2.yaml'))]
+
         self.squad1 = self.player1.squad_list[0]
         self.squad2 = self.player2.squad_list[0]
-        
-        self.squad1.name = 'p1'
+        #self.rand_place_squad(self.squad1)
+        #self.rand_place_squad(self.squad2)
+
+        if self.squad1.name == None:
+            self.squad1.name = 'p1'
         self.squad1.num  = '1'
-        self.squad2.name = 'p2'
+        if self.squad2.name == None:
+            self.squad2.name = 'p2'
         self.squad2.num  = '2'
-        
-        self.rand_place_squad(self.squad1)
-        self.rand_place_squad(self.squad2)
-        
+
         for s in (self.squad1, self.squad2):
             for i in s:
                 i.draw_text()
@@ -498,23 +501,41 @@ class BattlePane(Pane, battlefield.Battlefield):
                     if 0 <= tile[0] < self.grid.x:
                         if 0 <= tile[1] < self.grid.y:
                             tiles.append(tile)
-        return tiles    
-    
+        return tiles
+
+    def trans_squad(self, squad):
+        """hack to get a squad from yaml_store"""
+        out = Squad()
+        for unit in squad:
+            dude = BattlePane.Scient(scient=unit)
+            if dude.location == noloc:
+                self.rand_place_unit(dude)
+            else:
+                loc = dude.location
+                dude.location = noloc
+                self.place_unit(dude, loc)
+            out.append(dude)
+        return out
+
     class Scient(pygame.sprite.Sprite, Scient):
         """tricky"""
-        def __init__(self, element=None, comp=None):
+        def __init__(self, element=None, comp=None, scient=None):
             pygame.sprite.Sprite.__init__(self)
-            if element == None:
-                element = rand_element()
-            if comp == None:
-                comp = rand_comp(suit=element, kind='Scient')
-                
-            Scient.__init__(self, comp=comp, element=element) 
+            if scient:
+                Scient.__init__(self, scient.element, scient.comp, scient.name,
+                                scient.weapon, scient.weapon_bonus, scient.location)
+            else:
+                if element == None:
+                    element = rand_element()
+                if comp == None:
+                    comp = rand_comp(suit=element, kind='Scient')
+                Scient.__init__(self, comp=comp, element=element)
+            
             self.image = pygame.Surface([15, 15])
-            #self.image.fill(COLORS[element])
-            self.image.fill(grey)
-            #self.rect = self.image.get_rect()
-            self.rect = pygame.draw.polygon(self.image, COLORS[element], [(0,4),(0,10),(15,10),(15,4)])
+            self.image.fill(COLORS[self.element])
+            #self.image.fill(grey)
+            self.rect = self.image.get_rect()
+            #self.rect = pygame.draw.polygon(self.image, COLORS[self.element], [(0,4),(0,10),(15,10),(15,4)])
             self.text = []
             
         def draw_text(self):
@@ -587,6 +608,9 @@ class View:
         self.middle = MiddlePane((LEFTINSET, (TOPINSET + PANE_HEIGHT + PANE_SPACING)))
         self.bottom = BottomPane((LEFTINSET, (TOPINSET + 2 *(PANE_HEIGHT + PANE_SPACING))))
         #the name battle is hardcoded into pyconsole.py
+        self.player1 = battle.Player()
+        self.player2 = battle.Player()
+
         self.battle = BattlePane((242, TOPINSET), self.grid, tilesize=32, tiles=(16,16))
         self.battle_state = battle.state(grid=self.grid, battlefield=self.battle)
         #console code
