@@ -9,7 +9,6 @@
 import re
 import yaml
 import defs
-#from helpers import t2c, rand_squad
 
 def loc_representer(dumper, data):
     return dumper.represent_scalar(u'!loc', u'(%2s,%2s)' % data)
@@ -32,79 +31,54 @@ yaml.add_implicit_resolver(u'!loc', loc_pat)
 yaml.add_implicit_resolver(u'!loc', none_pat)
 
 
-class Scient(yaml.YAMLObject):
-    yaml_tag =u'!Scient'
-    def __init__(self, scient):
-        self.element= scient.element
-        self.comp = scient.comp
-        self.name = scient.name
-        self.weapon = scient.weapon
-        self.weapon_bonus = scient.weapon_bonus
-        self.location = scient.location
+''' 
+in case you were wondering what the for loop below does, it's something like this:   
+def bow_representer(dumper, data):
+    return dumper.represent_mapping(u'!bow', get_attribs(bow, data))
 
-    def to_defs(self):
-        #haha (part 1)
-        if  not(isinstance(self.weapon, defs.Weapon)):
-            self.weapon = Weapon().load(self.weapon)
-        return defs.Scient(self.element, self.comp, self.name, self.weapon,
-                           self.weapon_bonus, self.location)
-    def dump(self):
-        #haha (part 2)
-        if isinstance(self.weapon, defs.Weapon):
-            self.weapon =  Weapon().dump(self.weapon)
-        return yaml.dump(self, explicit_start=True, explicit_end=True)
-        
-class Squad(yaml.YAMLObject):
-    yaml_tag = u'!Squad'
-    def __init__(self, squad):
-        '''
-        I am so confused. In order for this to work, the number of units in
-        the squad cannot change after init... this is so stupid.
-        '''
-        self.__dict__ = squad.__dict__
-        self.lst = []
-        for unit in squad:
-            if isinstance(unit, defs.Scient):
-                self.lst.append(Scient(unit))
-        
-    def to_defs(self):
-        lst = []
-        for unit in self.lst:
-            lst.append(unit.to_defs())
-        return defs.Squad(lst, self.name)
-        
-    def dump(self):
-        tlst = self.lst
-        txt = ''
-        for unit in self.lst:
-            txt += unit.dump()
-        del self.lst
-        stuff  = yaml.dump(self, explicit_start=True, explicit_end=True)
-        self.lst = tlst
-        return stuff + txt
-           
-class Weapon(yaml.YAMLObject):
-    yaml_tag = u'!Weapon'
-    def load(self, document):
-        obj = yaml.load(document)
-        if   obj.type == 'Earth':
-            return defs.Sword(obj.element, obj.comp)
-        elif obj.type == 'Fire':
-            return defs.Bow(obj.element, obj.comp)
-        elif obj.type == 'Ice':
-            return defs.Wand(obj.element, obj.comp)            
-        else:
-            return defs.Glove(obj.element, obj.comp)
-            
-    def dump(self, weapon, stream=None):
-        self.type = weapon.type
-        self.element = weapon.element
-        self.comp = weapon.comp
-        return yaml.dump(self, stream, explicit_start=True)
+yaml.add_representer(defs.Bow, bow_representer)
+      
+def bow_constructor(loader, node):
+    value = loader.construct_mapping(node, deep=True)
+    return defs.Bow(value['element'], value['comp'])
+    
+yaml.add_constructor(u'!bow', bow_constructor)
+'''
+def make_constructor(kind, trick):
+    str =''
+    attribs = attrib_list[kind]
+    for value in attribs:
+        str += trick + "['" + value + "'], "
+    return str
 
-def load_squad(filename):
-    contents = []
-    for x in yaml.load_all(open(filename, 'r')): contents.append(x)
-    squad = contents.pop(0)
-    squad.lst = contents
-    return squad.to_defs()
+def get_attribs(kind, data):
+    tmp = {}
+    for attrib in attrib_list[kind]:
+        tmp[attrib] = data.__dict__[attrib]
+    return tmp
+    
+#meta what the hell did you just call me boy?
+for kind in ('sword', 'bow', 'wand', 'glove', 'scient', 'squad'):
+    def hack(kind=kind):
+        ts = u'!' + kind
+        tobj = eval('defs.'+ kind.capitalize())
+        trick = 'loader.construct_mapping(node, deep=True)'
+        yaml.add_representer(tobj, lambda dumper, data: dumper.represent_mapping(ts, get_attribs(kind, data)))
+        yaml.add_constructor(ts, lambda loader, node: eval('defs.'+ kind.capitalize() +'(' + make_constructor(kind,trick) + ')'))        
+    hack(kind)
+
+ec = ('element','comp')
+attrib_list = {'sword': ec, 'bow': ec, 'wand': ec, 'glove': ec,
+               'scient': ec + ('name','weapon','weapon_bonus','location'),
+               'squad': defs.Squad().__dict__.keys()}
+
+def squad_constructor(loader, node):
+    kwargs = loader.construct_mapping(node, deep=True)
+    #Don't fudge
+    del kwargs['free_spaces']
+    del kwargs['value']
+    return defs.Squad(**kwargs)
+
+yaml.add_constructor(u'!squad', squad_constructor)
+def load(filename):
+    return yaml.load(open(filename, 'r'))

@@ -1,5 +1,6 @@
 """Definitions for game units and unit interaction"""
 from collections import namedtuple
+from UserList import UserList
 import random
 from math import log
 
@@ -16,26 +17,26 @@ class Stone(object):
     def __init__(self, comp):
         self.comp = comp
         self.val = self.value()
-
+        #for x in self.comp.keys(): self.val += self.comp[x]
+        
     def value(self):
         """Returns sum of comp, overload as needed"""
         sum = 0
         for x in self.comp.keys():
             sum += self.comp[x]
         return sum
-
+        
     def imbue(self, stone):
         for i in self.comp:
             self.comp[i] += stone.comp[i]
 
-attack = ('phit','mhit','Pugil','Shoot','Blast','Theurge')
-
+#attack = ('phit','mhit','Pugil','Shoot','Blast','Theurge')
 class Weapon(Stone): #the names of all these functions is quite confusing; fix.
     """Scients Equip weapons to do damage"""
     def __init__(self, element, comp, type=None):
         #this should return the correct weapon based on type. (?)
-        self.type ='None'
         Stone.__init__(self, comp)
+        self.type ='None'
         self.element = element
 
         #self.attack_pattern = [(0,-1),(1,0),(0,1),(-1,0),(-1,-1),(-1,1),(1,1),(1,-1)]
@@ -107,7 +108,7 @@ class Sword(Weapon):
 class Bow(Weapon):
     """Long range physical weapon"""
     def __init__(self, element, comp):
-        Weapon.__init__(self, element, comp)
+        Weapon.__init__(self, element, comp)      
         self.type = 'Fire'
         '''
         def make_attack_pattern():
@@ -235,7 +236,7 @@ class Scient(Unit):
     
     def equip(self, weapon):
         """
-        A function that automatically equips items based on element.
+        A function that automagically equips items based on element.
         should be moved someplace else.
         """
         if weapon == None:
@@ -262,7 +263,7 @@ class Nescient(Unit):
         def breath(self, target):
             pass
 
-class Squad(list):
+class Squad(UserList):
     """contains a number of Units. Takes a list of Units"""
     def unit_size(self, object):
         if isinstance(object, Unit) == False:
@@ -273,19 +274,19 @@ class Squad(list):
             else:
                 return 2
                 
-    def __init__(self, lst=None, name=None):
+    def __init__(self, data=None, name=None):
         self.value = 0
         self.free_spaces = 8
         self.name = name
-        list.__init__(self)
-        if lst == None:
+        UserList.__init__(self)
+        if data == None:
             return
         
-        if isinstance(lst, list):
-            for x in lst: self.append(x)
+        if isinstance(data, list):
+            for x in data: self.append(x)
         
         else:
-            self.append(lst)
+            self.append(data)
             
     def __setitem__(self, key, val):
         #need to change how value of a squad is calculated.
@@ -312,7 +313,7 @@ class Squad(list):
         if self.free_spaces < size:
             raise Exception( \
             "There is not enough space in the squad for this unit")
-        list.append(self, item)
+        self.data.append(item)
         self.value += item.value()
         self.free_spaces -= size
         item.squad = self

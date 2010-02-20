@@ -412,8 +412,8 @@ class BattlePane(Pane, battlefield.Battlefield):
         self.contentimgs = pygame.sprite.RenderUpdates()
         self.player1 = battle.Player()
         self.player2 = battle.Player()
-        self.player1.squad_list = [self.trans_squad(yaml_store.load_squad('squad1.yaml'))]
-        self.player2.squad_list = [self.trans_squad(yaml_store.load_squad('squad2.yaml'))]
+        self.player1.squad_list = [self.trans_squad(yaml_store.load('squad1.yaml'))]
+        self.player2.squad_list = [self.trans_squad(yaml_store.load('squad2.yaml'))]
 
         self.squad1 = self.player1.squad_list[0]
         self.squad2 = self.player2.squad_list[0]
