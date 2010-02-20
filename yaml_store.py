@@ -71,7 +71,10 @@ ec = ('element','comp')
 attrib_list = {'sword': ec, 'bow': ec, 'wand': ec, 'glove': ec,
                'scient': ec + ('name','weapon','weapon_bonus','location'),
                'squad': defs.Squad().__dict__.keys()}
-
+#remake constructor to ignore free_spaces and value.
+#this protection against loading impossible squads
+#could be done any number of ways in any number of places.
+#This will do until objects are correctly checked at init/deserialization
 def squad_constructor(loader, node):
     kwargs = loader.construct_mapping(node, deep=True)
     #Don't fudge
@@ -80,5 +83,6 @@ def squad_constructor(loader, node):
     return defs.Squad(**kwargs)
 
 yaml.add_constructor(u'!squad', squad_constructor)
+
 def load(filename):
     return yaml.load(open(filename, 'r'))
