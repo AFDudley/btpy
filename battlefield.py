@@ -4,7 +4,7 @@ from operator import contains
 import random
 
 from const import COMP, ELEMENTS, E, F, I, W, ORTH, PHY, MAG
-from defs import Scient, loc, noloc
+from defs import Scient, Loc, noloc
 from helpers import rand_squad
 
 #There is a serious problem in this logic. it assumes that units fit on one
@@ -36,7 +36,7 @@ class Grid(tuple):
         for xpos in range(x):
             temp = ()
             for ypos in range(y):
-                temp += Tile(loc(xpos,ypos)),
+                temp += Tile(Loc(xpos,ypos)),
             grid += temp,
         return tuple.__new__(cls, grid)
 
@@ -112,7 +112,7 @@ class Battlefield(object):
                 if abs(xsrc-xdest) + abs(ysrc-ydest) <= move:
                     self.grid[xdest][ydest].contents = \
                     self.grid[xsrc][ysrc].contents
-                    self.grid[xdest][ydest].contents.location = loc(xdest, ydest)
+                    self.grid[xdest][ydest].contents.location = Loc(xdest, ydest)
                     self.grid[xsrc][ysrc].contents = None
                 else:
                     raise Exception("tried moving more than %s tiles" %move)
@@ -134,10 +134,10 @@ class Battlefield(object):
         if unit.location == noloc:
             if self.grid[xpos][ypos].contents == None:
                 self.grid[xpos][ypos].contents = unit
-                unit.location = loc(xpos, ypos)
+                unit.location = Loc(xpos, ypos)
                 self.dmg_queue[unit] = [] #append unit to dmg_queue
                 
-            elif unit.location == loc(xpos, ypos):
+            elif unit.location == Loc(xpos, ypos):
                 raise Exception("This unit is already on (%s,%s)" %(xpos, ypos))
         
             elif self.grid[xpos][ypos].contents != None:
@@ -309,7 +309,7 @@ class Battlefield(object):
             x,y = unit.location
             unit.hp = 0
             self.grid[x][y].contents = None
-            unit.location = loc(-1,-1)
+            unit.location = Loc(-1,-1)
             unit.squad.remove(unit)
             del self.dmg_queue[unit] 
             self.graveyard.append(unit)

@@ -185,7 +185,7 @@ class TopPane(Pane):
                 unit.text = [] #oops...
                 if self.squad[i].name == None:
                     name = str(self.squad[i].location)
-                squ_txt = name + " V: " + str(self.squad[i].value())
+                squ_txt = self.squad[i]name + " V: " + str(self.squad[i].value())
                 self.text.append((squ_txt, darkg, white))
                 unit.text.append("HP: " + str(unit.hp))
                 unit.text.append("E, F, I, W")

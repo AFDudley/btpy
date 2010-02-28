@@ -12,7 +12,7 @@ import battle
 import pyconsole
 from pygame.locals import *
 from const import E,F,I,W, ELEMENTS, OPP, ORTH, PHY
-from defs import Scient, Squad, loc, noloc
+from defs import Scient, Squad, Loc, noloc
 from helpers import rand_comp, rand_element
 import yaml_store
 
@@ -185,6 +185,8 @@ class TopPane(Pane):
                 unit.text = [] #oops...
                 if self.squad[i].name == None:
                     name = str(self.squad[i].location)
+                else:
+                    name = self.squad[i].name
                 squ_txt = name + " V: " + str(self.squad[i].value())
                 self.text.append((squ_txt, darkg, white))
                 unit.text.append("HP: " + str(unit.hp))
@@ -521,7 +523,7 @@ class BattlePane(Pane, battlefield.Battlefield):
         """tricky"""
         def __init__(self, element=None, comp=None, scient=None):
             pygame.sprite.Sprite.__init__(self)
-            if scient:
+            if scient != None:
                 Scient.__init__(self, scient.element, scient.comp, scient.name,
                                 scient.weapon, scient.weapon_bonus, scient.location)
             else:

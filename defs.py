@@ -1,45 +1,106 @@
 """Definitions for game units and unit interaction"""
-from collections import namedtuple
+from warnings import warn
+from collections import namedtuple, Mapping
 from UserList import UserList
-import random
-from math import log
+from UserDict import UserDict
+from operator import contains
 
 from const import * #needs fix, maybe whole file needs rewrite
                     #why aren't there constants in python?
 
-class loc(namedtuple('loc', 'x y')):
+c  = ('comp',)
+ec = c + ('element',)
+persisted = {'stone': c, 'sword': ec, 'bow': ec, 'wand': ec, 'glove': ec,
+             'scient': ec + ('name','weapon','weapon_bonus','location'),
+             'squad': ('data', 'name', 'value', 'free_spaces')}
+def get_persisted(obj):
+    """Returns a dict of obj attributes that are persisted."""
+    kind = obj.__class__.__name__.lower()
+    if contains(persisted.keys(), kind):
+        new_dict = {}
+        #check values of obj.__dict__ for persisted objects
+        for key in persisted[kind]:
+            other_kind = obj.__dict__[key].__class__.__name__.lower()
+            #special case for the .data of Squad:
+            if other_kind == 'list':
+                data = []
+                for item in obj.__dict__[key]:
+                    data.append(get_persisted(item))
+                new_dict[key] = data
+            #if value are persisted, call self
+            elif contains(persisted.keys(), other_kind):
+                new_dict[key] = get_persisted(obj.__dict__[key])
+            #else put value into new_dict
+            else:
+                new_dict[key] = obj.__dict__[key]
+        return {kind: new_dict}
+    else:
+        return obj
+        
+class Loc(namedtuple('Loc', 'x y')):
     __slots__ = ()
     def __repr__(self):
         return '(%r, %r)' % self
-noloc = loc(None,None)                    
+noloc = Loc(None,None)     
+ 
+class Stone(Mapping):
+    """ugh."""
+    def __init__(self, comp=None):
+        self.comp = {'Earth': 0, 'Fire': 0, 'Ice': 0, 'Wind': 0}
+        if comp == None:
+            comp = self.comp
+        try:
+            iter(comp)
+            if sorted(self.comp) == sorted(comp):
+                self.comp = dict(comp)
+            else:
+                if len(comp) == 4 or len(comp) == 0:
+                    for element in range(4):
+                        if type(comp[element]) == type(1):
+                            if 0 <= comp[element] < 256:
+                                self.comp[ELEMENTS[element]] = comp[element]                        
+                            else:
+                                raise AttributeError
+                        else:
+                            raise TypeError
+                else:
+                    raise ValueError
+        except TypeError:
+            raise
+        
+    def __iter__(self):
+         return iter(self.comp)
+    def __contains__(self, value):
+         return value in self.comp
+    def __getitem__(self,key):
+        return self.comp[key]
+    def __setitem__(self,key,value):
+        self.comp[key] = value
+    def __len__(self):
+         return len(self.comp)
+    def __repr__(self):
+        return dict.__repr__(self.comp)
 
-class Stone(object):
-    def __init__(self, comp):
-        self.comp = comp
-        self.val = self.value()
-        #for x in self.comp.keys(): self.val += self.comp[x]
+    def tup(self):
+        tup = ()
+        for key in sorted(self.comp):
+            tup += (self.comp[key],)
+        return tup
         
     def value(self):
-        """Returns sum of comp, overload as needed"""
-        sum = 0
-        for x in self.comp.keys():
-            sum += self.comp[x]
-        return sum
-        
-    def imbue(self, stone):
-        for i in self.comp:
-            self.comp[i] += stone.comp[i]
+        return sum(self.comp.values())
 
-#attack = ('phit','mhit','Pugil','Shoot','Blast','Theurge')
-class Weapon(Stone): #the names of all these functions is quite confusing; fix.
+class Weapon(Stone):
     """Scients Equip weapons to do damage"""
     def __init__(self, element, comp, type=None):
         #this should return the correct weapon based on type. (?)
         Stone.__init__(self, comp)
         self.type ='None'
         self.element = element
-
-        #self.attack_pattern = [(0,-1),(1,0),(0,1),(-1,0),(-1,-1),(-1,1),(1,1),(1,-1)]
+        self.persisted = ec
+    
+    def __repr__(self):
+        return dict.__repr__(self.__dict__)
     
     def map_to_grid(self, origin, grid_size):
         """maps pattern to grid centered on origin. 
@@ -103,31 +164,19 @@ class Sword(Weapon):
     """Close range physial weapon"""
     def __init__(self, element, comp):
         Weapon.__init__(self, element, comp)
-        self.type = 'Earth'
+        self.type = 'Sword'
     
 class Bow(Weapon):
     """Long range physical weapon"""
     def __init__(self, element, comp):
         Weapon.__init__(self, element, comp)      
-        self.type = 'Fire'
-        '''
-        def make_attack_pattern():
-            no_hit = 4 #the scient move value
-            min = -(2 * no_hit)
-            max = -min + 1
-            dist = range(min,max)
-            temp = []
-            [[temp.append((x,y)) for y in dist if (no_hit < (abs(x) \
-            + abs(y)) < max) ] for x in dist]
-            return temp
-        self.attack_pattern = make_attack_pattern()
-        '''
+        self.type = 'Bow'
         
 class Wand(Weapon):
     """Long range magical weapon"""
     def __init__(self, element, comp):
         Weapon.__init__(self, element, comp)
-        self.type = 'Ice'
+        self.type = 'Wand'
         #self.attack_pattern = []
     def make_pattern(self, origin, distance, pointing):
         """generates a pattern based on an origin, distance, and
@@ -158,38 +207,20 @@ class Glove(Weapon):
     """Close range magical weapon"""
     def __init__(self, element, comp):
         Weapon.__init__(self, element, comp)
-        self.type = 'Wind'
+        self.type = 'Glove'
         self.time = 3
-    
+           
 class Unit(Stone):
-    def __init__(self, element, comp, name=None):
+    def __init__(self, element, comp, name=None, location=noloc):
         if not element in ELEMENTS:
             raise Exception("Invalid element: %s, valid elements are %s" \
             % (element, ELEMENTS))
+        Stone.__init__(self, comp)
         self.element = element
-        self.comp = comp
-        self.name = None
-        self.location = noloc
+        self.name = name
+        self.location = location
         self.val = self.value()
-        
-        
-    def value(self):
-        """Returns sum of comp, overload as needed"""
-        sum = 0
-        for x in self.comp.keys():
-            sum += self.comp[x]
-        return sum
-        
-    def __repr__(self):
-        if self.name:
-            title = self.name
-        else:
-            title = str(id(self))
-            
-        #Need to write a seperate function:
-        return "%s -> suit: %2s | val: %3s | loc: %2s, %2s | HP: %5s \n" % (title, \
-    self.element[0], self.value(), self.location.x, self.location.y, self.hp) 
-
+    
 class Scient(Unit):
     """A Scient (playable character) unit.
     
@@ -200,40 +231,31 @@ class Scient(Unit):
     """
     
     def __init__(self, element, comp, name=None, weapon=None,
-                 weapon_bonus=COMP.copy(), location=noloc):
-        Unit.__init__(self, element, comp, name)
+                 weapon_bonus=dict(Stone()), location=noloc):
+        Unit.__init__(self, element, comp, name, location)
         self.move = 4
         self.weapon = weapon
         self.weapon_bonus = weapon_bonus
-        self.location = location
         self.equip_limit = {E:1, F:1 ,I:1 ,W:1}
         for i in self.equip_limit:
             self.equip_limit[i] = self.equip_limit[i] + self.comp[i] \
-            + self.weapon_bonus[i]            
+            + self.weapon_bonus[i]
+        self.persisted = ec + ('name','weapon','weapon_bonus','location')
         self.calcstats()
         self.equip(self.weapon)
 
     def calcstats(self):
-        self.p    = (2*(self.comp[F] + self.comp[E]) + self.comp[I] + \
-                    self.comp[W]) 
-        self.m    = (2*(self.comp[I] + self.comp[W]) + self.comp[F] + \
-                    self.comp[E])
-        self.atk  = (2*(self.comp[F] + self.comp[I]) + self.comp[E] + \
-                    self.comp[W]) + (2 * self.value())
-        self.defe = (2*(self.comp[E] + self.comp[W]) + self.comp[F] + \
-                    self.comp[I]) 
+        self.p    = (2*(self.comp[F] + self.comp[E]) + self.comp[I] + self.comp[W]) 
+        self.m    = (2*(self.comp[I] + self.comp[W]) + self.comp[F] + self.comp[E])
+        self.atk  = (2*(self.comp[F] + self.comp[I]) + self.comp[E] + self.comp[W]) + (2 * self.value())
+        self.defe = (2*(self.comp[E] + self.comp[W]) + self.comp[F] + self.comp[I]) 
+        
         self.pdef = self.p + self.defe + (2 * self.comp[E])
         self.patk = self.p + self.atk  + (2 * self.comp[F])
         self.matk = self.m + self.atk  + (2 * self.comp[I])
         self.mdef = self.m + self.defe + (2 * self.comp[W])
         self.hp   = 4 * (self.pdef + self.mdef) + self.value()
 
-    def comp_as_tuple(self):
-        tuple = ()
-        for x in ELEMENTS:
-            tuple += (self.comp[x],)
-        return tuple
-    
     def equip(self, weapon):
         """
         A function that automagically equips items based on element.
@@ -241,13 +263,13 @@ class Scient(Unit):
         """
         if weapon == None:
             if self.element == 'Earth':
-                self.weapon = Sword(self.element, COMP.copy())
+                self.weapon = Sword(self.element, Stone())
             elif self.element == 'Fire':
-                self.weapon = Bow(self.element, COMP.copy())
+                self.weapon = Bow(self.element, Stone())
             elif self.element == 'Ice':
-                self.weapon = Wand(self.element, COMP.copy())
+                self.weapon = Wand(self.element, Stone())
             else:
-                self.weapon = Glove(self.element, COMP.copy())
+                self.weapon = Glove(self.element, Stone())
             
         else:
             '''
@@ -257,6 +279,7 @@ class Scient(Unit):
                 self.weapon = weapon
             '''
             self.weapon = weapon
+            
 class Nescient(Unit):
         def bite(self, target):
             pass
@@ -278,13 +301,16 @@ class Squad(UserList):
         self.value = 0
         self.free_spaces = 8
         self.name = name
+        self.persisted = ('data', 'name', 'value', 'free_spaces')
         UserList.__init__(self)
         if data == None:
             return
-        
+            
         if isinstance(data, list):
-            for x in data: self.append(x)
-        
+            print "i'm in it"
+            for x in data: 
+                print type(x)
+                #self.append(x)
         else:
             self.append(data)
             

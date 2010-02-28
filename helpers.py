@@ -2,12 +2,12 @@
 import random
 #import const   
 from const import ELEMENTS, E, F, W, I, ORTH, KINDS, OPP, COMP
-from defs import Scient, Squad
+from defs import Scient, Squad, Stone
 
 def t2c(tup):
     """Converts a tuple to a comp"""
     if len(tup) != 4: raise Exception("Incorrect number of values in tuple")
-    comp = COMP.copy()
+    comp = Comp()
     for i in range(4):
         comp[ELEMENTS[i]] = tup[i]
     return comp
@@ -18,21 +18,21 @@ def rand_element():
     
 def max_comp(suit, kind='Scient'):
     """Returns the maximum composition of 'kind' of element 'suit'"""
-    comp = COMP.copy()
+    comp = Stone()
     if kind == 'Scient':
         comp[suit] = 255
         comp[OPP[suit]] = 0
         comp[ORTH[suit][0]] = comp[ORTH[suit][1]] = 127
         return comp
     if kind == 'Weapon':
-        comp2 = comp.copy()
+        comp2 = Comp()
         comp2[suit]          = comp[suit] = 63
         comp2[OPP[suit]]     = comp[OPP[suit]] = 0
         comp2[ORTH[suit][0]] = comp[ORTH[suit][1]] = 0
         comp2[ORTH[suit][1]] = comp[ORTH[suit][0]] = 63
         return (comp, comp2)
     if kind == 'Nescient':
-        comp2 = comp.copy()
+        comp2 = Comp()
         comp2[suit]          = comp[suit] = 255
         comp2[OPP[suit]]     = comp[OPP[suit]] = 0
         comp2[ORTH[suit][0]] = comp[ORTH[suit][1]] = 0
@@ -51,7 +51,7 @@ def rand_comp(suit=None, kind=None):
     if not suit in ELEMENTS:
         suit = rand_element()
     
-    comp = COMP.copy()
+    comp = Stone()
     if kind is None or kind not in KINDS:
         kind = 'Stone'
     
@@ -112,7 +112,7 @@ def max_squad_by_value(value):
     value = value/2 #more logical, really.
     half = value/2
     for i in ELEMENTS:
-        unit = Scient(i,{E:half, F:half, I:half, W:half,})
+        unit = Scient(i,Comp({E:half, F:half, I:half, W:half,}))
         unit.comp[unit.element] = value
         unit.comp[OPP[unit.element]] = 0
         unit.calcstats()
@@ -127,6 +127,3 @@ def one_three_zeros(value):
         unit.calcstats()
         squad.append(unit)
     return squad
-
-
-    
