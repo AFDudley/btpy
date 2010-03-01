@@ -39,7 +39,8 @@ def insert_co(obj, collection):
             if other_kind == 'list':
                 data = []
                 for item in obj.__dict__[key]:
-                    data.append(insert_co(item, collection))
+                    uc = item.__class__.__name__.lower()
+                    data.append({uc: insert_co(item, collection)})
                 new_dict[key] = data
             elif other_kind == 'dict':
                 '''regardless of the key, these are all going to be comps,
@@ -56,7 +57,7 @@ def insert_co(obj, collection):
         return findtinsert({kind: new_dict}, collection)
     else:
         return obj
-
+'''
 def extract_co(id, collection):
     """returns a composite object from db."""
     son = collection.find_one(id)
@@ -69,7 +70,10 @@ def extract_co(id, collection):
         if contains(persisted.keys(), key):
             if key == 'squad':
                 squad = defs.Squad(name=value['name'])
-                for unit in value['data']: squad.append(extract_co(unit, collection))
+                data = value['data']
+                for unit in data:
+                    key, value = unit.items()[0]
+                    squad.append(extract_co(value, collection))
                 return squad
             for subkey in value.keys():
                 if isinstance(value[subkey], ObjectId):
@@ -87,7 +91,47 @@ def extract_co(id, collection):
             return defs.Stone(eval(''.join(str(value).replace("u'", "'"))))
         #This should only catch weapons.
         return eval(u'defs.'+ key.capitalize())(**eval(''.join(str(value).replace("u'", "'"))))
+'''
 
+def get_dict(id, collection):
+    d = collection.find_one(id)
+    del d['_id']
+    for (key, value) in son.items():
+        if key =='comp':
+            return value
+        if isinstance(value, dict):
+            for (k, v) in value.items():
+                if isinstance(v, ObjectId):
+                    print v
+                    value[k] = get_dict(v, collection)
+        if key == 'squad':
+            data = value['data']
+            td = []
+            for unit in data:
+                kind, id = unit.items()[0]
+                td.append(get_dict(id, collection))
+            value['data'] = td
+    return d
+            
+def convert_dict(dict):
+    """takes a dict and returns composite objects."""
+    key, value = dict.items()[0]
+    if key == 'squad':
+        squad = defs.Squad(name=value['name'])
+        data = value['data']
+        for unit in data:
+            squad.append(convert_dict(unit))
+        return squad
+    elif key == 'scient':
+        scient = {}
+        scient['comp'] = value['comp']
+        scient['element'] = value['element']
+        scient = defs.Scient(**scient)
+        scient.weapon = convert_dict(value['weapon'])
+        scient.location = defs.Loc(value['location'][0], value['location'][1])
+        return scient
+    return eval(u'defs.'+ key.capitalize())(**eval(''.join(str(value).replace("u'", "'"))))
+    
 if __name__ == '__main__':
     from helpers import rand_unit, rand_squad, rand_comp, t2c
     connection = Connection()
