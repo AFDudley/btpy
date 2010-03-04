@@ -4,7 +4,7 @@ from collections import namedtuple, Mapping
 from UserList import UserList
 from UserDict import UserDict
 from operator import contains
-
+from random import randint
 from const import * #needs fix, maybe whole file needs rewrite
                     #why aren't there constants in python?
 
@@ -42,11 +42,12 @@ class Loc(namedtuple('Loc', 'x y')):
     def __repr__(self):
         return '(%r, %r)' % self
 noloc = Loc(None,None)     
- 
+
 class Stone(Mapping):
     """ugh."""
     def __init__(self, comp=None):
         self.comp = {'Earth': 0, 'Fire': 0, 'Ice': 0, 'Wind': 0}
+        self.salt = randint(0, 2**32)
         if comp == None:
             comp = self.comp
         try:
@@ -80,6 +81,15 @@ class Stone(Mapping):
          return len(self.comp)
     def __repr__(self):
         return dict.__repr__(self.comp)
+    """
+    __hash__ a hack to get around scients being mutable.
+    I think the answer is to actually make stones immutable and
+    have imbue return a different stone.
+    """
+    
+    def __hash__(self):
+        #nasty.
+        return hash(hash(self.tup()) + self.salt)
 
     def tup(self):
         tup = ()
@@ -89,6 +99,7 @@ class Stone(Mapping):
         
     def value(self):
         return sum(self.comp.values())
+
 
 class Weapon(Stone):
     """Scients Equip weapons to do damage"""
@@ -307,10 +318,8 @@ class Squad(UserList):
             return
             
         if isinstance(data, list):
-            print "i'm in it"
             for x in data: 
-                print type(x)
-                #self.append(x)
+                self.append(x)
         else:
             self.append(data)
             

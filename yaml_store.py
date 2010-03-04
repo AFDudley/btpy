@@ -52,3 +52,6 @@ def convert_dict(dict):
         scient.location = defs.Loc(value['location'][0], value['location'][1])
         return scient
     return eval(u'defs.'+ key.capitalize())(**eval(''.join(str(value).replace("u'", "'"))))
+    
+def load(filename):
+    return convert_dict(yaml.load(open(filename, 'r')))

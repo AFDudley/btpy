@@ -522,7 +522,6 @@ class BattlePane(Pane, battlefield.Battlefield):
     class Scient(pygame.sprite.Sprite, Scient):
         """tricky"""
         def __init__(self, element=None, comp=None, scient=None):
-            pygame.sprite.Sprite.__init__(self)
             if scient != None:
                 Scient.__init__(self, scient.element, scient.comp, scient.name,
                                 scient.weapon, scient.weapon_bonus, scient.location)
@@ -532,6 +531,7 @@ class BattlePane(Pane, battlefield.Battlefield):
                 if comp == None:
                     comp = rand_comp(suit=element, kind='Scient')
                 Scient.__init__(self, comp=comp, element=element)
+            pygame.sprite.Sprite.__init__(self)
             
             self.image = pygame.Surface([15, 15])
             self.image.fill(COLORS[self.element])
