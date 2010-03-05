@@ -88,8 +88,7 @@ class Stone(Mapping):
     """
     
     def __hash__(self):
-        #nasty.
-        return hash(hash(self.tup()) + self.salt)
+        return self.salt
 
     def tup(self):
         tup = ()
@@ -99,7 +98,6 @@ class Stone(Mapping):
         
     def value(self):
         return sum(self.comp.values())
-
 
 class Weapon(Stone):
     """Scients Equip weapons to do damage"""
@@ -118,8 +116,8 @@ class Weapon(Stone):
         Returns list of tiles on grid. (Lots of room for optimization)"""
         orix,oriy = origin
         tiles = []
-        if self.type != 'Ice':
-            if self.type == 'Fire':
+        if self.type != 'Wand':
+            if self.type == 'Bow':
                 no_hit = 4 #the scient move value
                 min = -(2 * no_hit)
                 max = -min + 1
@@ -204,13 +202,17 @@ class Wand(Weapon):
                 #rotate pattern based on direction
                 for j in xrange(len(in_range)): 
                     if pointing == 'North':
-                        pattern.append((src[0] + in_range[j], (src[1] - (1 +(i/2)))))
+                        pattern.append((src[0] + in_range[j], (src[1] -
+                                       (1 +(i/2)))))
                     elif pointing =='South':
-                        pattern.append((src[0] + in_range[j], (src[1] + (1 +(i/2)))))
+                        pattern.append((src[0] + in_range[j], (src[1] + 
+                                       (1 +(i/2)))))
                     elif pointing =='East':
-                        pattern.append((src[0] +  (1 +(i/2)), (src[1] - in_range[j])))
+                        pattern.append((src[0] +  (1 +(i/2)), (src[1] - 
+                                        in_range[j])))
                     elif pointing =='West':
-                        pattern.append((src[0] -  (1 +(i/2)), (src[1] - in_range[j])))
+                        pattern.append((src[0] -  (1 +(i/2)), (src[1] -
+                                        in_range[j])))
         
         return pattern
 
@@ -256,10 +258,14 @@ class Scient(Unit):
         self.equip(self.weapon)
 
     def calcstats(self):
-        self.p    = (2*(self.comp[F] + self.comp[E]) + self.comp[I] + self.comp[W]) 
-        self.m    = (2*(self.comp[I] + self.comp[W]) + self.comp[F] + self.comp[E])
-        self.atk  = (2*(self.comp[F] + self.comp[I]) + self.comp[E] + self.comp[W]) + (2 * self.value())
-        self.defe = (2*(self.comp[E] + self.comp[W]) + self.comp[F] + self.comp[I]) 
+        self.p    = (2*(self.comp[F] + self.comp[E]) +
+                        self.comp[I] + self.comp[W]) 
+        self.m    = (2*(self.comp[I] + self.comp[W]) +
+                        self.comp[F] + self.comp[E])
+        self.atk  = (2*(self.comp[F] + self.comp[I]) + 
+                        self.comp[E] + self.comp[W]) + (2 * self.value())
+        self.defe = (2*(self.comp[E] + self.comp[W]) + 
+                        self.comp[F] + self.comp[I]) 
         
         self.pdef = self.p + self.defe + (2 * self.comp[E])
         self.patk = self.p + self.atk  + (2 * self.comp[F])

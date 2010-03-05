@@ -11,7 +11,7 @@ import battlefield
 import battle
 import pyconsole
 from pygame.locals import *
-from const import E,F,I,W, ELEMENTS, OPP, ORTH, PHY
+from const import E,F,I,W, ELEMENTS, OPP, ORTH
 from defs import Scient, Squad, Loc, noloc
 from helpers import rand_comp, rand_element
 import yaml_store
@@ -192,7 +192,7 @@ class TopPane(Pane):
                 unit.text.append("HP: " + str(unit.hp))
                 unit.text.append("E, F, I, W")
                 unit.text.append(str(unit.comp[E]) + ", " + str(unit.comp[F]) + ", " + str(unit.comp[I]) +  ", " + str(unit.comp[W]))
-                if contains(PHY, unit.weapon.type):
+                if contains(('Sword', 'Bow'), unit.weapon.type):
                     atk = "PA: " + str(unit.patk)
                 else:
                     atk = "MA: " + str(unit.matk)
@@ -356,7 +356,7 @@ class BottomPane(Pane):
                 view.battle.color_tiles(area & view.move, purp)
             if self.action == 'attack':
                 view.draw_grid('Targets')
-                if view.unit.weapon.type == 'Ice':
+                if view.unit.weapon.type == 'Wand':
                     area = view.battle.calc_wand_area(view.unit, self.targets[self.cursor_pos])
                     view.battle.color_tiles(area, black)
                     print "area:", len(area)

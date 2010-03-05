@@ -22,8 +22,8 @@ ORTH = {E: (F, I),  #Earth is orthogonal to Fire and Ice
         W: (F, I),} #Wind  is orthogonal to Fire and Ice
 OPP = {E: W, W: E, #Earth and Wind are opposites
        F: I, I: F} #Fire and Ice are opposites
-PHY = (E,F) #High physical
-MAG = (I,W) #High magical
+#PHY = (E,F) #High physical
+#MAG = (I,W) #High magical
 COMP = {E:0, F:0, I:0, W:0}
 WEP_LIST = ('Sword','Bow','Wand','Glove')
 WEP_BONUS   = {'Sword':0, 'Bow':0, 'Wand':0, 'Glove':0}

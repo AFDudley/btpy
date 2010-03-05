@@ -3,7 +3,7 @@ from warnings import warn
 from operator import contains
 import random
 
-from const import COMP, ELEMENTS, E, F, I, W, ORTH, PHY, MAG
+from const import COMP, ELEMENTS, E, F, I, W, ORTH
 from defs import Scient, Loc, noloc
 from helpers import rand_squad
 
@@ -202,20 +202,20 @@ class Battlefield(object):
         damage_dealt = {E: 0, F: 0, I: 0, W: 0}
         if 0 <= dloc.x < self.grid.x:
             if 0 <= dloc.y < self.grid.y:
-                if contains(PHY,type) == True:
+                if contains(('Sword', 'Bow'),type) == True:
                     for element in damage_dealt:
-                        dmg = (atkr.p + atkr.patk + (2 * atkr.comp[element]) \
-                        + atkr.weapon.comp[element]) - (defdr.p + defdr.pdef \
-                        + (2 * defdr.comp[element]) + self.grid[dloc.x][dloc.y].comp[element])
+                        dmg = (atkr.p + atkr.patk + (2 * atkr.comp[element]) + 
+                        atkr.weapon.comp[element]) - (defdr.p + defdr.pdef +
+                        (2 * defdr.comp[element]) + self.grid[dloc.x][dloc.y].comp[element])
                         dmg = max(dmg, 0)
                         damage_dealt[element] = dmg
                     damage = sum(damage_dealt.values())
                     return damage
                 else:
                     for element in damage_dealt:
-                        dmg = (atkr.m + atkr.matk + (2 * atkr.comp[element]) \
-                        + atkr.weapon.comp[element]) - (defdr.m + defdr.mdef \
-                        + (2 * defdr.comp[element]) + self.grid[dloc.x][dloc.y].comp[element])
+                        dmg = (atkr.m + atkr.matk + (2 * atkr.comp[element]) +
+                        atkr.weapon.comp[element]) - (defdr.m + defdr.mdef + 
+                        (2 * defdr.comp[element]) + self.grid[dloc.x][dloc.y].comp[element])
                         dmg = max(dmg, 0)
                         damage_dealt[element] = dmg
              
@@ -259,12 +259,13 @@ class Battlefield(object):
             raise Exception( \
             "Defender's location: %s is outside of attacker's range" %str(dloc))
         else:
-            if weapon.type != I:
+            #this weapon logic is janky.
+            if weapon.type != 'Wand':
                 dmg = self.dmg(atkr, defdr, weapon.type)
-                if weapon.type == E:
+                if weapon.type == 'Sword':
                     return dmg
                 if dmg != 0:
-                    if weapon.type == F: 
+                    if weapon.type == 'Bow': 
                         return dmg / 4            
                     else:
                         return dmg / weapon.time #assumes weapon.type == W
@@ -324,19 +325,19 @@ class Battlefield(object):
                 if dmg != 0:
                     self.apply_dmg(defdr, dmg)
                 if defdr.hp > 0:
-                    if atkr.weapon.type == 'Wind':
+                    if atkr.weapon.type == 'Glove':
                         self.dmg_queue[defdr].append([dmg, atkr.weapon.time - 1])
-                return ["%s did %s points of damage to %s" %(atkr.__repr__().split(" ")[0], dmg, defdr.__repr__().split(" ")[0])]
+                return ["%s did %s points of damage to %s" %(atkr.__hash__(), dmg, defdr.__hash__())]
 
             else:
                 message = []
                 for i in dmg:
                     self.apply_dmg(i[0], i[1])
-                    message.append("%s did %s points of damage to %s" %(atkr.__repr__().split(" ")[0], i[1], i[0].__repr__().split(" ")[0]))
+                    message.append("%s did %s points of damage to %s" %(atkr.__hash__(), i[1], i[0].__hash__()))
                 return message
                     
         else:
-            return ["%s did no damage by attacking %s" %(atkr.__repr__().split(" ")[0], defdr.__repr__().split(" ")[0])]
+            return ["%s did no damage by attacking %s" %(atkr.__hash__(), defdr.__hash__())]
 
     def apply_queued(self):
         """applies damage to targets stored in dmg_queue"""
@@ -351,5 +352,5 @@ class Battlefield(object):
             udmg = sum(udmg)
             if udmg != 0:
                 self.apply_dmg(i, udmg)
-                message.append("%s recieved %s points of damage from the queue" %(i.__repr__().split(" ")[0], udmg))           
+                message.append("%s recieved %s points of damage from the queue" %(i.__hash__(), udmg))           
         return message
