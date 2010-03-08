@@ -47,7 +47,7 @@ class Stone(Mapping):
     """ugh."""
     def __init__(self, comp=None):
         self.comp = {'Earth': 0, 'Fire': 0, 'Ice': 0, 'Wind': 0}
-        self.salt = randint(0, 2**32)
+        self.salt = randint(1000000000, 2**32)
         if comp == None:
             comp = self.comp
         try:
@@ -123,6 +123,7 @@ class Weapon(Stone):
                 max = -min + 1
                 dist = range(min,max)
                 attack_pattern = []
+                #???
                 [[attack_pattern.append((x,y)) for y in dist if (no_hit < (abs(x) + abs(y)) < max) ] for x in dist]
             else:
                 attack_pattern = [(0,-1),(1,0),(0,1),(-1,0),(-1,-1),(-1,1),(1,1),(1,-1)]
