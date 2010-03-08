@@ -14,7 +14,7 @@ from pygame.locals import *
 from const import E,F,I,W, ELEMENTS, OPP, ORTH
 from defs import Scient, Squad, Loc, noloc
 from helpers import rand_comp, rand_element
-import yaml_store
+import stores.yaml_store as yaml_store
 
 black = [0,0,0]
 darkg = [50, 50, 50]
@@ -414,8 +414,8 @@ class BattlePane(Pane, battlefield.Battlefield):
         self.contentimgs = pygame.sprite.RenderUpdates()
         self.player1 = battle.Player()
         self.player2 = battle.Player()
-        self.player1.squad_list = [self.trans_squad(yaml_store.load('squad1.yaml'))]
-        self.player2.squad_list = [self.trans_squad(yaml_store.load('squad2.yaml'))]
+        self.player1.squad_list = [self.trans_squad(yaml_store.load('yaml/squad1.yaml'))]
+        self.player2.squad_list = [self.trans_squad(yaml_store.load('yaml/squad2.yaml'))]
 
         self.squad1 = self.player1.squad_list[0]
         self.squad2 = self.player2.squad_list[0]
