@@ -12,7 +12,8 @@ import binary_tactics.battlefield as battlefield
 import binary_tactics.battle as battle
 import pyconsole
 from binary_tactics.const import E,F,I,W, ELEMENTS, OPP, ORTH
-from binary_tactics.defs import Scient, Squad, Loc, noloc
+from binary_tactics.defs import Squad, Loc, noloc
+import binary_tactics.defs as defs
 from binary_tactics.helpers import rand_comp, rand_element
 import stores.yaml_store as yaml_store
 
@@ -178,15 +179,18 @@ class TopPane(Pane):
             self.last_line = - 1
             #cpu time < human time:
             self.squad.text = []
+            #ugh the units are sorted by something...
             for i in reversed(xrange(len(self.squad))):
                 #Some of these values only need to be computed once.
                 #This should really be done by a function in battlepane.Scient
                 unit = self.squad[i]
                 unit.text = [] #oops...
+                self.squad[i].name = None
                 if self.squad[i].name == None:
                     name = str(self.squad[i].location)
                 else:
                     name = self.squad[i].name
+                
                 squ_txt = name + " V: " + str(self.squad[i].value())
                 self.text.append((squ_txt, darkg, white))
                 unit.text.append("HP: " + str(unit.hp))
@@ -200,6 +204,8 @@ class TopPane(Pane):
                 unit.text.append(atk)
                 unit.text.append("PD: " + str(unit.pdef) + " MD: " + str(unit.mdef))
                 unit.text.append("Location: " + str(unit.location))
+            
+            print "text length: %s" %len(self.text)
             self.text.reverse()
             self.last_line = len(self.squad) - 1
         else:
@@ -207,7 +213,7 @@ class TopPane(Pane):
             
             view.set_action(None, 'pass', None)
             view.send_action()
-            print "Game Over."
+            #print "Game Over."
 
     def draw_other_panes(self):
         if len(self.squad) != 0:
@@ -422,11 +428,10 @@ class BattlePane(Pane, battlefield.Battlefield):
         #self.rand_place_squad(self.squad1)
         #self.rand_place_squad(self.squad2)
 
-        if self.squad1.name == None:
-            self.squad1.name = 'p1'
+        self.squad1.name = 'p1'
         self.squad1.num  = '1'
-        if self.squad2.name == None:
-            self.squad2.name = 'p2'
+        
+        self.squad2.name = 'p2'
         self.squad2.num  = '2'
 
         for s in (self.squad1, self.squad2):
@@ -484,8 +489,9 @@ class BattlePane(Pane, battlefield.Battlefield):
         self.contentimgs.add(self.grid[xpos][ypos].contents)
     
     def bury(self, unit):
-        battlefield.Battlefield.bury(self, unit)
         unit.remove(unit.groups())
+        battlefield.Battlefield.bury(self, unit)
+        
         
     def flush_units(self):
         battlefield.Battlefield.flush_units(self)
@@ -508,6 +514,7 @@ class BattlePane(Pane, battlefield.Battlefield):
     def trans_squad(self, squad):
         """hack to get a squad from yaml_store"""
         out = Squad()
+        out.name = squad.name
         for unit in squad:
             dude = BattlePane.Scient(scient=unit)
             if dude.location == noloc:
@@ -519,18 +526,18 @@ class BattlePane(Pane, battlefield.Battlefield):
             out.append(dude)
         return out
 
-    class Scient(pygame.sprite.Sprite, Scient):
+    class Scient(pygame.sprite.Sprite, defs.Scient):
         """tricky"""
         def __init__(self, element=None, comp=None, scient=None):
             if scient != None:
-                Scient.__init__(self, scient.element, scient.comp, scient.name,
+                defs.Scient.__init__(self, scient.element, scient.comp, scient.name,
                                 scient.weapon, scient.weapon_bonus, scient.location)
             else:
                 if element == None:
                     element = rand_element()
                 if comp == None:
                     comp = rand_comp(suit=element, kind='Scient')
-                Scient.__init__(self, comp=comp, element=element)
+                defs.Scient.__init__(self, comp=comp, element=element)
             pygame.sprite.Sprite.__init__(self)
             
             self.image = pygame.Surface([15, 15])
@@ -549,7 +556,7 @@ class BattlePane(Pane, battlefield.Battlefield):
             self.image.blit(textrect, (4,0))
             
         def __repr__(self):
-            return Scient.__repr__(self)
+            return defs.Scient.__repr__(self)
 
     class Tile(pygame.sprite.Sprite, battlefield.Tile):
         """it's a battlefield tile and a pygame sprite, yo"""

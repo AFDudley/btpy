@@ -1,5 +1,5 @@
-from battlefield import *
-from helpers import *
+from binary_tactics.battlefield import *
+from binary_tactics.helpers import *
 import pydb
 btl = Battlefield(Grid(), rand_squad(), rand_squad())
 #btl.rand_place_squad(btl.squad1) 

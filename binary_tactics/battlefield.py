@@ -233,7 +233,7 @@ class Battlefield(object):
     
     def calc_wand_area(self, atkr, target):
         ax,ay = aloc = atkr.location
-        dx,dy = dloc = loc._make(target)
+        dx,dy = dloc = Loc._make(target)
         direction = {0:'West', 1:'North', 2:'East', 3:'South'}
         maxes = (ax, ay, (self.grid.x - 1 - ax), (self.grid.y - 1 - ay),)
         for i in direction:
@@ -308,15 +308,19 @@ class Battlefield(object):
                 target.hp -= damage
 
     def bury(self, unit):
-            """moves unit to graveyard"""
-            x,y = unit.location
-            unit.hp = 0
-            self.grid[x][y].contents = None
-            unit.location = Loc(-1,-1)
-            unit.squad.remove(unit)
-            del self.dmg_queue[unit] 
-            self.graveyard.append(unit)
-            
+        """moves unit to graveyard"""
+        squad = unit.squad
+        x,y = unit.location
+        unit.hp = 0
+        self.grid[x][y].contents = None
+        unit.location = Loc(-1,-1)
+        del self.dmg_queue[unit] 
+        self.graveyard.append(unit)
+        #squad thinks all the units are the same. :(
+        #squad.remove(unit)
+        for x in xrange(len(squad) - 1):
+            if squad[x].hp == 0:
+                squad.pop(x)
     def attack(self, atkr, target):
         """calls calc_damage, applies result, Handles death."""
         defdr = self.grid[target[0]][target[1]].contents
@@ -329,17 +333,17 @@ class Battlefield(object):
                 if defdr.hp > 0:
                     if atkr.weapon.type == 'Glove':
                         self.dmg_queue[defdr].append([dmg, atkr.weapon.time - 1])
-                return ["%s did %s points of damage to %s" %(atkr.__hash__(), dmg, defdr.__hash__())]
+                return ["%s did %s points of damage to %s" %(atkr.name, dmg, defdr.name)]
 
             else:
                 message = []
                 for i in dmg:
                     self.apply_dmg(i[0], i[1])
-                    message.append("%s did %s points of damage to %s" %(atkr.__hash__(), i[1], i[0].__hash__()))
+                    message.append("%s did %s points of damage to %s" %(atkr.name, i[1], i[0].name))
                 return message
                     
         else:
-            return ["%s did no damage by attacking %s" %(atkr.__hash__(), defdr.__hash__())]
+            return ["%s did no damage by attacking %s" %(atkr.name, defdr.name)]
 
     def apply_queued(self):
         """applies damage to targets stored in dmg_queue"""
@@ -354,5 +358,5 @@ class Battlefield(object):
             udmg = sum(udmg)
             if udmg != 0:
                 self.apply_dmg(i, udmg)
-                message.append("%s recieved %s points of damage from the queue" %(i.__hash__(), udmg))           
+                message.append("%s recieved %s points of damage from the queue" %(i.name, udmg))           
         return message

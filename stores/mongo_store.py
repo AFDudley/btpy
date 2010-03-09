@@ -11,8 +11,8 @@ from pymongo.connection import Connection
 from pymongo.binary import Binary
 from pymongo.objectid import ObjectId
 
-from const import *
-import defs
+from binary_tactics.const import *
+from binary_tactics import defs
 
 c  = ('comp',)
 ec = c + ('element',)
@@ -124,8 +124,9 @@ def convert_dict(dict):
         return squad
     elif key == 'scient':
         scient = {}
-        scient['comp'] = value['comp']
         scient['element'] = value['element']
+        scient['comp'] = value['comp']
+        scient['name'] = value['name']
         scient = defs.Scient(**scient)
         scient.weapon = convert_dict(value['weapon'])
         scient.location = defs.Loc(value['location'][0], value['location'][1])
@@ -133,7 +134,7 @@ def convert_dict(dict):
     return eval(u'defs.'+ key.capitalize())(**eval(''.join(str(value).replace("u'", "'"))))
     
 if __name__ == '__main__':
-    from helpers import rand_unit, rand_squad, rand_comp, t2c
+    from binary_tactics.helpers import rand_unit, rand_squad, rand_comp, t2c
     connection = Connection()
     db = connection.test
     db.test.drop_indexes()

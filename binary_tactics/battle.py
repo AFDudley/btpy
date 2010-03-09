@@ -67,7 +67,7 @@ class state():
                 que = self.append_action(action)
                 if que != None:
                     text += que
-                text += ["%s moved to %s" %(action[0].__hash__(), action[2])]
+                text += ["%s moved to %s" %(action[0].name, action[2])]
                 return text
             except:
                 raise

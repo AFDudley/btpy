@@ -10,9 +10,6 @@ from operator import contains
 import re
 import yaml
 import binary_tactics.defs as defs
-from binary_tactics.helpers import rand_unit, rand_squad, rand_comp
-
-sq = rand_squad()
 
 def loc_representer(dumper, data):
     return dumper.represent_scalar(u'!loc', u'(%2s,%2s)' % data)
@@ -45,8 +42,9 @@ def convert_dict(dict):
         return squad
     elif key == 'scient':
         scient = {}
-        scient['comp'] = value['comp']
         scient['element'] = value['element']
+        scient['comp']    = value['comp']
+        scient['name']    = value['name']
         scient = defs.Scient(**scient)
         scient.weapon = convert_dict(value['weapon'])
         scient.location = defs.Loc(value['location'][0], value['location'][1])

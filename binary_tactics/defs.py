@@ -47,7 +47,9 @@ class Stone(Mapping):
     """ugh."""
     def __init__(self, comp=None):
         self.comp = {'Earth': 0, 'Fire': 0, 'Ice': 0, 'Wind': 0}
-        self.salt = randint(1000000000, 2**32)
+        #self.id = randint(1000000000, 2**32)
+        if isinstance(comp, Stone):
+            self.comp = comp.comp
         if comp == None:
             comp = self.comp
         try:
@@ -79,17 +81,16 @@ class Stone(Mapping):
         self.comp[key] = value
     def __len__(self):
          return len(self.comp)
-    def __repr__(self):
-        return dict.__repr__(self.comp)
+
     """
-    __hash__ a hack to get around scients being mutable.
+    __hash__ and __cmp__ are hacks to get around scients being mutable.
     I think the answer is to actually make stones immutable and
     have imbue return a different stone.
     """
-    
-    def __hash__(self):
-        return self.salt
 
+    def __hash__(self):
+        return id(self)
+                
     def tup(self):
         tup = ()
         for key in sorted(self.comp):
@@ -187,7 +188,7 @@ class Wand(Weapon):
     def __init__(self, element, comp):
         Weapon.__init__(self, element, comp)
         self.type = 'Wand'
-        #self.attack_pattern = []
+
     def make_pattern(self, origin, distance, pointing):
         """generates a pattern based on an origin, distance, and
         direction. Returns a set of coords"""
@@ -231,6 +232,8 @@ class Unit(Stone):
             % (element, ELEMENTS))
         Stone.__init__(self, comp)
         self.element = element
+        if name == None:
+            self.name = self.__hash__()
         self.name = name
         self.location = location
         self.val = self.value()
@@ -344,10 +347,10 @@ class Squad(UserList):
         key.squad = self
         
     def __delitem__(self, key):
-        del self[key].squad
+        del self.data[key].squad
         temp = self[key].value()
         self.free_spaces += self.unit_size(self[key])
-        list.__delitem__(self, key)
+        self.data.__delitem__(self, key)
         self.value -= temp
         
     def append(self, item):
@@ -366,7 +369,7 @@ class Squad(UserList):
             if self.value > 0:
                 s = ''
                 for i in range(len(self)):
-                    s += str(i) + ': ' + str(self[i]) + '\n'
+                    s += str(i) + ': ' + str(self[i].name) + '\n'
                 return "Name: %s, Value: %s, Free spaces: %s \n%s" \
                 %(self.name, self.value, self.free_spaces, s)
         else:
