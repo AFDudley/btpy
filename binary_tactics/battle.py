@@ -163,7 +163,7 @@ class state():
     def end(self, log, log_dest):
         """write log to someplace"""
         pass
-        
+            
 class Log(dict):
     def __init__(self, game_id, players, grid, start_time):
         self.game_id = game_id
@@ -201,6 +201,7 @@ class Log(dict):
         else:
             raise Exception("Need someplace to write files")
 
+
 #TODO: Time stamps.
 class move(list):
     """contains the actions and damage queue generated during nth move."""
@@ -220,4 +221,5 @@ class action(list):
     def __init__(self, unit=None, type=None, target=None):
         list.__init__(self, [unit, type, target])
      
+
 

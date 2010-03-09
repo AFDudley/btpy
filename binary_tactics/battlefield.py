@@ -5,7 +5,7 @@ import random
 
 from const import COMP, ELEMENTS, E, F, I, W, ORTH
 from defs import Scient, Loc, noloc
-from helpers import rand_squad
+#from helpers import rand_squad
 
 #There is a serious problem in this logic. it assumes that units fit on one
 #tile, nesceints do not.
@@ -81,12 +81,14 @@ class Battlefield(object):
         if squad1 is not None:
             self.squad1 = squad1
         else:
-            self.squad1 = rand_squad()
+            raise
+            #self.squad1 = rand_squad()
 
         if squad2 is not None:
             self.squad2 = squad2
         else:
-            self.squad2 = rand_squad()
+            raise
+            #self.squad2 = rand_squad()
     
     def move_unit(self, src, dest):
         """move unit from src tile to dest tile"""

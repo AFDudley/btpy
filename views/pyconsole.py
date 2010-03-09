@@ -97,7 +97,7 @@ class Console:
         self.txt_layer = pygame.Surface(self.size)
         self.txt_layer.set_colorkey(self.bg_color)
         
-        self.font = pygame.font.Font('DroidSansMono.ttf', 12)
+        self.font = pygame.font.Font('views/DroidSansMono.ttf', 12)
         
         self.font_height = self.font.get_linesize()
         self.max_lines = (self.size[HEIGHT] / self.font_height) - 1

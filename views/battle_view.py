@@ -7,13 +7,13 @@
 #
 from operator import contains
 import pygame
-import battlefield
-import battle
-import pyconsole
 from pygame.locals import *
-from const import E,F,I,W, ELEMENTS, OPP, ORTH
-from defs import Scient, Squad, Loc, noloc
-from helpers import rand_comp, rand_element
+import binary_tactics.battlefield as battlefield
+import binary_tactics.battle as battle
+import pyconsole
+from binary_tactics.const import E,F,I,W, ELEMENTS, OPP, ORTH
+from binary_tactics.defs import Scient, Squad, Loc, noloc
+from binary_tactics.helpers import rand_comp, rand_element
 import stores.yaml_store as yaml_store
 
 black = [0,0,0]
@@ -718,7 +718,7 @@ class View:
 if __name__ == '__main__':
     print "Copyright (c) 2010 A. Frederick Dudley. All rights reserved. PLEASE DO NOT REDISTRIBUTE"
     pygame.init()
-    FONT =  pygame.font.Font('DroidSansMono.ttf', 12)
+    FONT =  pygame.font.Font('views/DroidSansMono.ttf', 12)
     screen = pygame.display.set_mode([800, 600])
     grid = BattlePane.Grid(tiles=(16,16), tilesize=32)
     view = View(screen, grid)

@@ -6,11 +6,11 @@
 #  Copyright (c) 2010 A. Frederick Dudley. All rights reserved.
 #
 """This code converts game objects to and from yaml streams"""
+from operator import contains
 import re
 import yaml
-import defs
-from operator import contains
-from helpers import rand_unit, rand_squad, rand_comp
+import binary_tactics.defs as defs
+from binary_tactics.helpers import rand_unit, rand_squad, rand_comp
 
 sq = rand_squad()
 
