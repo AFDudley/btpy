@@ -4,68 +4,43 @@ from operator import contains
 import random
 
 from const import COMP, ELEMENTS, E, F, I, W, ORTH
-from defs import Scient, Loc, noloc
-#from helpers import rand_squad
+from defs import Scient, Loc, noloc, Stone
 
-#There is a serious problem in this logic. it assumes that units fit on one
-#tile, nesceints do not.
-class Tile(object):
-    """Tiles are contained in battlefields and hold units and stones"""
-    def __init__(self, location = noloc):
-        self.comp = COMP.copy() #Currently any 4 values 0...255
-        self.contents = None
-        self.location = location # makes abstraction a little easier.
+class Tile(Stone):
+    def __init__(self, comp=Stone(), contents=None):
+        Stone.__init__(self, comp)
+        self.contents = contents
 
-class Grid(tuple):
-    """
-    Creates a grid of empty tiles sized 2-tuple
-    There is some args/kwargs magic here, one day it will be documented or
-    removed.  
-    """
-    #boy do i ever need some type checking :D
-    def __new__(cls, *args, **kwargs):
-        if not args:
-            try:
-                size = kwargs['size']
-            except KeyError:
-                size = (16,16)
+class Grid(dict):
+    """Tiles are stones, Grids most likely should be too."""
+    def __init__(self, comp=Stone().comp, x=16, y=16, tiles=None):
+        self.x, self.y = self.size = (x, y)
+        if tiles == None:
+            self.tiles = {}
+            for i in range(x):
+                bar = {}
+                for j in range(y):
+                    bar.update({j: Tile()})
+                self.tiles.update({i: bar})
         else:
-            size = args[0]
-        x,y = size
-        grid = ()
-        for xpos in range(x):
-            temp = ()
-            for ypos in range(y):
-                temp += Tile(Loc(xpos,ypos)),
-            grid += temp,
-        return tuple.__new__(cls, grid)
+            self.tiles = tiles
+        self.comp = comp
 
-    def __init__(self, *args, **kwargs):
-        # make a grid, if no size given make it (16, 16) 
-        if not args:
-            try:
-                self.size = kwargs['size']
-            except KeyError:
-                self.size = (16, 16)
-        else:    
-            self.size = args[0]
-        self.x,self.y = self.size
-        try: 
-            self.comp = kwargs['comp']
-            self.make_grid(self.comp)
-        except KeyError:
-            self.comp = {E:0, F:0, I:0, W:0}
-                
-    def make_grid(self, avg):
-        """
-        transforms an empty grid to one with an average composition of COMP
-        called by __init__
-        """
-        print "make_grid was called"
-            
+    def __iter__(self):
+        return iter(self.tiles)
+    def __contains__(self, value):
+        return value in self.tiles
+    def __getitem__(self,key):
+        return self.tiles[key]
+    def __setitem__(self,key,value):
+        self.tiles[key] = value
+    def __len__(self):
+        return len(self.tiles)
+    def __repr__(self):
+        return dict.__repr__(self.tiles)
+        
 class Battlefield(object):
-    """A battlefield is a map of tiles which contains units and the logic for
-    their movement and status."""
+    """contains grid, units and the logic for damage and movement."""
     def __init__(self, grid=None, squad1=None, squad2=None):
         #grid is a tuple of tuples containing tiles
         self.game_id = 0 #?
@@ -82,13 +57,11 @@ class Battlefield(object):
             self.squad1 = squad1
         else:
             raise
-            #self.squad1 = rand_squad()
 
         if squad2 is not None:
             self.squad2 = squad2
         else:
             raise
-            #self.squad2 = rand_squad()
     
     def move_unit(self, src, dest):
         """move unit from src tile to dest tile"""
@@ -146,13 +119,6 @@ class Battlefield(object):
                 raise Exception("(%s, %s) is not empty" %(xpos, ypos))
         else:
             self.move_unit(unit.location, tile)
-        '''
-        if self.grid[unit.location[0]][unit.location[1]].contents != unit:
-            raise Exception( \
-            "grid, unit disagreement: grid[%s][%s] contains %s, not %s." \
-            %(unit.location[0], unit.location[1], \
-            self.grid[unit.location[0]][unit.location[1]].contents, unit))
-        '''
         
     def find_units(self):
         list = []
@@ -318,9 +284,10 @@ class Battlefield(object):
         self.graveyard.append(unit)
         #squad thinks all the units are the same. :(
         #squad.remove(unit)
-        for x in xrange(len(squad) - 1):
-            if squad[x].hp == 0:
+        for x in reversed(range(len(squad))):
+            if squad[x].hp <= 0:
                 squad.pop(x)
+                
     def attack(self, atkr, target):
         """calls calc_damage, applies result, Handles death."""
         defdr = self.grid[target[0]][target[1]].contents

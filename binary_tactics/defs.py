@@ -8,35 +8,7 @@ from random import randint
 from const import * #needs fix, maybe whole file needs rewrite
                     #why aren't there constants in python?
 
-c  = ('comp',)
-ec = c + ('element',)
-persisted = {'stone': c, 'sword': ec, 'bow': ec, 'wand': ec, 'glove': ec,
-             'scient': ec + ('name','weapon','weapon_bonus','location'),
-             'squad': ('data', 'name', 'value', 'free_spaces')}
-def get_persisted(obj):
-    """Returns a dict of obj attributes that are persisted."""
-    kind = obj.__class__.__name__.lower()
-    if contains(persisted.keys(), kind):
-        new_dict = {}
-        #check values of obj.__dict__ for persisted objects
-        for key in persisted[kind]:
-            other_kind = obj.__dict__[key].__class__.__name__.lower()
-            #special case for the .data of Squad:
-            if other_kind == 'list':
-                data = []
-                for item in obj.__dict__[key]:
-                    data.append(get_persisted(item))
-                new_dict[key] = data
-            #if value are persisted, call self
-            elif contains(persisted.keys(), other_kind):
-                new_dict[key] = get_persisted(obj.__dict__[key])
-            #else put value into new_dict
-            else:
-                new_dict[key] = obj.__dict__[key]
-        return {kind: new_dict}
-    else:
-        return obj
-        
+
 class Loc(namedtuple('Loc', 'x y')):
     __slots__ = ()
     def __repr__(self):
@@ -107,7 +79,6 @@ class Weapon(Stone):
         Stone.__init__(self, comp)
         self.type ='None'
         self.element = element
-        self.persisted = ec
     
     def __repr__(self):
         return dict.__repr__(self.__dict__)
@@ -257,7 +228,6 @@ class Scient(Unit):
         for i in self.equip_limit:
             self.equip_limit[i] = self.equip_limit[i] + self.comp[i] \
             + self.weapon_bonus[i]
-        self.persisted = ec + ('name','weapon','weapon_bonus','location')
         self.calcstats()
         self.equip(self.weapon)
 
@@ -322,7 +292,6 @@ class Squad(UserList):
         self.value = 0
         self.free_spaces = 8
         self.name = name
-        self.persisted = ('data', 'name', 'value', 'free_spaces')
         UserList.__init__(self)
         if data == None:
             return

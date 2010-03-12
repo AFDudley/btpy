@@ -3,7 +3,7 @@ squad:
   - scient:
       comp: {Earth: 0, Fire: 127, Ice: 127, Wind: 255}
       element: Wind
-      location: (6,4)
+      location: (None,None)
       name: 'Wizard #0'
       weapon:
         wand:
@@ -13,7 +13,7 @@ squad:
   - scient:
       comp: {Earth: 0, Fire: 127, Ice: 127, Wind: 255}
       element: Wind
-      location: (7,4)
+      location: (None,None)
       name: 'Archer #0'
       weapon:
         bow:
@@ -23,7 +23,7 @@ squad:
   - scient:
       comp: {Earth: 0, Fire: 127, Ice: 127, Wind: 255}
       element: Wind
-      location: (8,4)
+      location: (None,None)
       name: 'Pugilist #0'
       weapon:
         sword:
@@ -33,7 +33,7 @@ squad:
   - scient:
       comp: {Earth: 0, Fire: 127, Ice: 127, Wind: 255}
       element: Wind
-      location: (9,4)
+      location: (None,None)
       name: 'Theurgist #0'
       weapon:
         glove:

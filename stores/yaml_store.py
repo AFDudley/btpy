@@ -10,6 +10,7 @@ from operator import contains
 import re
 import yaml
 import binary_tactics.defs as defs
+from stores.store import convert_dict
 
 def loc_representer(dumper, data):
     return dumper.represent_scalar(u'!loc', u'(%2s,%2s)' % data)
@@ -30,26 +31,6 @@ loc_pat = re.compile(r'^\(\s*\d+\s*,\s*\d+\s*\)\s*$')
 none_pat = re.compile(r'^\(\s*None\s*,\s*None\s*\)\s*$')
 yaml.add_implicit_resolver(u'!loc', loc_pat)
 yaml.add_implicit_resolver(u'!loc', none_pat)
-
-def convert_dict(dict):
-    """takes a dict and returns composite objects."""
-    key, value = dict.items()[0]
-    if key == 'squad':
-        squad = defs.Squad(name=value['name'])
-        data = value['data']
-        for unit in data:
-            squad.append(convert_dict(unit))
-        return squad
-    elif key == 'scient':
-        scient = {}
-        scient['element'] = value['element']
-        scient['comp']    = value['comp']
-        scient['name']    = value['name']
-        scient = defs.Scient(**scient)
-        scient.weapon = convert_dict(value['weapon'])
-        scient.location = defs.Loc(value['location'][0], value['location'][1])
-        return scient
-    return eval(u'defs.'+ key.capitalize())(**eval(''.join(str(value).replace("u'", "'"))))
     
 def load(filename):
     return convert_dict(yaml.load(open(filename, 'r')))

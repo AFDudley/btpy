@@ -169,7 +169,7 @@ class TopPane(Pane):
         view.middle.cursor_pos = -1
         view.bottom.title = "Info:"
         view.bottom.text = []
-        if view.battle_state.current_ply.num % 2 == 1:
+        if view.battle_state.current_ply['num'] % 2 == 1:
             self.squad = view.battle.squad1
         else:
             self.squad = view.battle.squad2
@@ -185,7 +185,6 @@ class TopPane(Pane):
                 #This should really be done by a function in battlepane.Scient
                 unit = self.squad[i]
                 unit.text = [] #oops...
-                self.squad[i].name = None
                 if self.squad[i].name == None:
                     name = str(self.squad[i].location)
                 else:
@@ -205,7 +204,6 @@ class TopPane(Pane):
                 unit.text.append("PD: " + str(unit.pdef) + " MD: " + str(unit.mdef))
                 unit.text.append("Location: " + str(unit.location))
             
-            print "text length: %s" %len(self.text)
             self.text.reverse()
             self.last_line = len(self.squad) - 1
         else:
@@ -213,7 +211,7 @@ class TopPane(Pane):
             
             view.set_action(None, 'pass', None)
             view.send_action()
-            #print "Game Over."
+            print "Game Over."
 
     def draw_other_panes(self):
         if len(self.squad) != 0:
@@ -251,7 +249,7 @@ class TopPane(Pane):
             
     def process_return(self):
         if len(self.squad) != 0:
-            view.set_action(self.unit, view.current_action[1], view.current_action[2])
+            view.set_action(self.unit, view.current_action['type'], view.current_action['target'])
             view.transition(view.middle)
         else:
             view.current_state = view.top
@@ -279,7 +277,7 @@ class MiddlePane(Pane):
             view.middle.text.append(("Attack", darkg, pink))
         view.middle.text.append(("Pass", darkg, white))
     
-        if view.battle_state.current_ply[0] == None:
+        if view.battle_state.current_ply['action1'] == None:
             self.text.append(("Cancel", darkg, red))
         self.last_line = len(self.text) - 1
         
@@ -302,7 +300,7 @@ class MiddlePane(Pane):
             view.bottom.title = "Info:"
         if self.text[self.cursor_pos][0] == 'Pass':
             text = []
-            if view.battle_state.current_ply[0] == None:
+            if view.battle_state.current_ply['action1'] == None:
                 view.bottom.title = "Skip both actions?"
             else:
                 view.bottom.title = "Skip second action?"
@@ -314,7 +312,7 @@ class MiddlePane(Pane):
     def process_return(self):
         if self.text[self.cursor_pos][0] != 'Cancel':
             type = self.text[self.cursor_pos][0].lower()
-            view.set_action(view.current_action[0], type, view.current_action[2])
+            view.set_action(view.current_action['unit'], type, view.current_action['target'])
             view.transition(view.bottom)
         else:
             #TODO: keep the privous view.top.cursor_pos; harder than it sounds.
@@ -380,7 +378,7 @@ class BottomPane(Pane):
                     dest = self.targets[self.old_cursor]
                 else:
                     dest = None
-                view.set_action(view.current_action[0], view.current_action[1], dest)
+                view.set_action(view.current_action['unit'], view.current_action['type'], dest)
                 view.send_action()
                 ###
             else:
@@ -547,6 +545,9 @@ class BattlePane(Pane, battlefield.Battlefield):
             #self.rect = pygame.draw.polygon(self.image, COLORS[self.element], [(0,4),(0,10),(15,10),(15,4)])
             self.text = []
             
+        def __repr__(self):
+            return defs.Scient.__repr__(self)
+
         def draw_text(self):
             """a crude, crude hack."""
             self.font = FONT
@@ -555,9 +556,6 @@ class BattlePane(Pane, battlefield.Battlefield):
             COLORS[self.element])
             self.image.blit(textrect, (4,0))
             
-        def __repr__(self):
-            return defs.Scient.__repr__(self)
-
     class Tile(pygame.sprite.Sprite, battlefield.Tile):
         """it's a battlefield tile and a pygame sprite, yo"""
         def __init__(self,  topleft):
@@ -570,7 +568,7 @@ class BattlePane(Pane, battlefield.Battlefield):
         
         def set_color(self, color):
             self.image.fill(color)
-
+    '''
     class Grid(pygame.sprite.Sprite, battlefield.Grid):
         def __init__(self, *args, **kwargs):
             pygame.sprite.Sprite.__init__(self)
@@ -609,7 +607,26 @@ class BattlePane(Pane, battlefield.Battlefield):
                     temp += tile
                 grid += temp,
             return tuple.__new__(cls, grid)
+    '''
+    class Grid(pygame.sprite.Sprite, battlefield.Grid):
+        def __init__(self, *args, **kwargs):
+            pygame.sprite.Sprite.__init__(self)
+            self.tilesize = kwargs['tilesize']
+            self.tiles    = kwargs['tiles']
+            self.image    = pygame.Surface(tuple([self.tilesize * x for x in self.tiles]))
+            self.rect     = self.image.get_rect()
+            self.rect.x, self.rect.y = (242, TOPINSET)
+            self.x,self.y = self.tiles
+            battlefield.Grid.__init__(self, x=self.x, y=self.y)
             
+            for xpos in range(self.x):
+                for ypos in range(self.y):
+                    tile = BattlePane.Tile((xpos,ypos))
+                    tile.rect.topleft = [(xpos*self.tilesize) + 2, (ypos*self.tilesize) + 2]
+                    self.image.blit(tile.image, tile.rect)
+                    self[xpos][ypos] = tile
+            self.image.set_colorkey((0,0,0))
+        
 class View:
     def __init__(self, screen, grid):
         self.grid = grid
@@ -691,20 +708,20 @@ class View:
         """sends the current action to the battle_state"""
         #if first action in ply is pass, set second to same
         text = []
-        if self.current_action[1] == 'pass':
-            if self.battle_state.current_ply[0] == None:
+        if self.current_action['type'] == 'pass':
+            if self.battle_state.current_ply['action1'] == None:
                 text += self.battle_state.process_action(self.current_action)
         text += self.battle_state.process_action(self.current_action)
         '''
         send_action is only called from the bottom pane and we should move to
         the top pane only when the ply is full, otherwise, move to the middle.
         '''
-        if self.battle_state.current_ply[0] == None:
+        if self.battle_state.current_ply['action1'] == None:
             self.last_action_type = None
             self.transition(view.top)
         else:
             self.make_tile_sets(self.unit)
-            self.last_action_type = self.current_action[1]
+            self.last_action_type = self.current_action['type']
             self.transition(view.middle)
         for i in text:
             print i
@@ -727,6 +744,7 @@ if __name__ == '__main__':
     pygame.init()
     FONT =  pygame.font.Font('views/DroidSansMono.ttf', 12)
     screen = pygame.display.set_mode([800, 600])
+    #grid = BattlePane.Grid(tiles=(16,16), tilesize=32)
     grid = BattlePane.Grid(tiles=(16,16), tilesize=32)
     view = View(screen, grid)
     view.state = view.get_key()
