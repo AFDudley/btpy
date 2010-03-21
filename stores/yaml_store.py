@@ -6,7 +6,6 @@
 #  Copyright (c) 2010 A. Frederick Dudley. All rights reserved.
 #
 """This code converts game objects to and from yaml streams"""
-from operator import contains
 import re
 import yaml
 import binary_tactics.defs as defs

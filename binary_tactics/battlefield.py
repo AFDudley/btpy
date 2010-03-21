@@ -11,9 +11,10 @@ class Tile(Stone):
         Stone.__init__(self, comp)
         self.contents = contents
 
-class Grid(dict):
+class Grid(Stone):
     """Tiles are stones, Grids most likely should be too."""
-    def __init__(self, comp=Stone().comp, x=16, y=16, tiles=None):
+    def __init__(self, comp=None, x=16, y=16, tiles=None):
+        Stone.__init__(self)
         self.x, self.y = self.size = (x, y)
         if tiles == None:
             self.tiles = {}
@@ -24,7 +25,6 @@ class Grid(dict):
                 self.tiles.update({i: bar})
         else:
             self.tiles = tiles
-        self.comp = comp
 
     def __iter__(self):
         return iter(self.tiles)
@@ -89,6 +89,7 @@ class Battlefield(object):
                     self.grid[xsrc][ysrc].contents
                     self.grid[xdest][ydest].contents.location = Loc(xdest, ydest)
                     self.grid[xsrc][ysrc].contents = None
+                    return ["A unit has been moved from %s to %s" %(str(src), str(dest))]
                 else:
                     raise Exception("tried moving more than %s tiles" %move)
             else:
@@ -118,7 +119,7 @@ class Battlefield(object):
             elif self.grid[xpos][ypos].contents != None:
                 raise Exception("(%s, %s) is not empty" %(xpos, ypos))
         else:
-            self.move_unit(unit.location, tile)
+            return self.move_unit(unit.location, tile)
         
     def find_units(self):
         list = []
@@ -218,7 +219,7 @@ class Battlefield(object):
         """Calcuate damage delt to defdr from atkr. Also calculates the damage of 
         all units within a blast range. if weapon has a blast range list of
         (target, dmg) is returned. otherwise just dmg is returned"""
-        #Broken!!!
+        #Broken: dmg_queue
         weapon = atkr.weapon
         aloc = atkr.location
         dloc = defdr.location
@@ -236,7 +237,8 @@ class Battlefield(object):
                     if weapon.type == 'Bow': 
                         return dmg / 4            
                     else:
-                        return dmg / weapon.time #assumes weapon.type == W
+                        print "sent it"
+                        return dmg / weapon.time #assumes weapon.type == 'Glove'
                 else:
                     return None #No damage.
             else:
@@ -269,13 +271,15 @@ class Battlefield(object):
         apply_queued()"""
         if damage != 0:
             if damage >= target.hp:
-                self.bury(target)
+                return self.bury(target)
             else:
+                #These returns will need to be sorted out later.
                 target.hp -= damage
 
     def bury(self, unit):
         """moves unit to graveyard"""
         squad = unit.squad
+        name = unit.name
         x,y = unit.location
         unit.hp = 0
         self.grid[x][y].contents = None
@@ -287,6 +291,7 @@ class Battlefield(object):
         for x in reversed(range(len(squad))):
             if squad[x].hp <= 0:
                 squad.pop(x)
+        return ["%s has been buried." %name] 
                 
     def attack(self, atkr, target):
         """calls calc_damage, applies result, Handles death."""
@@ -296,17 +301,20 @@ class Battlefield(object):
             message = [] # A list of strings
             if isinstance(dmg, int) == True:
                 if dmg != 0:
-                    self.apply_dmg(defdr, dmg)
+                    m = self.apply_dmg(defdr, dmg)
                 if defdr.hp > 0:
                     if atkr.weapon.type == 'Glove':
                         self.dmg_queue[defdr].append([dmg, atkr.weapon.time - 1])
-                return ["%s did %s points of damage to %s" %(atkr.name, dmg, defdr.name)]
+                message.append("%s did %s points of damage to %s" %(atkr.name, dmg, defdr.name))
+                if m != None: message.append(m)
+                return message
 
             else:
                 message = []
                 for i in dmg:
-                    self.apply_dmg(i[0], i[1])
+                    m = self.apply_dmg(i[0], i[1])
                     message.append("%s did %s points of damage to %s" %(atkr.name, i[1], i[0].name))
+                    if m != None: message.append(m)
                 return message
                     
         else:
@@ -322,8 +330,10 @@ class Battlefield(object):
                 self.dmg_queue[i][dmg_lst][1] -= 1
                 if self.dmg_queue[i][dmg_lst][1] == 0:
                     del self.dmg_queue[i][dmg_lst]
+            
             udmg = sum(udmg)
             if udmg != 0:
-                self.apply_dmg(i, udmg)
+                m = self.apply_dmg(i, udmg)
                 message.append("%s recieved %s points of damage from the queue" %(i.name, udmg))           
+                if m != None: message.append(m)
         return message

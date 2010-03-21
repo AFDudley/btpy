@@ -634,8 +634,8 @@ class View:
         self.middle = MiddlePane((LEFTINSET, (TOPINSET + PANE_HEIGHT + PANE_SPACING)))
         self.bottom = BottomPane((LEFTINSET, (TOPINSET + 2 *(PANE_HEIGHT + PANE_SPACING))))
         #the name battle is hardcoded into pyconsole.py
-        self.player1 = battle.Player()
-        self.player2 = battle.Player()
+        #self.player1 = battle.Player()
+        #self.player2 = battle.Player()
 
         self.battle = BattlePane((242, TOPINSET), self.grid, tilesize=32, tiles=(16,16))
         self.battle_state = battle.state(grid=self.grid, battlefield=self.battle)
@@ -750,6 +750,7 @@ if __name__ == '__main__':
     view.state = view.get_key()
     view.battle_state.player1.name = "Player 1"
     view.battle_state.player2.name = "Player 2"
+    view.battle_state.start()
     view.console.active = 0
     paneimgs = pygame.sprite.RenderUpdates()
     for pane in (view.top, view.middle, view.bottom, view.battle):

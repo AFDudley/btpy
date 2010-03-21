@@ -6,6 +6,7 @@
 #  Copyright (c) 2010 A. Frederick Dudley. All rights reserved.
 #
 """Functions shared between yaml_ and mongo_ store.py"""
+from operator import contains
 import binary_tactics.defs as defs
 from binary_tactics.battlefield import Grid, Tile
 
@@ -15,7 +16,9 @@ persisted = {'stone': c, 'sword': ec, 'bow': ec, 'wand': ec, 'glove': ec,
              'scient': ec + ('name','weapon','weapon_bonus','location'),
              'squad': ('data', 'name', 'value', 'free_spaces'),
              'tile': c + ('contents',),
-             'grid': c + ('tiles','x','y'),}
+             'grid': c + ('tiles','x','y'),
+             'player': ('name', 'squad_list'),
+             'log': ('start_time', 'winner', 'players', 'grid', 'end_time', 'moves'),}
              
 def get_persisted(obj):
     """Returns a dict of obj attributes that are persisted."""    
@@ -33,7 +36,7 @@ def get_persisted(obj):
                     for (l, w) in v.items():
                         new_x.update({l: get_persisted(w)})
                     new_dict['tiles'].update({k: new_x})
-            
+                    
             #special case for the .data of Squad:
             elif other_kind == 'list':
                 data = []
@@ -55,7 +58,7 @@ def convert_dict(dict):
     key, value = dict.items()[0]
     if key == 'tile':
         return Tile(**eval("".join(str(value).replace("u'", "'"))))
-    if key == 'grid':
+    elif key == 'grid':
         #It's dat eval hammer, boy!!! WOOO!!!
         comp = eval("".join(str(value['comp']).replace("u'", "'")))
         tiles = {}
@@ -68,7 +71,7 @@ def convert_dict(dict):
             tiles.update({i: new_x})
         return Grid(comp, x, y, tiles)
         
-    if key == 'squad':
+    elif key == 'squad':
         squad = defs.Squad(name=value['name'])
         data = value['data']
         for unit in data:
@@ -86,3 +89,4 @@ def convert_dict(dict):
     else:
         #for weapons
         return eval(u'defs.'+ key.capitalize())(**eval(''.join(str(value).replace("u'", "'"))))
+    

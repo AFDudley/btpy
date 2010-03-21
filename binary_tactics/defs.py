@@ -287,7 +287,11 @@ class Squad(UserList):
                 return 1
             else:
                 return 2
-                
+    
+    def hp(self):
+        """Returns the total HP of the Squad."""
+        return sum([unit.hp for unit in self])
+
     def __init__(self, data=None, name=None):
         self.value = 0
         self.free_spaces = 8

@@ -13,9 +13,6 @@ Make binary-tactics standalone via virtualenv
 Develop django/ajax version of battle_view.
 included user registration, profiles, accounts, etc.
 Add a NDA.
-
----
-Add support for storing objects in yaml
-Use mongodb to create and store the matrix of game prototypes. 
+ 
 ---
 Design the world, world view, and asset management.
