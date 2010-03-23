@@ -178,38 +178,43 @@ class TopPane(Pane):
             self.squad, self.not_squad = self.not_squad, self.squad
             
         if len(self.squad) > 0:
+            squad = Squad()
+            squad.name = self.squad.name
+            for x in reversed(sorted(self.squad, key=lambda t: t.hp)): squad.append(x)
+            self.squad = squad
             self.text = []
             self.title = self.squad.name + " Inital Value: " + str(self.squad.value)
             self.last_line = - 1
             #cpu time < human time:
             self.squad.text = []
             #ugh the units are sorted by something...
-            for i in reversed(xrange(len(self.squad))):
+            for i in xrange(len(self.squad)):
                 #Some of these values only need to be computed once.
                 #This should really be done by a function in battlepane.Scient
                 unit = self.squad[i]
-                unit.text = [] #oops...
-                if self.squad[i].name == None:
-                    name = str(self.squad[i].location)
-                else:
-                    name = self.squad[i].name
-                
-                squ_txt = name + " V: " + str(self.squad[i].value())
-                self.text.append((squ_txt, darkg, white))
-                unit.text.append("HP: " + str(unit.hp))
-                unit.text.append("E, F, I, W")
-                unit.text.append(str(unit.comp[E]) + ", " + str(unit.comp[F]) + ", " + str(unit.comp[I]) +  ", " + str(unit.comp[W]))
-                if contains(('Sword', 'Bow'), unit.weapon.type):
-                    atk = "PA: " + str(unit.patk)
-                else:
-                    atk = "MA: " + str(unit.matk)
-                unit.text.append("Weapon: " + unit.weapon.type)
-                unit.text.append(atk)
-                unit.text.append("PD: " + str(unit.pdef) + " MD: " + str(unit.mdef))
-                unit.text.append("Location: " + str(unit.location))
+                if unit.hp > 0:
+                    unit.text = [] #oops...
+                    if self.squad[i].name == None:
+                        name = str(self.squad[i].location)
+                    else:
+                        name = self.squad[i].name
+                    
+                    squ_txt = name + " V: " + str(self.squad[i].value())
+                    self.text.append((squ_txt, darkg, white))
+                    unit.text.append("HP: " + str(unit.hp))
+                    unit.text.append("E, F, I, W")
+                    unit.text.append(str(unit.comp[E]) + ", " + str(unit.comp[F]) + ", " + str(unit.comp[I]) +  ", " + str(unit.comp[W]))
+                    if contains(('Sword', 'Bow'), unit.weapon.type):
+                        atk = "PA: " + str(unit.patk)
+                    else:
+                        atk = "MA: " + str(unit.matk)
+                    unit.text.append("Weapon: " + unit.weapon.type)
+                    unit.text.append(atk)
+                    unit.text.append("PD: " + str(unit.pdef) + " MD: " + str(unit.mdef))
+                    unit.text.append("Location: " + str(unit.location))
             
-            self.text.reverse()
-            self.last_line = len(self.squad) - 1
+            self.text
+            self.last_line = len(self.text) - 1
         else:
             #set next move to pass; send to battle_state; which should end the game.
             
@@ -423,7 +428,7 @@ class BattlePane(Pane, battlefield.Battlefield):
         self.contentimgs = pygame.sprite.RenderUpdates()
         self.player1 = battle.Player()
         self.player2 = battle.Player()
-        self.player1.squad_list = [self.trans_squad(yaml_store.load('yaml/squad1.yaml'))]
+        self.player1.squad_list = [self.trans_squad(yaml_store.load('yaml/ice_maxes.yaml'))]
         self.player2.squad_list = [self.trans_squad(yaml_store.load('yaml/squad2.yaml'))]
 
         self.squad1 = self.player1.squad_list[0]
