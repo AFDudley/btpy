@@ -49,20 +49,19 @@ class Battlefield(object):
         self.squad1 = squad1
         self.squad2 = squad2
         self.dmg_queue = {}
-
-    def load_squads(self, squad1=None, squad2=None):
-        """loads squads into battlefield, uses random if none provided"""
-        #need better checks, duh
-        if squad1 is not None:
-            self.squad1 = squad1
-        else:
-            raise
-
-        if squad2 is not None:
-            self.squad2 = squad2
-        else:
-            raise
+        self.squads = (self.squad1, self.squad2)
+        self.units = self.get_units()
     
+    def get_units(self):
+        """looks in squads, returns all units in squads."""
+        #Squads should be made immutable somewhere in Battlefield.
+        units =[]
+        for s in self.squads:
+            if s != None:
+                for u in s:
+                    units.append(u)
+        return tuple(units)
+        
     def move_unit(self, src, dest):
         """move unit from src tile to dest tile"""
         if 0 <= src[0] < self.grid.x:
@@ -89,7 +88,7 @@ class Battlefield(object):
                     self.grid[xsrc][ysrc].contents
                     self.grid[xdest][ydest].contents.location = Loc(xdest, ydest)
                     self.grid[xsrc][ysrc].contents = None
-                    return ["A unit has been moved from %s to %s" %(str(src), str(dest))]
+                    return True 
                 else:
                     raise Exception("tried moving more than %s tiles" %move)
             else:
@@ -112,6 +111,7 @@ class Battlefield(object):
                 self.grid[xpos][ypos].contents = unit
                 unit.location = Loc(xpos, ypos)
                 self.dmg_queue[unit] = [] #append unit to dmg_queue
+                return True
                 
             elif unit.location == Loc(xpos, ypos):
                 raise Exception("This unit is already on (%s,%s)" %(xpos, ypos))
@@ -217,9 +217,9 @@ class Battlefield(object):
     
     def calc_damage(self, atkr, defdr):
         """Calcuate damage delt to defdr from atkr. Also calculates the damage of 
-        all units within a blast range. if weapon has a blast range list of
-        (target, dmg) is returned. otherwise just dmg is returned"""
-        #Broken: dmg_queue
+        all units within a blast range. if weapon has a AOE list of
+        (area, [target, dmg]) is returned. otherwise just dmg is returned"""
+        #Broken: dmg_queue is applied at the wrong time in battle.py
         weapon = atkr.weapon
         aloc = atkr.location
         dloc = defdr.location
@@ -237,7 +237,6 @@ class Battlefield(object):
                     if weapon.type == 'Bow': 
                         return dmg / 4            
                     else:
-                        print "sent it"
                         return dmg / weapon.time #assumes weapon.type == 'Glove'
                 else:
                     return None #No damage.
@@ -267,15 +266,19 @@ class Battlefield(object):
                             return dmg_list
 
     def apply_dmg(self, target, damage):
-        """applies damage to target, called by attack() and \
-        apply_queued()"""
-        if damage != 0:
-            if damage >= target.hp:
-                return self.bury(target)
-            else:
-                #These returns will need to be sorted out later.
-                target.hp -= damage
-
+        """applies damage to target, called by attack() and 
+        apply_queued() returns damage applied"""
+        if damage >= target.hp:
+            try:
+                self.bury(target)
+                return "Dead."
+                #return target.hp
+            except:
+                raise Exception("STOP BEING GREEDY.")
+        else:
+            target.hp -= damage
+            return damage
+                
     def bury(self, unit):
         """moves unit to graveyard"""
         squad = unit.squad
@@ -286,43 +289,54 @@ class Battlefield(object):
         unit.location = Loc(-1,-1)
         del self.dmg_queue[unit] 
         self.graveyard.append(unit)
+        '''
         #squad thinks all the units are the same. :(
         #squad.remove(unit)
+        #this code is dumb.
         for x in reversed(range(len(squad))):
             if squad[x].hp <= 0:
                 squad.pop(x)
-        return ["%s has been buried." %name] 
+        '''
+        return True
                 
     def attack(self, atkr, target):
         """calls calc_damage, applies result, Handles death."""
         defdr = self.grid[target[0]][target[1]].contents
         dmg = self.calc_damage(atkr, defdr)
         if dmg != None:
-            message = [] # A list of strings
             if isinstance(dmg, int) == True:
                 if dmg != 0:
-                    m = self.apply_dmg(defdr, dmg)
+                    recieved_dmg = self.apply_dmg(defdr, dmg)
+                else:
+                    return [[defdr, 0]]
                 if defdr.hp > 0:
                     if atkr.weapon.type == 'Glove':
                         self.dmg_queue[defdr].append([dmg, atkr.weapon.time - 1])
-                message.append("%s did %s points of damage to %s" %(atkr.name, dmg, defdr.name))
-                if m != None: message.append(m)
-                return message
+                return [[defdr, recieved_dmg]]
 
             else:
-                message = []
+                defdr_HPs = []
                 for i in dmg:
-                    m = self.apply_dmg(i[0], i[1])
-                    message.append("%s did %s points of damage to %s" %(atkr.name, i[1], i[0].name))
-                    if m != None: message.append(m)
-                return message
+                    if i[0].hp > 0:
+                        defdr_HPs.append([defdr, self.apply_dmg(i[0], i[1]) ])
+                return defdr_HPs
                     
         else:
-            return ["%s did no damage by attacking %s" %(atkr.name, defdr.name)]
-
+            #no damage
+            return []
+    def get_dmg_queue(self):
+        """returns a copy of the dmg_queue."""
+        new_dict = {}
+        for (key, value) in self.dmg_queue.items():
+            new_lst = []
+            for lst in value:
+                new_lst.append(tuple(lst))
+                new_dict[key] = new_lst
+        return new_dict
+        
     def apply_queued(self):
         """applies damage to targets stored in dmg_queue"""
-        message = []
+        defdr_HPs = []
         for i in self.dmg_queue.keys():
             udmg = []
             for dmg_lst in reversed(xrange(len(self.dmg_queue[i]))):
@@ -333,7 +347,7 @@ class Battlefield(object):
             
             udmg = sum(udmg)
             if udmg != 0:
-                m = self.apply_dmg(i, udmg)
-                message.append("%s recieved %s points of damage from the queue" %(i.name, udmg))           
-                if m != None: message.append(m)
-        return message
+                defdr_HPs.append([i, self.apply_dmg(i, udmg)])
+        return defdr_HPs
+        
+
