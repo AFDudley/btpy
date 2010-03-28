@@ -9,7 +9,7 @@ from operator import contains
 import pygame
 from pygame.locals import *
 import binary_tactics.battlefield as battlefield
-import new_battle as battle
+import binary_tactics.battle as battle
 import pyconsole
 from binary_tactics.const import E,F,I,W, ELEMENTS, OPP, ORTH
 from binary_tactics.defs import Squad, Loc, noloc
@@ -171,10 +171,10 @@ class TopPane(Pane):
         view.bottom.title = "Info:"
         view.bottom.text = []
     
-        if view.battle_state.state['num'] == 1:
+        if view.game.state['num'] == 1:
             self.squad = view.battle.squad1
             self.not_squad = view.battle.squad2
-        elif view.battle_state.state['num'] % 2 == 1:
+        elif view.game.state['num'] % 2 == 1:
             self.squad, self.not_squad = self.not_squad, self.squad
             
         if len(self.squad) > 0:
@@ -216,7 +216,7 @@ class TopPane(Pane):
             self.text
             self.last_line = len(self.text) - 1
         else:
-            #set next move to pass; send to battle_state; which should end the game.
+            #set next move to pass; send to game; which should end the game.
             
             view.set_action(None, 'pass', None)
             view.send_action()
@@ -286,7 +286,7 @@ class MiddlePane(Pane):
             view.middle.text.append(("Attack", darkg, pink))
         view.middle.text.append(("Pass", darkg, white))
         
-        if view.battle_state.state['num'] % 2 == 1:
+        if view.game.state['num'] % 2 == 1:
             self.text.append(("Cancel", darkg, red))
         self.last_line = len(self.text) - 1
         
@@ -309,7 +309,7 @@ class MiddlePane(Pane):
             view.bottom.title = "Info:"
         if self.text[self.cursor_pos][0] == 'Pass':
             text = []
-            if view.battle_state.state['num'] % 2 == 1:
+            if view.game.state['num'] % 2 == 1:
                 view.bottom.title = "Skip both actions?"
             else:
                 view.bottom.title = "Skip second action?"
@@ -422,6 +422,8 @@ class BattlePane(Pane, battlefield.Battlefield):
         #NOTE: This object has Player information that a battlefield does not have.
         pane_area = (((tilesize* tiles[0]) + 4), ((tilesize * tiles[1]) +4))
         battlefield.Battlefield.__init__(self)
+
+    
         Pane.__init__(self, pane_area, title=None)
         self.rect.x, self.rect.y = position
         self.grid = grid
@@ -441,10 +443,10 @@ class BattlePane(Pane, battlefield.Battlefield):
         
         self.squad2.name = 'p2'
         self.squad2.num  = '2'
-
-        for s in (self.squad1, self.squad2):
-            for i in s:
-                i.draw_text()
+        self.squads = (self.squad1, self.squad2)
+        self.units = self.get_units()
+        for u in self.units:
+                u.draw_text()
         self.get_contents_image()
 
     def update(self):
@@ -608,7 +610,7 @@ class View:
         #self.player2 = battle.Player()
 
         self.battle = BattlePane((242, TOPINSET), self.grid, tilesize=32, tiles=(16,16))
-        self.battle_state = battle.Game(grid=self.grid, battlefield=self.battle)
+        self.game = battle.Game(grid=self.grid, battlefield=self.battle)
         #console code
         self.console = pyconsole.Console(screen, (2,398,794,200))
         self.console.set_interpreter()
@@ -675,18 +677,18 @@ class View:
         self.current_action = battle.Action(unit, type, target)
             
     def send_action(self):
-        """sends the current action to the battle_state"""
+        """sends the current action to the game"""
         #if first action in ply is pass, set second to same
         text = []
         if self.current_action['type'] == 'pass':
-            if view.battle_state.state['num'] % 2 == 1:
-                text += self.battle_state.process_action(self.current_action)
-        text += self.battle_state.process_action(self.current_action)
+            if view.game.state['num'] % 2 == 1:
+                text += self.game.process_action(self.current_action)
+        text += self.game.process_action(self.current_action)
         '''
         send_action is only called from the bottom pane and we should move to
         the top pane only when the ply is full, otherwise, move to the middle.
         '''
-        if view.battle_state.state['num'] % 2 == 1:
+        if view.game.state['num'] % 2 == 1:
             self.last_action_type = None
             self.transition(view.top)
         else:
@@ -715,9 +717,9 @@ if __name__ == '__main__':
     grid = BattlePane.Grid(tiles=(16,16), tilesize=32)
     view = View(screen, grid)
     view.state = view.get_key()
-    view.battle_state.player1.name = "Player 1"
-    view.battle_state.player2.name = "Player 2"
-    #view.battle_state.start()
+    view.game.player1.name = "Player 1"
+    view.game.player2.name = "Player 2"
+    #view.game.start()
     view.console.active = 0
     paneimgs = pygame.sprite.RenderUpdates()
     for pane in (view.top, view.middle, view.bottom, view.battle):

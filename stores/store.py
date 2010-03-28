@@ -18,7 +18,12 @@ persisted = {'stone': c, 'sword': ec, 'bow': ec, 'wand': ec, 'glove': ec,
              'tile': c + ('contents',),
              'grid': c + ('tiles','x','y'),
              'player': ('name', 'squad_list'),
-             'log': ('start_time', 'winner', 'players', 'grid', 'end_time', 'moves'),}
+             'log': ('applied', 'start_time', 'winner', 'messages', 'actions',
+                     'states', 'players', 'grid', 'end_time', 'condition',
+                     'units', 'init_locs',),
+             'action': ('when', 'type', 'target', 'unit'),
+             'message': ('text', 'num', 'when'),
+             'state': ('pass_count', 'num', 'hp_count', 'queued', 'old_squad2_hp', 'game_over'),}
              
 def get_persisted(obj):
     """Returns a dict of obj attributes that are persisted."""    
@@ -36,13 +41,43 @@ def get_persisted(obj):
                     for (l, w) in v.items():
                         new_x.update({l: get_persisted(w)})
                     new_dict['tiles'].update({k: new_x})
-                    
+            #For Logs
+            elif key == 'units':
+                new_dict['units'] = {}
+                for (n, s) in obj.__dict__[key].items():
+                    new_dict['units'][n] = get_persisted(s)
+
+            elif key == 'init_locs':
+                new_dict['init_locs'] = {}
+                for (n, s) in obj.__dict__[key].items():
+                    new_dict['init_locs'][n] = get_persisted(s)
+            
+            elif key =='queued':
+                que = obj.__dict__[key]
+                if que != None:
+                    new_dict['queued'] = que
+                else:
+                    new_dict['queued'] = {}
+            
+            elif key == 'squad_list':
+                sl = []
+                for s in obj.__dict__[key]:
+                        sl.append(get_persisted(s))
+                new_dict['squad_list'] = sl
+            
+            elif key == 'players':
+                ps = []
+                for p in obj.__dict__[key]:
+                        ps.append(get_persisted(p))
+                new_dict['players'] = ps
+                
             #special case for the .data of Squad:
-            elif other_kind == 'list':
+            elif key == 'data':
                 data = []
                 for item in obj.__dict__[key]:
                     data.append(get_persisted(item))
                 new_dict[key] = data
+
             #if value are persisted, call self
             elif contains(persisted.keys(), other_kind):
                 new_dict[key] = get_persisted(obj.__dict__[key])

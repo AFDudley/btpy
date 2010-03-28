@@ -6,6 +6,10 @@
 #  Copyright (c) 2010 A. Frederick Dudley. All rights reserved.
 #
 """Store and retrieve game objects to and from mongodb."""
+
+#Logs are really quite different from game objects and should be stored in a 
+#different db.
+
 from operator import contains
 from ordereddict import OrderedDict
 from pymongo.connection import Connection
@@ -47,45 +51,44 @@ def insert_co(obj, collection):
                     for (l, w) in v.items():
                         new_x.update({str(l): insert_co(w, collection)})
                     new_dict['tiles'].update({str(k): new_x})
-            elif key == 'moves':
-                lst = []
-                for i in obj.__dict__[key]:
-                    new_move = {}
-                    for (k, v) in i.items():
-                        if k == 'num':
-                            new_move[k] = v
-                        elif k == 'queued':
-                            new_q = {}
-                            for (w, f) in i[k].items():
-                                new_q[unicode(insert_co(w, collection))] = f
-                            new_move[k] = new_q
-                        elif k == 'when':
-                            new_move[k] = v
-                        elif k == 'message':
-                            new_move[k] = v
-                        else:
-                            new_move[k] = {}
-                            for (ke, va) in i[k].items():
-                                if ke == 'when':
-                                    new_move[k][ke] = i[k][ke]
-                                elif ke != 'num':
-                                    new_move[k][ke] = {}
-                                    for (l, r) in va.items():
-                                        if l == 'unit':
-                                            new_move[k][ke][l] = insert_co(i[k][ke]['unit'], collection)
-                                        else:
-                                            new_move[k][ke][l] = r
-                                else:
-                                    new_move[k][ke] = i[k][ke]
-                    lst.append(new_move)
-                new_dict[key] = lst
-            #special case for the .data of Squad:
-            elif other_kind == 'list':
+            #For Logs (not a composite)
+            elif key == 'units':
+                new_dict['units'] = {}
+                for (n, s) in obj.__dict__[key].items():
+                    new_dict['units'][str(n)] = insert_co(s, collection)
+
+            elif key == 'init_locs':
+                new_dict['init_locs'] = {}
+                for (n, s) in obj.__dict__[key].items():
+                    new_dict['init_locs'][str(n)] = insert_co(s, collection)
+                    
+            elif key =='queued':
+                que = obj.__dict__[key]
+                if que != None:
+                    new_dict['queued'] = que
+                else:
+                    new_dict['queued'] = {}
+            #For Player objects (not a composite)
+            elif key == 'squad_list':
+                sl = []
+                for s in obj.__dict__[key]:
+                    sl.append(insert_co(s, collection))
+                new_dict['squad_list'] = sl
+            #For list of players (not a composite)
+            elif key == 'players':
+                ps = []
+                for p in obj.__dict__[key]:
+                    ps.append(insert_co(p, collection))
+                new_dict['players'] = ps
+                
+            #For Squads: (squads should have a composition)
+            elif key == 'data':
                 data = []
                 for item in obj.__dict__[key]:
                     uc = item.__class__.__name__.lower()
                     data.append({uc: insert_co(item, collection)})
                 new_dict[key] = data
+                
             elif other_kind == 'dict':
                 '''regardless of the key, these are all going to be comps,
                 save them as such.'''
@@ -113,10 +116,12 @@ def get_dict(id, collection):
                 
         if key == 'comp':
             return value
+
         if isinstance(value, dict):
             for (k, v) in value.items():
                 if isinstance(v, ObjectId):
                     value[k] = get_dict(v, collection)
+        
         if key == 'squad':
             data = value['data']
             td = []

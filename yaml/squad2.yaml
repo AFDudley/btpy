@@ -1,45 +1,45 @@
 squad:
   data:
   - scient:
-      comp: {Earth: 1, Fire: 2, Ice: 0, Wind: 1}
-      element: Fire
-      location: ( 6, 4)
+      comp: {Earth: 0, Fire: 127, Ice: 127, Wind: 255}
+      element: Wind
+      location: (None,None)
       name: 'Wizard #0'
       weapon:
         wand:
           comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
-          element: Fire
+          element: Wind
       weapon_bonus: &id001 {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
   - scient:
-      comp: {Earth: 1, Fire: 2, Ice: 0, Wind: 1}
-      element: Fire
-      location: ( 7, 4)
+      comp: {Earth: 0, Fire: 127, Ice: 127, Wind: 255}
+      element: Wind
+      location: (None,None)
       name: 'Archer #0'
       weapon:
         bow:
           comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
-          element: Fire
+          element: Wind
       weapon_bonus: *id001
   - scient:
-      comp: {Earth: 1, Fire: 2, Ice: 0, Wind: 1}
-      element: Fire
-      location: ( 8, 4)
+      comp: {Earth: 0, Fire: 127, Ice: 127, Wind: 255}
+      element: Wind
+      location: (None,None)
       name: 'Pugilist #0'
       weapon:
         sword:
           comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
-          element: Fire
+          element: Wind
       weapon_bonus: *id001
   - scient:
-      comp: {Earth: 1, Fire: 2, Ice: 0, Wind: 1}
-      element: Fire
-      location: ( 9, 4)
+      comp: {Earth: 0, Fire: 127, Ice: 127, Wind: 255}
+      element: Wind
+      location: (None,None)
       name: 'Theurgist #0'
       weapon:
         glove:
           comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
-          element: Fire
+          element: Wind
       weapon_bonus: *id001
   free_spaces: 4
-  name: Fire Mins
-  value: 16
+  name: Wind Maxes
+  value: 2036

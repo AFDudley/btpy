@@ -289,14 +289,6 @@ class Battlefield(object):
         unit.location = Loc(-1,-1)
         del self.dmg_queue[unit] 
         self.graveyard.append(unit)
-        '''
-        #squad thinks all the units are the same. :(
-        #squad.remove(unit)
-        #this code is dumb.
-        for x in reversed(range(len(squad))):
-            if squad[x].hp <= 0:
-                squad.pop(x)
-        '''
         return True
                 
     def attack(self, atkr, target):
@@ -318,7 +310,7 @@ class Battlefield(object):
                 defdr_HPs = []
                 for i in dmg:
                     if i[0].hp > 0:
-                        defdr_HPs.append([defdr, self.apply_dmg(i[0], i[1]) ])
+                        defdr_HPs.append([i[0], self.apply_dmg(i[0], i[1]) ])
                 return defdr_HPs
                     
         else:
