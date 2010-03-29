@@ -1,7 +1,8 @@
 # Django settings for binary_tactics project.
 import os
 import django
-
+from mongoengine import connect
+connect(db='binary_tactics', host='173.203.203.77')
 DJANGO_ROOT = os.path.dirname(os.path.realpath(django.__file__))
 SITE_ROOT = os.path.dirname(os.path.realpath(__file__))
 
@@ -84,3 +85,9 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.admin',
 )
+"""
+AUTHENTICATION_BACKENDS = (
+    'mongoengine.django.auth.MongoEngineBackend',
+)
+"""
+SESSION_ENGINE = 'mongoengine.django.sessions'

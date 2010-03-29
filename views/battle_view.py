@@ -713,13 +713,11 @@ if __name__ == '__main__':
     pygame.init()
     FONT =  pygame.font.Font('views/DroidSansMono.ttf', 12)
     screen = pygame.display.set_mode([800, 600])
-    #grid = BattlePane.Grid(tiles=(16,16), tilesize=32)
     grid = BattlePane.Grid(tiles=(16,16), tilesize=32)
     view = View(screen, grid)
     view.state = view.get_key()
     view.game.player1.name = "Player 1"
     view.game.player2.name = "Player 2"
-    #view.game.start()
     view.console.active = 0
     paneimgs = pygame.sprite.RenderUpdates()
     for pane in (view.top, view.middle, view.bottom, view.battle):
