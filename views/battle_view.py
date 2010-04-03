@@ -548,12 +548,19 @@ class BattlePane(Pane, battlefield.Battlefield):
                     comp = rand_comp(suit=element, kind='Scient')
                 defs.Scient.__init__(self, comp=comp, element=element)
             pygame.sprite.Sprite.__init__(self)
-            
-            self.image = pygame.Surface([15, 15])
+            self.image = pygame.Surface([34, 34])
             self.image.fill(COLORS[self.element])
-            #self.image.fill(grey)
-            self.rect = self.image.get_rect()
-            #self.rect = pygame.draw.polygon(self.image, COLORS[self.element], [(0,4),(0,10),(15,10),(15,4)])
+            self.image.fill(black)
+            #self.rect = self.image.get_rect()
+            if self.weapon.type == 'Sword':
+                self.rect = pygame.draw.polygon(self.image, COLORS[self.element], [(0,0),(50,0),(50,50),(0,50)]) #square
+            elif self.weapon.type == 'Bow':
+                self.rect = pygame.draw.circle(self.image, COLORS[self.element], (17,17), 15) # cirlcle
+            elif self.weapon.type == 'Wand':
+                self.rect  = pygame.draw.polygon(self.image, COLORS[self.element], [(0,16),(16,0),(33,16),(16,33)])
+            elif self.weapon.type == 'Glove':
+                self.rect = pygame.draw.polygon(self.image, COLORS[self.element], [(0,25),(15,0),(30,25),]) # triangle
+            self.image.set_colorkey(black)
             self.text = []
             
         def __repr__(self):
@@ -565,14 +572,14 @@ class BattlePane(Pane, battlefield.Battlefield):
             self.font_color = [0, 0, 0]
             textrect = self.font.render(self.squad.num, True, self.font_color, \
             COLORS[self.element])
-            self.image.blit(textrect, (4,0))
+            self.image.blit(textrect, (12,10.5))
             
     class Tile(pygame.sprite.Sprite, battlefield.Tile):
         """it's a battlefield tile and a pygame sprite, yo"""
         def __init__(self,  topleft):
             pygame.sprite.Sprite.__init__(self)
             battlefield.Tile.__init__(self)
-            self.image = pygame.Surface([31, 31])
+            self.image = pygame.Surface([50, 50])
             self.image.fill(grey)
             self.rect = self.image.get_rect()
             self.rect.topleft = topleft
@@ -597,7 +604,7 @@ class BattlePane(Pane, battlefield.Battlefield):
                     tile.rect.topleft = [(xpos*self.tilesize) + 2, (ypos*self.tilesize) + 2]
                     self.image.blit(tile.image, tile.rect)
                     self[xpos][ypos] = tile
-            self.image.set_colorkey((0,0,0))
+            self.image.set_colorkey(black)
         
 class View:
     def __init__(self, screen, grid):
@@ -609,7 +616,7 @@ class View:
         #self.player1 = battle.Player()
         #self.player2 = battle.Player()
 
-        self.battle = BattlePane((242, TOPINSET), self.grid, tilesize=32, tiles=(16,16))
+        self.battle = BattlePane((242, TOPINSET + 1), self.grid, tilesize=51, tiles=(10,10))
         self.game = battle.Game(grid=self.grid, battlefield=self.battle)
         #console code
         self.console = pyconsole.Console(screen, (2,398,794,200))
@@ -713,7 +720,7 @@ if __name__ == '__main__':
     pygame.init()
     FONT =  pygame.font.Font('views/DroidSansMono.ttf', 12)
     screen = pygame.display.set_mode([800, 600])
-    grid = BattlePane.Grid(tiles=(16,16), tilesize=32)
+    grid = BattlePane.Grid(tiles=(10,10), tilesize=51)
     view = View(screen, grid)
     view.state = view.get_key()
     view.game.player1.name = "Player 1"
