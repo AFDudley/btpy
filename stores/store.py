@@ -8,6 +8,7 @@
 """Functions shared between yaml_ and mongo_ store.py"""
 from operator import contains
 import binary_tactics.defs as defs
+
 from binary_tactics.battlefield import Grid, Tile
 
 c  = ('comp',)
@@ -112,6 +113,7 @@ def convert_dict(dict):
         for unit in data:
             squad.append(convert_dict(unit))
         return squad
+
     elif key == 'scient':
         scient = {}
         scient['element'] = value['element']
@@ -121,6 +123,14 @@ def convert_dict(dict):
         scient.weapon = convert_dict(value['weapon'])
         scient.location = defs.Loc(value['location'][0], value['location'][1])
         return scient
+
+    elif key == 'player':
+        from binary_tactics.battle import Player
+        squad_list = []
+        for squad in value['squad_list']:
+            squad_list.append(convert_dict(squad))
+        return Player(value['name'], squad_list)
+
     else:
         #for weapons
         return eval(u'defs.'+ key.capitalize())(**eval(''.join(str(value).replace("u'", "'"))))

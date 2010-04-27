@@ -129,6 +129,13 @@ def get_dict(id, collection):
                 kind, id = unit.items()[0]
                 td.append(get_dict(id, collection))
             value['data'] = td
+    
+        if key == 'player':
+            squad_list = value['squad_list']
+            new = []
+            for squad in squad_list:
+                new.append(get_dict(squad, collection))
+            value['squad_list'] = new
     return d
     
 if __name__ == '__main__':
