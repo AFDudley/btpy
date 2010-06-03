@@ -10,13 +10,17 @@ import pygame
 from pygame.locals import *
 import binary_tactics.battlefield as battlefield
 import binary_tactics.battle as battle
-import pyconsole
+
 from binary_tactics.const import E,F,I,W, ELEMENTS, OPP, ORTH
 from binary_tactics.defs import Squad, Loc, noloc
 import binary_tactics.defs as defs
 from binary_tactics.helpers import rand_comp, rand_element
 import stores.yaml_store as yaml_store
-
+try:
+    import pyconsole
+except ImportError, message:
+    import views.pyconsole as pyconsole
+    
 black = [0,0,0]
 darkg = [50, 50, 50]
 blue  = [0, 0, 255]
