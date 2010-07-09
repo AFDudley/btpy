@@ -236,8 +236,8 @@ class Console:
     # Functions to communicate with the console and the python interpreter#
     def set_interpreter(self):
         #self.output("Entering Python mode")
-        #self.python_interpreter = InteractiveConsole(locals=__IPYTHON__.user_ns)
-        self.python_interpreter = InteractiveConsole()
+        self.python_interpreter = InteractiveConsole(locals=__IPYTHON__.user_ns)
+        #self.python_interpreter = InteractiveConsole()
         self.tmp_fds = []
         self.py_fds = [Writable() for i in range(3)]
         self.c_ps = self.ps2
