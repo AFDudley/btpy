@@ -84,10 +84,14 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.admin',
+    'assets',
+    'world',
 )
+AUTH_PROFILE_MODULE = "world.Player"
 """
 AUTHENTICATION_BACKENDS = (
     'mongoengine.django.auth.MongoEngineBackend',
 )
-"""
+
 SESSION_ENGINE = 'mongoengine.django.sessions'
+"""
