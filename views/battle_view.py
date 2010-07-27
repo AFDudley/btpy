@@ -1,6 +1,6 @@
 #
 #  battle_view.py
-#  
+#
 #
 #  Created by AFD on 1/12/10.
 #  Copyright (c) 2010 A. Frederick Dudley. All rights reserved.
@@ -20,7 +20,11 @@ try:
     import pyconsole
 except ImportError, message:
     import views.pyconsole as pyconsole
-    
+
+if not '__IPYTHON__' in globals():
+    from IPython.iplib import InteractiveShell
+    __IPYTHON__ = InteractiveShell('fake')
+
 black = [0,0,0]
 darkg = [50, 50, 50]
 blue  = [0, 0, 255]

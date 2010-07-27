@@ -6,7 +6,7 @@
 #
 # To build exe, python, pygame, and py2exe have to be installed. After
 # building exe none of this libraries are needed.
- 
+
 try:
     from distutils.core import setup
     import py2exe, pygame
@@ -15,7 +15,7 @@ try:
     import sys, os, shutil
     import operator
     import views.pyconsole
-	
+
 except ImportError, message:
     raise SystemExit,  "Unable to load module. %s" % message
 
@@ -35,58 +35,61 @@ class pygame2exe(py2exe.build_exe.py2exe): #This hack make sure that pygame defa
         #Add font to list of extension to be copied
         extensions.append(Module("pygame.font", pygame_default_font))
         py2exe.build_exe.py2exe.copy_extensions(self, extensions)
- 
+
 class BuildExe:
     def __init__(self):
         #Name of starting .py
         self.script = "views/battle_view.py"
- 
+
         #Name of program
         self.project_name = "Binary Tactics: Battle Demo DO NOT REDISTRIBUTE"
- 
+
         #Project url
         self.project_url = "http://groups.google.com/group/binary-tactics"
- 
+
         #Version of program
         self.project_version = "0.0"
- 
+
         #License of the program
         self.license = "If you, the person reading this, are not my friend on facebook.com you have no permissions, rights, warranties, etc of any kind. DO NOT REDISTRIBUTE"
- 
+
         #Author of program
         self.author_name = "A. Frederick Dudley"
         self.author_email = "a.frederick.dudley@gmail.com"
         self.copyright = "Copyright (c) 2010 A. Frederick Dudley."
- 
+
         #Description
         self.project_description = "Binary Tactics: Battle Demo DO NOT REDISTRIBUTE"
- 
+
         #Icon file (None will use pygame default icon)
         self.icon_file = None
- 
+
         #Extra files/dirs copied to game
-        self.extra_datas = ["views/DroidSansMono.ttf","yaml"]
-            
-		#Extra/excludes python modules
+        self.extra_datas = [
+            "views/DroidSansMono.ttf",
+            "yaml",
+        ]
+
+        #Extra/excludes python modules
         self.includes = []
-        self.extra_modules = []
+        self.extra_modules = ['yaml', 'IPython']
         self.exclude_modules = []
-        
+
         #DLL Excludes
         self.exclude_dll = ['']
- 
+
         #Zip file name (None will bundle files in exe instead of zip file)
         self.zipfile_name = None
- 
+
         #Dist directory
         self.dist_dir ='dist'
- 
+
     ## Code from DistUtils tutorial at http://wiki.python.org/moin/Distutils/Tutorial
     ## Originally borrowed from wxPython's setup and config files
     def opj(self, *args):
         path = os.path.join(*args)
         return os.path.normpath(path)
- 
+
     def find_data_files(self, srcdir, *wildcards, **kw):
         # get a list of all files under the srcdir matching wildcards,
         # returned in a format to be used for install_data
@@ -99,12 +102,12 @@ class BuildExe:
                 wc_name = self.opj(dirname, wc)
                 for f in files:
                     filename = self.opj(dirname, f)
- 
+
                     if fnmatch.fnmatch(filename, wc_name) and not os.path.isdir(filename):
                         names.append(filename)
             if names:
                 lst.append( (dirname, names ) )
- 
+
         file_list = []
         recursive = kw.get('recursive', True)
         if recursive:
@@ -114,16 +117,16 @@ class BuildExe:
                         srcdir,
                         [os.path.basename(f) for f in glob.glob(self.opj(srcdir, '*'))])
         return file_list
- 
+
     def run(self):
         if os.path.isdir(self.dist_dir): #Erase previous destination dir
             shutil.rmtree(self.dist_dir)
-        
+
         #Use the default pygame icon, if none given
         if self.icon_file == None:
             path = os.path.split(pygame.__file__)[0]
             self.icon_file = os.path.join(path, 'pygame.ico')
- 
+
         #List all data files to add
         extra_datas = []
         for data in self.extra_datas:
@@ -131,7 +134,7 @@ class BuildExe:
                 extra_datas.extend(self.find_data_files(data, '*'))
             else:
                 extra_datas.append(('.', [data]))
-        
+
         setup(
             cmdclass = {'py2exe': pygame2exe},
             version = self.project_version,
@@ -142,7 +145,7 @@ class BuildExe:
             author_email = self.author_email,
             license = self.license,
             py_modules = ['views.pyconsole'],
- 
+
             # targets to build
             console = [{
                 'script': self.script,
@@ -160,7 +163,7 @@ class BuildExe:
         if os.path.isdir('build'): #Clean up build dir
             shutil.rmtree('build')
         '''
-        
+
 
 if __name__ == '__main__':
     if operator.lt(len(sys.argv), 2):
