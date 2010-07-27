@@ -63,11 +63,11 @@ class Action(dict):
     @property
     def __dict__(self):
         return self
-        
+
 class Message(dict):
     def __init__(self, num, text):
         dict.__init__(self, num=num, text=text, when=now())
-        
+
     @property
     def __dict__(self):
         return self
@@ -102,7 +102,7 @@ class Log(dict):
         for u in self['units'].keys():
             locs.update({u: self['units'][u].location})
         return locs
-        
+
     def close(self, winner, condition):
         """Writes final timestamp, called when game is over."""
         self['end_time'] = now()
@@ -112,7 +112,61 @@ class Log(dict):
     def to_english(self):
         pass
 
-class Game():
+class State(dict):
+    """A dictionary containing the current game state."""
+    def __init__(self, num=1, pass_count=0, hp_count=0, old_squad2_hp=0,
+                  queued={},game_over=False):
+        dict.__init__(self, num=num, pass_count=pass_count,
+                      hp_count=hp_count, old_squad2_hp=old_squad2_hp,
+                      queued=queued,game_over=game_over)
+    
+    @property
+    def __dict__(self):
+        return self
+    
+    def check(self, game):
+        """checks for game ending conditions. (assumes two players)"""
+        num = self['num']
+        if game.log['actions'][num - 1]['type'] == 'pass':
+            self['pass_count'] += 1
+        else:
+            self['pass_count'] = 0
+            
+        squad2_hp = game.battlefield.squad2.hp()
+        if self['old_squad2_hp']  <= squad2_hp:
+            self['hp_count'] += 1
+        else:
+            self['hp_count'] = 0
+
+        #check if game is over.
+        if game.battlefield.squad1.hp() == 0:
+            game.winner = game.player2
+            game.end("Player1's squad is dead")
+        
+        if game.battlefield.squad2.hp() == 0:
+            game.winner = game.player1
+            game.end("Player2's squad is dead")
+
+        if self['pass_count'] >= 8:
+            game.winner = game.player2
+            game.end("Both sides passed")
+        
+        if self['hp_count'] >= 12:
+            game.winner = game.player2
+            game.end("Player1 failed to deal sufficent damage.")
+        
+        #self['queued'] = game.battlefield.get_dmg_queue()
+        self['queued'] = game.map_queue()
+        
+        game.log['states'].append(State(**self))
+
+        #game is not over, state is stored, update state.
+        self['old_squad2_hp'] = squad2_hp
+        self['num'] += 1
+    
+
+
+class Game(object):
     """Almost-state-machine that maintains game state."""
     def __init__(self, grid=Grid(), player1=None, player2=None, battlefield=None):
         self.grid = grid
@@ -127,7 +181,7 @@ class Game():
         if self.battlefield == None:
             self.battlefield = Battlefield(grid, self.player1.squad_list[0],
                                            self.player2.squad_list[0])        
-        self.state = self.State()
+        self.state = State()
         self.players = (self.player1, self.player2)
         self.map = self.unit_map() 
         self.winner = None
@@ -145,7 +199,7 @@ class Game():
         units = {}
         for (k,v) in self.map.items(): units[v] = k
         return units
-        
+
     def map_text(self, text):
         if text != None:
             for t in text:
@@ -214,56 +268,4 @@ class Game():
         self.log['states'].append(self.state)
         self.log.close(self.winner, condition)
         raise Exception("Game Over")
-        
-    class State(dict):
-        """A dictionary containing the current game state."""
-        def __init__(self, num=1, pass_count=0, hp_count=0, old_squad2_hp=0,
-                      queued={},game_over=False):
-            dict.__init__(self, num=num, pass_count=pass_count,
-                          hp_count=hp_count, old_squad2_hp=old_squad2_hp,
-                          queued=queued,game_over=game_over)
-        
-        @property
-        def __dict__(self):
-            return self
-        
-        def check(self, game):
-            """checks for game ending conditions. (assumes two players)"""
-            num = self['num']
-            if game.log['actions'][num - 1]['type'] == 'pass':
-                self['pass_count'] += 1
-            else:
-                self['pass_count'] = 0
-                
-            squad2_hp = game.battlefield.squad2.hp()
-            if self['old_squad2_hp']  <= squad2_hp:
-                self['hp_count'] += 1
-            else:
-                self['hp_count'] = 0
 
-            #check if game is over.
-            if game.battlefield.squad1.hp() == 0:
-                game.winner = game.player2
-                game.end("Player1's squad is dead")
-            
-            if game.battlefield.squad2.hp() == 0:
-                game.winner = game.player1
-                game.end("Player2's squad is dead")
-
-            if self['pass_count'] >= 8:
-                game.winner = game.player2
-                game.end("Both sides passed")
-            
-            if self['hp_count'] >= 12:
-                game.winner = game.player2
-                game.end("Player1 failed to deal sufficent damage.")
-            
-            #self['queued'] = game.battlefield.get_dmg_queue()
-            self['queued'] = game.map_queue()
-            
-            game.log['states'].append(game.State(**self))
-            
-            #game is not over, state is stored, update state.
-            self['old_squad2_hp'] = squad2_hp
-            self['num'] += 1
-        
