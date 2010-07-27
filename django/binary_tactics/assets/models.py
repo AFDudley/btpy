@@ -8,12 +8,14 @@ ELEMENTS = (
             ('I', 'Ice'),
             ('W', 'Wind'),
             )
+            
 WEAPON_KIND = (
                 ('S', 'Sword'),
                 ('B', 'Bow'),
                 ('W', 'Wand'),
                 ('G', 'Glove'),
                 )
+                
 class Stone(models.Model):
     Earth = models.PositiveSmallIntegerField(choices=max_comp)
     Fire  = models.PositiveSmallIntegerField(choices=max_comp)
