@@ -1,0 +1,55 @@
+squad:
+  data:
+  - scient:
+      comp: {Earth: 8, Fire: 232, Ice: 0, Wind: 7}
+      element: Fire
+      location: &id001 (None,None)
+      name: null
+      weapon:
+        bow:
+          comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+          element: Fire
+      weapon_bonus: &id002 {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+  - scient:
+      comp: {Earth: 7, Fire: 0, Ice: 18, Wind: 3}
+      element: Ice
+      location: *id001
+      name: null
+      weapon:
+        wand:
+          comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+          element: Ice
+      weapon_bonus: *id002
+  - scient:
+      comp: {Earth: 15, Fire: 0, Ice: 43, Wind: 5}
+      element: Ice
+      location: *id001
+      name: null
+      weapon:
+        wand:
+          comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+          element: Ice
+      weapon_bonus: *id002
+  - scient:
+      comp: {Earth: 0, Fire: 104, Ice: 0, Wind: 34}
+      element: Fire
+      location: *id001
+      name: null
+      weapon:
+        bow:
+          comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+          element: Fire
+      weapon_bonus: *id002
+  - scient:
+      comp: {Earth: 166, Fire: 66, Ice: 54, Wind: 0}
+      element: Earth
+      location: *id001
+      name: null
+      weapon:
+        sword:
+          comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+          element: Earth
+      weapon_bonus: *id002
+  free_spaces: 3
+  name: null
+  value: 763
