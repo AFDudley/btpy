@@ -1,3 +1,8 @@
+Requirements:
+* pygame
+* PyYAML
+* ipython
+
 views/battle_view.py is the working demo, run it with:
 $ ipython views/battle_view.py
 
