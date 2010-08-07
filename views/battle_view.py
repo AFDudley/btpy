@@ -491,12 +491,12 @@ class BattlePane(Pane, battlefield.Battlefield):
                     self.contentimgs.add(self.grid[x][y].contents)
     
     def move_unit(self, src, dest):
-            battlefield.Battlefield.move_unit(self, src, dest)
-            xpos, ypos = dest
-            temp = self.grid[xpos][ypos].rect
-            topleft = ((temp.x + 8),(temp.y + 8))
-            self.grid[xpos][ypos].contents.rect.topleft = topleft
-            self.set_tile_color(src, grey)
+        battlefield.Battlefield.move_unit(self, src, dest)
+        xpos, ypos = dest
+        temp = self.grid[xpos][ypos].rect
+        topleft = ((temp.x + 8),(temp.y + 8))
+        self.grid[xpos][ypos].contents.rect.topleft = topleft
+        self.set_tile_color(src, grey)
             
     def place_unit(self, unit, dest):
         battlefield.Battlefield.place_unit(self, unit, dest)
