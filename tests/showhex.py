@@ -50,16 +50,18 @@ def draw_nshex(side):
     hexa = pygame.Surface(size)
     hexa.fill([0,0,0])
     hexa.set_colorkey([0,0,0])
+
     pygame.draw.polygon(hexa, [255,0,0], pl,)
     pygame.draw.polygon(hexa, [120,120,120], pl2,)
-
-    for x in range(4):
-        for y in range(4):
+    
+    for x in range(5):
+        for y in range(5):
             if y&1:
                 screen.blit(hexa,(.5*size[0]+size[0]*x,rowh*y))
             else:
                 screen.blit(hexa,(size[0]*x,rowh*y))
     
+    '''
     rec = pygame.Surface(size)
     rec.fill([0,0,0])
     rec.set_colorkey([0,0,0])
@@ -67,7 +69,7 @@ def draw_nshex(side):
     for x in range(5):
         for y in range(5):
             screen.blit(rec, (recw*x, y*(hexh + s)))
-    '''wrong.
+    #wrong.
     for x in range(16):
         for y in range(16):
             if y&1:
@@ -117,43 +119,41 @@ while pygame.event.poll().type != KEYDOWN:
             m = hexh / float(r)
             if (recy & 1) == 0:
                 #section: A
-                print 'a'
                 if sectpixely < (hexh - sectpixelx * m):
-                    print "left edge?"
+                    #left edge
                     hexx = recx - 1
                     hexy = recy - 1
                 elif sectpixely < (- hexh + sectpixelx * m):
-                    print "right edge?"
+                    #right edge
                     hexx = recx 
                     hexy = recy - 1
                 else:
-                    print "in the middle?"
+                    #middle
                     hexx = recx
                     hexy = recy
 
             else:
                 #section: B
-                print 'b'
                 if sectpixelx >= r:
-                    print "right side"
+                    #right side
                     if sectpixely < (2* hexh - sectpixelx * m):
-                        print "top?"
+                        #top
                         hexx = recx
                         hexy = recy - 1
                     else:
                         hexx = recx
                         hexy = recy
                 else:
-                    print "left side"
+                    #left side
                     if sectpixely < (sectpixelx * m):
-                        print "top?"
+                        #top
                         hexx = recx
                         hexy = recy - 1
                     else:
                         hexx = recx - 1
                         hexy = recy
             print "hex: (%s, %s)" %(hexx,hexy)
-            print "rec: (%s, %s)" %(recx,recy)
+            #print "rec: (%s, %s)" %(recx,recy)
             
 
     #pygame.time.delay(10)
