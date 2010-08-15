@@ -1,5 +1,5 @@
 #
-#  battle_view.py
+#  hex_view.py
 #
 #
 #  Created by AFD on 1/12/10.
@@ -9,7 +9,7 @@ from math import sin, cos, radians, ceil, floor
 from operator import contains
 import pygame
 from pygame.locals import *
-import binary_tactics.battlefield as battlefield
+import binary_tactics.hex_battlefield as battlefield
 import binary_tactics.battle as battle
 
 from binary_tactics.const import E,F,I,W, ELEMENTS, OPP, ORTH
@@ -518,25 +518,33 @@ class BattlePane(Pane, battlefield.Battlefield):
         battlefield.Battlefield.flush_units(self)
         self.contentimgs.empty()
     
-    def make_move(self, unit):
+    def make_move(self, unit): #TODO: move to battlefield.py
         """generates a list of tiles within the move range of unit."""
+        def get_adjacent(tile):
+            """returns a list of six hextiles adjacent to the tile provided."""
+            x,y = tile
+            if y&1:
+                return set(((x-1, y), (x, y-1)  , (x+1, y-1), (x+1, y), (x+1, y+1), (x, y+1)))
+            else:
+                return set(((x-1, y), (x-1, y-1), (x, y-1), (x+1, y), (x, y+1)  , (x-1, y+1)))
         m = unit.move
-        x, y = unit.location
         tiles = []
-        for xs in range(-m, m):
-            for ys in range(-m, m):
-                if ys&1:
-                    l = [(x-xs, y), (x, y-ys)  , (x+xs, y-ys), (x+xs, y), (x+xs, y+ys), (x, y+ys)]
-                else:
-                    l = [(x-xs, y), (x-xs, y-ys), (x, y-ys), (x+xs, y), (x, y+ys)  , (x-xs, y+ys)]
-        
-                for tile in l:
-                    if abs(x-tile[0]) + abs(y-tile[1]) <= m:
-                        if 0 <= tile[0] < self.grid.x:
-                            if 0 <= tile[1] < self.grid.y:
-                                tiles.append(tile)
-        return list(set(tiles))
-    
+        #so far from optimal
+        tiles.append(get_adjacent(unit.location))
+        while len(tiles) < m:
+            new = set()
+            for tile in tiles[-1]:
+                new |= get_adjacent(tile)
+            tiles.append(new)
+        group = set()
+        for x in tiles: group |= x
+        out = []
+        for loc in group:
+            if 0 <= loc[0] < self.grid.x:
+                if 0 <= loc[1] < self.grid.y:
+                    out.append(loc)
+        return out
+
     def trans_squad(self, squad):
         """hack to get a squad from yaml_store"""
         out = Squad()
@@ -591,7 +599,7 @@ class BattlePane(Pane, battlefield.Battlefield):
             COLORS[self.element])
             self.image.blit(textrect, (12,10.5))
     
-    class Tile(pygame.sprite.Sprite, battlefield.Tile):
+    class Tile(pygame.sprite.Sprite, battlefield.Tile): 
         """it's a battlefield tile and a pygame sprite, yo"""
         def make_hex(self, recw, colr):
             """returns a Surface containing a hextile"""
@@ -697,7 +705,7 @@ class View:
             for y in range(self.battle.grid.y):
                 self.battle.set_tile_color((x,y), grey)
     
-    def make_tile_sets(self, unit):
+    def make_tile_sets(self, unit): #TODO move to battlefield.py
         """Make area, move, targets tile sets for unit."""
         self.unit  = unit
         self.area  = set(self.unit.weapon.map_to_grid(self.unit.location, self.grid.size))
