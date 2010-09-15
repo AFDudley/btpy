@@ -8,7 +8,8 @@
 from math import sin, cos, radians, ceil, floor
 from operator import contains
 import pygame
-from pygame.locals import *
+#from pygame.locals import *
+from pygame.locals import K_ESCAPE, KEYDOWN, K_w, K_UP, K_DOWN, K_RETURN
 import binary_tactics.hex_battlefield as battlefield
 import binary_tactics.battle as battle
 
@@ -21,10 +22,11 @@ try:
     import pyconsole
 except ImportError, message:
     import views.pyconsole as pyconsole
-
+'''
 if not '__IPYTHON__' in globals():
     from IPython.iplib import InteractiveShell
     __IPYTHON__ = InteractiveShell('fake')
+'''
 
 black = [0, 0, 0]
 darkg = [50, 50, 50]
@@ -373,7 +375,7 @@ class BottomPane(Pane):
                 self.text.append((str(self.cursor_pos) + ": " + str(self.move[self.cursor_pos]) + "?", black, white))
                 view.draw_grid('Move')
                 view.battle.set_tile_color(self.move[self.cursor_pos], white)
-                area  = set(view.unit.weapon.map_to_grid(self.move[self.cursor_pos], view.grid.size))
+                area  = set(view.battle.map_to_grid(self.move[self.cursor_pos], view.unit.weapon))
                 area -= view.loc
                 view.battle.color_tiles(area - view.move, pink)
                 view.battle.color_tiles(area & view.move, purp)
@@ -517,33 +519,6 @@ class BattlePane(Pane, battlefield.Battlefield):
     def flush_units(self):
         battlefield.Battlefield.flush_units(self)
         self.contentimgs.empty()
-    
-    def make_move(self, unit): #TODO: move to battlefield.py
-        """generates a list of tiles within the move range of unit."""
-        def get_adjacent(tile):
-            """returns a list of six hextiles adjacent to the tile provided."""
-            x,y = tile
-            if y&1:
-                return set(((x-1, y), (x, y-1)  , (x+1, y-1), (x+1, y), (x+1, y+1), (x, y+1)))
-            else:
-                return set(((x-1, y), (x-1, y-1), (x, y-1), (x+1, y), (x, y+1)  , (x-1, y+1)))
-        m = unit.move
-        tiles = []
-        #so far from optimal
-        tiles.append(get_adjacent(unit.location))
-        while len(tiles) < m:
-            new = set()
-            for tile in tiles[-1]:
-                new |= get_adjacent(tile)
-            tiles.append(new)
-        group = set()
-        for x in tiles: group |= x
-        out = []
-        for loc in group:
-            if 0 <= loc[0] < self.grid.x:
-                if 0 <= loc[1] < self.grid.y:
-                    out.append(loc)
-        return out
 
     def trans_squad(self, squad):
         """hack to get a squad from yaml_store"""
@@ -559,7 +534,7 @@ class BattlePane(Pane, battlefield.Battlefield):
                 self.place_unit(dude, loc)
             out.append(dude)
         return out
-    
+
     class Scient(pygame.sprite.Sprite, defs.Scient):
         """tricky"""
         def __init__(self, element=None, comp=None, scient=None, size=None):
@@ -708,8 +683,8 @@ class View:
     def make_tile_sets(self, unit): #TODO move to battlefield.py
         """Make area, move, targets tile sets for unit."""
         self.unit  = unit
-        self.area  = set(self.unit.weapon.map_to_grid(self.unit.location, self.grid.size))
-        self.move  = set(self.battle.make_move(self.unit))
+        self.area  = set(self.battle.map_to_grid(self.unit.location, self.unit.weapon))
+        self.move  = set(self.battle.make_range(self.unit.location, self.unit.move))
         self.units = set(self.battle.find_units())
         self.move -= self.units #can't moved to occupied tiles
         self.loc   = set((self.unit.location,),)

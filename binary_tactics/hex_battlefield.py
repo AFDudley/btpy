@@ -3,7 +3,9 @@ from operator import contains
 import random
 
 from const import E, F, I, W
-from defs import Loc, noloc, Stone
+from defs import Loc, noloc
+from stone import Stone
+from weapons import Sword, Bow, Wand, Glove
 
 class Tile(Stone):
     """Tiles contain units or stones and are used to make battlefields."""
@@ -62,6 +64,99 @@ class Battlefield(object):
                     units.append(unit)
         return tuple(units)
     
+    def on_grid(self, tile):
+        """returns True if tile is on grid"""
+        if 0 <= tile[0] < self.grid.x:
+            if 0 <= tile[1] < self.grid.y:
+                return True
+            else:
+                return False 
+        else:
+            return False
+            
+    def get_adjacent(self, tile):
+        """returns a set of six hextiles adjacent to the tile provided, if they are in fact on the grid."""
+        xpos,ypos = tile
+        if ypos&1:
+            group = set(((xpos-1, ypos), (xpos, ypos-1)  , (xpos+1, ypos-1),
+                        (xpos+1, ypos), (xpos+1, ypos+1), (xpos, ypos+1)))
+        else:
+            group = set(((xpos-1, ypos), (xpos-1, ypos-1), (xpos, ypos-1),
+                        (xpos+1, ypos), (xpos, ypos+1)  , (xpos-1, ypos+1)))
+    
+        out = []
+        for loc in group:
+            if self.on_grid(loc):
+                out.append(loc)
+        return set(out)
+        
+    def map_to_grid(self, location, weapon):
+        weapon = weapon
+        tiles = []
+        if weapon.type != 'Wand':
+            if weapon.type != 'Bow':
+                return self.get_adjacent(location)
+            else:
+                #Should pull unit.move from someplace... hardcoded for now.
+                move = 4
+                no_hit = self.make_range(location, move)
+                hit    = self.make_range(location, 2*move)
+                return hit - no_hit
+                
+        else:
+            def make_pattern(location, distance, pointing):
+                """generates a pattern based on an origin, distance, and
+                direction. Returns a set of coords"""
+                #TODO: use inversion to create Wand/Ice attack pattern.
+                #needs lots o checking
+                src = location
+                sid = 2 * distance
+                pattern = []
+                tiles = []
+                for i in xrange(sid): #generate pattern based on distance from origin
+                    if i % 2:
+                        in_range = xrange(-(i/2),((i/2)+1))
+                        #rotate pattern based on direction
+                        for j in xrange(len(in_range)): 
+                            if pointing == 'Northwest':
+                                pattern.append((src[0] + in_range[j], (src[1] - (1 +(i/2)))))
+                            elif pointing =='Southwest':
+                                pattern.append((src[0] + in_range[j], (src[1] + (1 +(i/2)))))
+                            elif pointing =='East':
+                                pattern.append((src[0] +  (1 +(i/2)), (src[1] - in_range[j])))
+                            elif pointing =='West':
+                                pattern.append((src[0] -  (1 +(i/2)), (src[1] - in_range[j])))
+                
+                return pattern
+            #direction = {0:'West', 1:'North', 2:'East', 3:'South'}
+            direction = {0:'East', 1:'West'}
+            
+            maxes = (location[0], location[1], (self.grid.x - 1 - location[0]), \
+            (self.grid.y - 1 - location[1]),)
+            tiles = []
+            for i in direction:
+                for j in  make_pattern(location, maxes[i], direction[i]):
+                    if 0 <= j[0] < self.grid.x:
+                        if 0 <= j[1] < self.grid.y:
+                            tiles.append(j)
+            return tiles
+    def make_range(self, location, distance):
+        """generates a list of tiles within distance of location."""
+        location = location
+        dist = distance
+        
+        tiles = []
+        #so far from optimal
+        tiles.append(self.get_adjacent(location))
+        while len(tiles) < dist:
+            new = set()
+            for tile in tiles[-1]:
+                new |= self.get_adjacent(tile)
+            tiles.append(new)
+        group = set()
+        for x in tiles: group |= x
+        return group
+            
     def move_unit(self, src, dest):
         """move unit from src tile to dest tile"""
         if 0 <= src[0] < self.grid.x:
@@ -227,7 +322,7 @@ class Battlefield(object):
         weapon = atkr.weapon
         aloc = atkr.location
         dloc = defdr.location
-        in_range = weapon.map_to_grid(aloc, self.grid.size)
+        in_range = self.map_to_grid(aloc, weapon)
         if not contains(in_range, dloc):
             raise Exception( \
             "Defender's location: %s is outside of attacker's range" %str(dloc))
