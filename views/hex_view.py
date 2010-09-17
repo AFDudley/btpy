@@ -383,7 +383,7 @@ class BottomPane(Pane):
                 view.draw_grid('Targets')
                 if view.unit.weapon.type == 'Wand':
                     area = view.battle.calc_wand_area(view.unit, self.targets[self.cursor_pos])
-                    view.battle.color_tiles(area, black)
+                    view.battle.color_tiles(area, green)
                     print "area:", len(area)
                 view.battle.set_tile_color(self.targets[self.cursor_pos], red)
             if self.action == 'pass':

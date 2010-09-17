@@ -74,24 +74,54 @@ class Battlefield(object):
         else:
             return False
             
-    def get_adjacent(self, tile):
+    def get_adjacent(self, tile, direction="All"):
         """returns a set of six hextiles adjacent to the tile provided, if they are in fact on the grid."""
+        direction = direction
         xpos,ypos = tile
-        if ypos&1:
-            group = set(((xpos-1, ypos), (xpos, ypos-1)  , (xpos+1, ypos-1),
-                        (xpos+1, ypos), (xpos+1, ypos+1), (xpos, ypos+1)))
+        directions = {"East":((xpos + 1, ypos),), "West":((xpos - 1, ypos),),}
+        if ypos&1: #sub-optimal
+            directions.update({"North":((xpos + 1, ypos - 1),(xpos, ypos - 1)),
+                          "South":((xpos + 1, ypos + 1), (xpos, ypos + 1)),
+                          "Northeast":((xpos + 1, ypos - 1), (xpos + 1, ypos)),
+                          "Southeast":((xpos + 1, ypos + 1), (xpos + 1, ypos)),
+                          "Southwest":((xpos, ypos + 1), (xpos - 1, ypos)),
+                          "Northwest":((xpos, ypos - 1), (xpos - 1, ypos)),}) 
         else:
-            group = set(((xpos-1, ypos), (xpos-1, ypos-1), (xpos, ypos-1),
-                        (xpos+1, ypos), (xpos, ypos+1)  , (xpos-1, ypos+1)))
-    
+            directions.update({"North":((xpos, ypos - 1),(xpos - 1, ypos - 1)),
+                          "South":((xpos, ypos + 1), (xpos - 1, ypos + 1)),
+                          "Northeast":((xpos, ypos - 1), (xpos + 1, ypos)),
+                          "Southeast":((xpos, ypos + 1), (xpos + 1, ypos)),
+                          "Southwest":((xpos - 1, ypos + 1), (xpos - 1, ypos)),
+                          "Northwest":((xpos - 1, ypos - 1), (xpos - 1, ypos)),})
+        directions["All"] = directions["North"] + directions["East"] + directions["South"] + directions["West"]
         out = []
-        for loc in group:
+        for loc in directions[direction]:
             if self.on_grid(loc):
                 out.append(loc)
         return set(out)
-        
+
+    def make_pattern(self, location, distance, pointing):
+        """generates a pattern based on an origin, distance, and
+        direction. Returns a set of coords"""
+        location  = location
+        dist = distance
+        pointing = pointing
+        tiles = []
+        pattern = []   
+        head = self.get_adjacent(location, pointing)
+        cols = 1 #maintain dist = 1 behavior.
+        while cols != dist:
+            pattern += list(head)
+            temp_head = head
+            head = set()
+            for loc in temp_head:
+                head |= self.get_adjacent(loc, pointing)
+            cols += 1
+        return pattern
+                    
     def map_to_grid(self, location, weapon):
         weapon = weapon
+        xpos, ypos = location = location
         tiles = []
         if weapon.type != 'Wand':
             if weapon.type != 'Bow':
@@ -104,41 +134,21 @@ class Battlefield(object):
                 return hit - no_hit
                 
         else:
-            def make_pattern(location, distance, pointing):
-                """generates a pattern based on an origin, distance, and
-                direction. Returns a set of coords"""
-                #TODO: use inversion to create Wand/Ice attack pattern.
-                #needs lots o checking
-                src = location
-                sid = 2 * distance
-                pattern = []
-                tiles = []
-                for i in xrange(sid): #generate pattern based on distance from origin
-                    if i % 2:
-                        in_range = xrange(-(i/2),((i/2)+1))
-                        #rotate pattern based on direction
-                        for j in xrange(len(in_range)): 
-                            if pointing == 'Northwest':
-                                pattern.append((src[0] + in_range[j], (src[1] - (1 +(i/2)))))
-                            elif pointing =='Southwest':
-                                pattern.append((src[0] + in_range[j], (src[1] + (1 +(i/2)))))
-                            elif pointing =='East':
-                                pattern.append((src[0] +  (1 +(i/2)), (src[1] - in_range[j])))
-                            elif pointing =='West':
-                                pattern.append((src[0] -  (1 +(i/2)), (src[1] - in_range[j])))
-                
-                return pattern
-            #direction = {0:'West', 1:'North', 2:'East', 3:'South'}
-            direction = {0:'East', 1:'West'}
-            
-            maxes = (location[0], location[1], (self.grid.x - 1 - location[0]), \
-            (self.grid.y - 1 - location[1]),)
-            tiles = []
+            direction = {0:'North', 1:'Northeast', 2:'Southeast', 3:'South', 4:'Southwest', 5:'Northwest'}
             for i in direction:
-                for j in  make_pattern(location, maxes[i], direction[i]):
-                    if 0 <= j[0] < self.grid.x:
-                        if 0 <= j[1] < self.grid.y:
-                            tiles.append(j)
+                if direction[i] == "North":
+                    dist = xpos + 1
+                elif direction[i] == "Northeast" or "Southeast":
+                    #dist = self.grid.x - xpos
+                    dist = 23
+                elif direction[i] == "South":
+                    dist = self.grid.x - xpos
+                elif direction[i] == "Northwest" or "Southwest":
+                    #dist = xpos + 1
+                    dist = 23
+                for j in  self.make_pattern(location, dist, direction[i]):
+                    if self.on_grid(j):
+                        tiles.append(j)
             return tiles
     def make_range(self, location, distance):
         """generates a list of tiles within distance of location."""
@@ -268,50 +278,49 @@ class Battlefield(object):
         """Calculates the damage of an attack"""
         dloc = defdr.location
         damage_dealt = {E: 0, F: 0, I: 0, W: 0}
-        if 0 <= dloc.x < self.grid.x:
-            if 0 <= dloc.y < self.grid.y:
-                if contains(('Sword', 'Bow'),type) == True:
-                    for element in damage_dealt:
-                        dmg = (atkr.p + atkr.patk + (2 * atkr.comp[element]) +
-                        atkr.weapon.comp[element]) - (defdr.p + defdr.pdef +
-                        (2 * defdr.comp[element]) + self.grid[dloc.x][dloc.y].comp[element])
-                        dmg = max(dmg, 0)
-                        damage_dealt[element] = dmg
-                    damage = sum(damage_dealt.values())
-                    return damage
-                else:
-                    for element in damage_dealt:
-                        dmg = (atkr.m + atkr.matk + (2 * atkr.comp[element]) +
-                        atkr.weapon.comp[element]) - (defdr.m + defdr.mdef +
-                        (2 * defdr.comp[element]) + self.grid[dloc.x][dloc.y].comp[element])
-                        dmg = max(dmg, 0)
-                        damage_dealt[element] = dmg
-                    
-                    damage = sum(damage_dealt.values())
-                    if atkr.element == defdr.element:
-                        return 0 - damage
-                    else:
-                        return damage
+        if self.on_grid(dloc):
+            if contains(('Sword', 'Bow'),type) == True:
+                for element in damage_dealt:
+                    dmg = (atkr.p + atkr.patk + (2 * atkr.comp[element]) +
+                    atkr.weapon.comp[element]) - (defdr.p + defdr.pdef +
+                    (2 * defdr.comp[element]) + self.grid[dloc.x][dloc.y].comp[element])
+                    dmg = max(dmg, 0)
+                    damage_dealt[element] = dmg
+                damage = sum(damage_dealt.values())
+                return damage
             else:
-                raise Exception("Defender's y coord  %s is off grid" %dloc.y)
+                for element in damage_dealt:
+                    dmg = (atkr.m + atkr.matk + (2 * atkr.comp[element]) +
+                    atkr.weapon.comp[element]) - (defdr.m + defdr.mdef +
+                    (2 * defdr.comp[element]) + self.grid[dloc.x][dloc.y].comp[element])
+                    dmg = max(dmg, 0)
+                    damage_dealt[element] = dmg
+            
+                damage = sum(damage_dealt.values())
+                if atkr.element == defdr.element:
+                    return 0 - damage
+                else:
+                    return damage
         else:
-            raise Exception("Defender's x coord %s is off grid" %dloc.x)
+            raise Exception("Defender is off grid")
     
     def calc_wand_area(self, atkr, target):
         ax,ay = aloc = atkr.location
         dx,dy = dloc = Loc._make(target)
-        direction = {0:'West', 1:'North', 2:'East', 3:'South'}
-        maxes = (ax, ay, (self.grid.x - 1 - ax), (self.grid.y - 1 - ay),)
+        direction = {0:'North', 1:'Northeast', 2:'Southeast', 3:'South', 4:'Southwest', 5:'Northwest'}
+        
+        maxes = (ax + 1, 23, 23, ay + 1, 23, 23)
         for i in direction:
-            pat = atkr.weapon.make_pattern(aloc, maxes[i], direction[i])
+            pat = self.make_pattern(aloc, maxes[i], direction[i])
             if contains(pat, dloc):
-                ranges  = (abs(dx - ax), abs(dy - ay), abs(dx - ax), abs(dy - ay))
-                pat_ = atkr.weapon.make_pattern(aloc, ranges[i], direction[i])
+                #ranges  = (abs(dx - ax), abs(dy - ay), abs(dx - ax), abs(dy - ay)) old and correct
+                ranges  = (abs(dx - ax), abs(dy - ay), abs(dy - ay), abs(dx - ax), abs(dy - ay), abs(dy - ay),)
+                
+                pat_ = self.make_pattern(aloc, ranges[i], direction[i])
                 new_pat = []
                 for i in pat_:
-                    if 0 <= i[0] < self.grid.x:
-                        if 0 <= i[1] < self.grid.y:
-                            new_pat.append(i)
+                    if self.on_grid(i):
+                        new_pat.append(i)
                 return new_pat
     
     def calc_damage(self, atkr, defdr):
