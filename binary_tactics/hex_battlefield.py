@@ -1,6 +1,7 @@
 """contains battlefield objects"""
 from operator import contains
 import random
+from math import ceil
 
 from const import E, F, I, W
 from defs import Loc, noloc
@@ -135,18 +136,10 @@ class Battlefield(object):
                 
         else:
             direction = {0:'North', 1:'Northeast', 2:'Southeast', 3:'South', 4:'Southwest', 5:'Northwest'}
+            #distance  = {0:xpos + 1, 1:23, 2:23, 3:self.grid.x - xpos, 4:23, 5:23}
+            distance = self.make_ranges(location, (self.grid.x, self.grid.y))
             for i in direction:
-                if direction[i] == "North":
-                    dist = xpos + 1
-                elif direction[i] == "Northeast" or "Southeast":
-                    #dist = self.grid.x - xpos
-                    dist = 23
-                elif direction[i] == "South":
-                    dist = self.grid.x - xpos
-                elif direction[i] == "Northwest" or "Southwest":
-                    #dist = xpos + 1
-                    dist = 23
-                for j in  self.make_pattern(location, dist, direction[i]):
+                for j in  self.make_pattern(location, distance[i], direction[i]):
                     if self.on_grid(j):
                         tiles.append(j)
             return tiles
@@ -304,18 +297,36 @@ class Battlefield(object):
         else:
             raise Exception("Defender is off grid")
     
+    def make_ranges(self, src, dest):
+        ax,ay = src
+        dx,dy = dest
+        xdist = abs(dx - ax)
+        ydist = abs(dy - ay)
+        zdist = xdist + ydist/2 + 1
+        ranges = {}
+        for index in range(6):
+            ranges[index] = zdist
+        
+        ranges.update({0:ydist + 1, 3:ydist + 1,})
+        if ay & 1:
+            if not dy & 1:
+                ranges.update({4:zdist + 1, 5:zdist + 1,})
+        else:
+            if dy & 1:
+                ranges.update({1:zdist + 1, 2:zdist + 1,})
+        return ranges
+        
     def calc_wand_area(self, atkr, target):
-        ax,ay = aloc = atkr.location
-        dx,dy = dloc = Loc._make(target)
+        aloc = atkr.location
+        dloc = Loc._make(target)
+        ranges = self.make_ranges(aloc, dloc)
+        maxes  = self.make_ranges(aloc, (self.grid.x, self.grid.y))
+        print maxes
         direction = {0:'North', 1:'Northeast', 2:'Southeast', 3:'South', 4:'Southwest', 5:'Northwest'}
         
-        maxes = (ax + 1, 23, 23, ay + 1, 23, 23)
         for i in direction:
             pat = self.make_pattern(aloc, maxes[i], direction[i])
             if contains(pat, dloc):
-                #ranges  = (abs(dx - ax), abs(dy - ay), abs(dx - ax), abs(dy - ay)) old and correct
-                ranges  = (abs(dx - ax), abs(dy - ay), abs(dy - ay), abs(dx - ax), abs(dy - ay), abs(dy - ay),)
-                
                 pat_ = self.make_pattern(aloc, ranges[i], direction[i])
                 new_pat = []
                 for i in pat_:
