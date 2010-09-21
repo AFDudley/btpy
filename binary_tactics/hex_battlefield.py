@@ -54,7 +54,8 @@ class Battlefield(object):
         self.dmg_queue = {}
         self.squads = (self.squad1, self.squad2)
         self.units = self.get_units()
-    
+        self.direction = {0:'North', 1:'Northeast', 2:'Southeast', 3:'South', 4:'Southwest', 5:'Northwest'}
+        
     def get_units(self):
         """looks in squads, returns all units in squads."""
         #Squads should be made immutable somewhere in Battlefield.
@@ -71,12 +72,12 @@ class Battlefield(object):
             if 0 <= tile[1] < self.grid.y:
                 return True
             else:
-                return False 
+                return False
         else:
             return False
-            
+    
     def get_adjacent(self, tile, direction="All"):
-        """returns a set of six hextiles adjacent to the tile provided, if they are in fact on the grid."""
+        """returns a set of hextiles adjacent to the tile provided, if they are in fact on the grid."""
         direction = direction
         xpos,ypos = tile
         directions = {"East":((xpos + 1, ypos),), "West":((xpos - 1, ypos),),}
@@ -86,7 +87,7 @@ class Battlefield(object):
                           "Northeast":((xpos + 1, ypos - 1), (xpos + 1, ypos)),
                           "Southeast":((xpos + 1, ypos + 1), (xpos + 1, ypos)),
                           "Southwest":((xpos, ypos + 1), (xpos - 1, ypos)),
-                          "Northwest":((xpos, ypos - 1), (xpos - 1, ypos)),}) 
+                          "Northwest":((xpos, ypos - 1), (xpos - 1, ypos)),})
         else:
             directions.update({"North":((xpos, ypos - 1),(xpos - 1, ypos - 1)),
                           "South":((xpos, ypos + 1), (xpos - 1, ypos + 1)),
@@ -100,7 +101,7 @@ class Battlefield(object):
             if self.on_grid(loc):
                 out.append(loc)
         return set(out)
-
+    
     def make_pattern(self, location, distance, pointing):
         """generates a pattern based on an origin, distance, and
         direction. Returns a set of coords"""
@@ -108,7 +109,7 @@ class Battlefield(object):
         dist = distance
         pointing = pointing
         tiles = []
-        pattern = []   
+        pattern = []
         head = self.get_adjacent(location, pointing)
         cols = 1 #maintain dist = 1 behavior.
         while cols != dist:
@@ -119,7 +120,7 @@ class Battlefield(object):
                 head |= self.get_adjacent(loc, pointing)
             cols += 1
         return pattern
-                    
+    
     def map_to_grid(self, location, weapon):
         weapon = weapon
         xpos, ypos = location = location
@@ -133,16 +134,20 @@ class Battlefield(object):
                 no_hit = self.make_range(location, move)
                 hit    = self.make_range(location, 2*move)
                 return hit - no_hit
-                
+        
         else:
-            direction = {0:'North', 1:'Northeast', 2:'Southeast', 3:'South', 4:'Southwest', 5:'Northwest'}
-            #distance  = {0:xpos + 1, 1:23, 2:23, 3:self.grid.x - xpos, 4:23, 5:23}
-            distance = self.make_ranges(location, (self.grid.x, self.grid.y))
-            for i in direction:
-                for j in  self.make_pattern(location, distance[i], direction[i]):
+            '''The old way
+            maxes = self.maxes(location)
+            for i in self.direction:
+                for j in  self.make_pattern(location, maxes[i], self.direction[i]):
                     if self.on_grid(j):
                         tiles.append(j)
-            return tiles
+            '''
+            #lazy hack: wands can now hit everywhere.
+            tiles = set([(x, y) for x in xrange(self.grid.x) for y in xrange(self.grid.y)])
+            tiles -= set(((location),),)
+            return list(tiles)
+            
     def make_range(self, location, distance):
         """generates a list of tiles within distance of location."""
         location = location
@@ -159,29 +164,24 @@ class Battlefield(object):
         group = set()
         for x in tiles: group |= x
         return group
-            
+    
     def move_unit(self, src, dest):
         """move unit from src tile to dest tile"""
-        if 0 <= src[0] < self.grid.x:
-            if 0 <= src[1] < self.grid.y:
-                xsrc, ysrc = src
-            else:
-                raise Exception("source y (src[1]: %s) is out of range" %src[1])
+        if self.on_grid(src):
+            xsrc, ysrc = src
         else:
-            raise Exception("source x (src[0]: %s) is out of range" %src[0])
+            raise Exception("Source %s is off grid" %src)
         
-        if 0 <= dest[0] < self.grid.x:
-            if 0 <= dest[1] < self.grid.y:
-                xdest, ydest = dest
-            else:
-                raise Exception("Destination y (dest[1]: %s) is out of range" %dest[1])
+        if self.on_grid(dest):
+            xdest, ydest = dest
         else:
-            raise Exception("Destination x (dest[0]: %s) is out of range" %dest[0])
+            raise Exception("Destination %s is off grid" %dest)
         
         if self.grid[xsrc][ysrc].contents:
             if not self.grid[xdest][ydest].contents:
                 move = self.grid[xsrc][ysrc].contents.move
-                if abs(xsrc-xdest) + abs(ysrc-ydest) <= move:
+                if contains(self.make_range(src, move), dest):
+                #if abs(xsrc-xdest) + abs(ysrc-ydest) <= move:
                     self.grid[xdest][ydest].contents = \
                     self.grid[xsrc][ysrc].contents
                     self.grid[xdest][ydest].contents.location = Loc(xdest, ydest)
@@ -196,13 +196,10 @@ class Battlefield(object):
     
     def place_unit(self, unit, tile):
         """Places unit at tile, if already on grid, move_unit is called"""
-        if 0 <= tile[0] < self.grid.x:
-            if 0 <= tile[1] < self.grid.y:
-                xpos, ypos = tile
-            else:
-                raise Exception("Tile y (tile[1]: %s) is out of range" %tile[1])
+        if self.on_grid(tile):
+            xpos, ypos = tile
         else:
-            raise Exception("Tile x (tile[0]: %s) is out of range" %tile[0])
+            raise Exception("Tile %s is off grid" %tile)
         
         if unit.location == noloc:
             if self.grid[xpos][ypos].contents == None:
@@ -233,7 +230,7 @@ class Battlefield(object):
         #readable?
         inset = 0 #place units in a smaller area, for testing.
         def Randpos():
-            """returns a random position in grid.""" 
+            """returns a random position in grid."""
             return (random.randint(0, ((self.grid.x - 1) - inset)),
             random.randint(0, ((self.grid.y - 1) - inset)))
         if len(self.find_units()) == (self.grid.x * self.grid.y):
@@ -288,7 +285,7 @@ class Battlefield(object):
                     (2 * defdr.comp[element]) + self.grid[dloc.x][dloc.y].comp[element])
                     dmg = max(dmg, 0)
                     damage_dealt[element] = dmg
-            
+                
                 damage = sum(damage_dealt.values())
                 if atkr.element == defdr.element:
                     return 0 - damage
@@ -297,7 +294,7 @@ class Battlefield(object):
         else:
             raise Exception("Defender is off grid")
     
-    def make_ranges(self, src, dest):
+    def make_distances(self, src, dest):
         ax,ay = src
         dx,dy = dest
         xdist = abs(dx - ax)
@@ -315,19 +312,32 @@ class Battlefield(object):
             if dy & 1:
                 ranges.update({1:zdist + 1, 2:zdist + 1,})
         return ranges
+    
+    def maxes(self, src):
+        #NOTE: Currently, wands can hit every tile on the grid so this is really quite moot.
+        #      At some point LOS style blasting might be added at which point this would be needed.
+        #sub-optimal should check ay % 1 and change the + 1 and + 2 accordingly.
+        ax, ay = src
+        maxes = {
+                0:ay + 1,
+                1:(self.grid.x - ax) + ay/2,
+                2:(self.grid.x - ax) + (self.grid.y - ay)/2, 
+                3:self.grid.y - ay,
+                4:ax + (self.grid.y - ay)/2 + 1,
+                5: ax + ay/2 + 2,
+                }
+        return maxes
         
     def calc_wand_area(self, atkr, target):
-        aloc = atkr.location
+        xpos, ypos = aloc = atkr.location
         dloc = Loc._make(target)
-        ranges = self.make_ranges(aloc, dloc)
-        maxes  = self.make_ranges(aloc, (self.grid.x, self.grid.y))
-        print maxes
-        direction = {0:'North', 1:'Northeast', 2:'Southeast', 3:'South', 4:'Southwest', 5:'Northwest'}
+        dists = self.make_distances(aloc, dloc)
+        maxes = self.maxes(aloc)
         
-        for i in direction:
-            pat = self.make_pattern(aloc, maxes[i], direction[i])
+        for i in self.direction:
+            pat = self.make_pattern(aloc, maxes[i], self.direction[i])
             if contains(pat, dloc):
-                pat_ = self.make_pattern(aloc, ranges[i], direction[i])
+                pat_ = self.make_pattern(aloc, dists[i], self.direction[i])
                 new_pat = []
                 for i in pat_:
                     if self.on_grid(i):
@@ -360,14 +370,13 @@ class Battlefield(object):
                 else:
                     return None #No damage.
             else:
-                direction = {0:'West', 1:'North', 2:'East', 3:'South'}
-                maxes = (aloc.x, aloc.y, (self.grid.x - 1 - aloc.x), (self.grid.y - 1 - aloc.y),)
-                for i in direction:
-                    pat = atkr.weapon.make_pattern(aloc, maxes[i], direction[i])
+                dists = self.make_distances(aloc, dloc)
+                maxes = self.maxes(aloc)
+                for i in self.direction:
+                    pat = self.make_pattern(aloc, maxes[i], self.direction[i])
                     if contains(pat, dloc):
-                        #need to check ranges
-                        ranges  = (abs(dloc.x - aloc.x), abs(dloc.y - aloc.y), abs(dloc.x - aloc.x), abs(dloc.y - aloc.y))
-                        new_pat = atkr.weapon.make_pattern(aloc, ranges[i], direction[i])
+                        #ranges  = (abs(dloc.x - aloc.x), abs(dloc.y - aloc.y), abs(dloc.x - aloc.x), abs(dloc.y - aloc.y))
+                        new_pat = self.make_pattern(aloc, dists[i], self.direction[i])
                         targets = list(set(self.find_units()) & set(new_pat))
                         dmg_list = []
                         area = len(new_pat)
@@ -433,6 +442,7 @@ class Battlefield(object):
         else:
             #no damage
             return []
+    
     def get_dmg_queue(self):
         """returns a copy of the dmg_queue."""
         new_dict = {}
@@ -458,5 +468,3 @@ class Battlefield(object):
             if udmg != 0:
                 defdr_HPs.append([i, self.apply_dmg(i, udmg)])
         return defdr_HPs
-
-

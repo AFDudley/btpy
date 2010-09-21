@@ -55,6 +55,19 @@ TOPINSET = 42
 LEFTINSET = 42
 #FONT =  pygame.font.Font('DroidSansMono.ttf', 12)
 
+#I haven't figured out a better way:
+    #hexagon stuff
+def roof(num):
+    return int(ceil(num))
+    
+def get_hex_params(recw):
+    r = recw/2
+    s = int(floor(r/cos(radians(30))))
+    hexh = roof(sin(radians(30))*s)
+    rech = s + (2*hexh)
+    size = [roof(recw), roof(rech)]
+    return r,s,hexh,rech,size
+    
 def rand_unit(suit=None): #may change to rand_unit(suit, kind)
     """Returns a random Scient of suit. Random suit used if none given."""
     if not suit in ELEMENTS:
@@ -374,11 +387,11 @@ class BottomPane(Pane):
                 self.text = []
                 self.text.append((str(self.cursor_pos) + ": " + str(self.move[self.cursor_pos]) + "?", black, white))
                 view.draw_grid('Move')
-                view.battle.set_tile_color(self.move[self.cursor_pos], white)
                 area  = set(view.battle.map_to_grid(self.move[self.cursor_pos], view.unit.weapon))
                 area -= view.loc
                 view.battle.color_tiles(area - view.move, pink)
                 view.battle.color_tiles(area & view.move, purp)
+                view.battle.set_tile_color(self.move[self.cursor_pos], white)
             if self.action == 'attack':
                 view.draw_grid('Targets')
                 if view.unit.weapon.type == 'Wand':
@@ -432,14 +445,14 @@ class BattlePane(Pane, battlefield.Battlefield):
     """Pane that displays the battlefield"""
     def __init__(self,  position, grid, tilesize, tiles):
         #NOTE: This object has Player information that a battlefield does not have.
-        pane_area = (((tilesize* tiles[0]) + tilesize/2), ((tilesize * tiles[1]) +4))
+        #pane_area = (((tilesize* tiles[0]) + tilesize/2), ((tilesize * tiles[1]) +4))
+        pane_area = ((34 * (tiles[0] + 1) + 5), (30 * tiles[1]) + 5)
         battlefield.Battlefield.__init__(self)
-    
         
         Pane.__init__(self, pane_area, title=None)
         self.bgcolor = black
-        
         self.rect.x, self.rect.y = position
+        
         self.grid = grid
         self.contentimgs = pygame.sprite.RenderUpdates()
         self.player1 = battle.Player()
@@ -462,6 +475,9 @@ class BattlePane(Pane, battlefield.Battlefield):
         for u in self.units:
             u.draw_text()
         self.get_contents_image()
+
+
+
     
     def update(self):
         Pane.update(self)
@@ -490,8 +506,8 @@ class BattlePane(Pane, battlefield.Battlefield):
         for x in range(self.grid.x):
             for y in range(self.grid.y):
                 if self.grid[x][y].contents:
-                    topleft = ((self.grid[x][y].rect.x + 9), \
-                               (self.grid[x][y].rect.y + 9))
+                    topleft = ((self.grid[x][y].rect.x), \
+                               (self.grid[x][y].rect.y))
                     self.grid[x][y].contents.rect.topleft = topleft
                     self.grid[x][y].contents.draw_text()
                     self.contentimgs.add(self.grid[x][y].contents)
@@ -537,7 +553,7 @@ class BattlePane(Pane, battlefield.Battlefield):
 
     class Scient(pygame.sprite.Sprite, defs.Scient):
         """tricky"""
-        def __init__(self, element=None, comp=None, scient=None, size=None):
+        def __init__(self, element=None, comp=None, scient=None, hexparams=get_hex_params(35)):
             if scient != None:
                 defs.Scient.__init__(self, scient.element, scient.comp, scient.name,
                                 scient.weapon, scient.weapon_bonus, scient.location)
@@ -548,20 +564,27 @@ class BattlePane(Pane, battlefield.Battlefield):
                     comp = rand_comp(suit=element, kind='Scient')
                 defs.Scient.__init__(self, comp=comp, element=element)
             pygame.sprite.Sprite.__init__(self)
-            self.image = pygame.Surface([34, 34])
+            self.hexparams = hexparams
+            r,s,hexh,rech,size = self.hexparams
+            self.size = size
+            self.image = pygame.Surface(size)
             self.image.fill(COLORS[self.element])
             self.image.fill(black)
+            #self.image.fill([0,255,255])
             #self.rect = self.image.get_rect()
             if self.weapon.type == 'Sword':
-                self.rect = pygame.draw.polygon(self.image, COLORS[self.element], [(0,0),(50,0),(50,50),(0,50)]) #square
+                x = r/2
+                y = hexh
+                self.rect = pygame.draw.polygon(self.image, COLORS[self.element], [(x, y), (x+s, y), (x+s, y+s), (x, y+s)]) #square
             elif self.weapon.type == 'Bow':
-                self.rect = pygame.draw.circle(self.image, COLORS[self.element], (17,17), 15) # cirlcle
+                self.rect = pygame.draw.circle(self.image, COLORS[self.element], ((size[0]/2) + 1, (size[1]/2) + 1), size[0]/2 - hexh/2) # cirlcle
             elif self.weapon.type == 'Wand':
-                self.rect  = pygame.draw.polygon(self.image, COLORS[self.element], [(0,16),(16,0),(33,16),(16,33)])
+                self.rect  = pygame.draw.polygon(self.image, COLORS[self.element], [(r+1,3), (2*r - 1 , rech-2*hexh), (r+1, rech-3), (2, rech - 2*hexh)])
             elif self.weapon.type == 'Glove':
-                self.rect = pygame.draw.polygon(self.image, COLORS[self.element], [(0,25),(15,0),(30,25),]) # triangle
+                self.rect = pygame.draw.polygon(self.image, COLORS[self.element], [(r,2), (2*r-2, rech-hexh-1), (2, rech - hexh-1)]) # triangle
             self.image.set_colorkey(black)
             self.text = []
+
         
         def __repr__(self):
             return defs.Scient.__repr__(self)
@@ -572,20 +595,15 @@ class BattlePane(Pane, battlefield.Battlefield):
             self.font_color = [0, 0, 0]
             textrect = self.font.render(self.squad.num, True, self.font_color, \
             COLORS[self.element])
-            self.image.blit(textrect, (12,10.5))
+            self.image.blit(textrect, (self.size[0]/2 - 4, self.size[1]/3))
     
     class Tile(pygame.sprite.Sprite, battlefield.Tile): 
         """it's a battlefield tile and a pygame sprite, yo"""
-        def make_hex(self, recw, colr):
+        def make_hex(self, hexparams, colr):
             """returns a Surface containing a hextile"""
-            def roof(num):
-                return int(ceil(num))
-            r = recw/2
-            s = int(floor(r/cos(radians(30))))
-            hexh = roof(sin(radians(30))*s)
-            rech = s + (2*hexh)
-            size = [roof(recw), roof(rech)]
-            pl = [(0, hexh), (.5*recw,0), (recw,hexh), (recw, rech-hexh), (.5*recw, rech), (0, rech - hexh)]
+            r,s,hexh,rech,size = hexparams
+            recw = 2 * r
+            pl = [(0, hexh), (r,0), (recw,hexh), (recw, rech-hexh), (.5*recw, rech), (0, rech - hexh)]
             pl2 = [(1, 1+hexh), (.5*recw,2), (recw-2,hexh+1), (recw-2, rech-hexh-1), (.5*recw, rech-2), (2, rech - hexh-1)]
             hexa = pygame.Surface(size)
             hexa.fill(black)
@@ -594,15 +612,16 @@ class BattlePane(Pane, battlefield.Battlefield):
             pygame.draw.polygon(hexa, colr, pl2,)
             return hexa
             
-        def __init__(self,  topleft, size=(50,50), colr=grey):
+        def __init__(self,  topleft, hexparams, colr=grey):
             pygame.sprite.Sprite.__init__(self)
             battlefield.Tile.__init__(self)
-            self.image = self.make_hex(size[0], colr)
+            self.hexparams = hexparams
+            self.image = self.make_hex(self.hexparams, colr)
             self.rect = self.image.get_rect()
             self.rect.topleft = topleft
         
         def set_color(self, color):
-            self.image = self.make_hex(self.rect.width, color)
+            self.image = self.make_hex(self.hexparams, color)
             #self.image.fill(color)
         
 
@@ -618,14 +637,13 @@ class BattlePane(Pane, battlefield.Battlefield):
             self.rect.x, self.rect.y = (242, TOPINSET)
             self.x,self.y = self.tiles
             battlefield.Grid.__init__(self, x=self.x, y=self.y)
-            def roof(num):
-                return int(ceil(num))
-            r = self.tilesize/2
-            s = int(floor(r/cos(radians(30))))
-            hexh = roof(sin(radians(30))*s)
+
+            self.hexparams = kwargs['hexparams']
+            hexh = self.hexparams[2]
+            s    = self.hexparams[1]
             for xpos in range(self.x):
                 for ypos in range(self.y):
-                    tile = BattlePane.Tile((xpos,ypos), (self.tilesize-1, self.tilesize-1), grey)
+                    tile = BattlePane.Tile((xpos,ypos), self.hexparams, grey)
                     if ypos&1:
                         tile.rect.topleft = [(xpos*tile.rect.width) + .5*tile.rect.width + 4, (ypos*(hexh +s)) + 4]
                         self.image.blit(tile.image, tile.rect)
@@ -688,7 +706,7 @@ class View:
         self.units = set(self.battle.find_units())
         self.move -= self.units #can't moved to occupied tiles
         self.loc   = set((self.unit.location,),)
-        self.targets = self.area & self.units
+        self.targets = self.area & (self.units)
     
     def draw_grid(self, tiles_to_color=None):
         """takes a list of (tiles, color) tuples, applies colors,
@@ -748,8 +766,9 @@ if __name__ == '__main__':
     print "Copyright (c) 2010 A. Frederick Dudley. All rights reserved. PLEASE DO NOT REDISTRIBUTE"
     pygame.init()
     FONT =  pygame.font.Font('views/DroidSansMono.ttf', 12)
-    screen = pygame.display.set_mode([800, 600])
-    grid = BattlePane.Grid(tiles=(16,16), tilesize=35)
+    screen = pygame.display.set_mode([850, 600])
+
+    grid = BattlePane.Grid(tiles=(16,16), tilesize=35, hexparams=get_hex_params(35))
     view = View(screen, grid)
     view.state = view.get_key()
     view.game.player1.name = "Player 1"
