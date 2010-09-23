@@ -269,7 +269,7 @@ class Battlefield(object):
         dloc = defdr.location
         damage_dealt = {E: 0, F: 0, I: 0, W: 0}
         if self.on_grid(dloc):
-            if contains(('Sword', 'Bow'),type) == True:
+            if atkr.weapon.kind == 'p':
                 for element in damage_dealt:
                     dmg = (atkr.p + atkr.patk + (2 * atkr.comp[element]) +
                     atkr.weapon.comp[element]) - (defdr.p + defdr.pdef +

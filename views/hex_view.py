@@ -22,11 +22,11 @@ try:
     import pyconsole
 except ImportError, message:
     import views.pyconsole as pyconsole
-'''
+
+#This check doesn't seem to work quite right, but it's close enough.
 if not '__IPYTHON__' in globals():
     from IPython.iplib import InteractiveShell
     __IPYTHON__ = InteractiveShell('fake')
-'''
 
 black = [0, 0, 0]
 darkg = [50, 50, 50]

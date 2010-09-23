@@ -75,19 +75,21 @@ class Sword(Weapon):
     def __init__(self, element, comp):
         Weapon.__init__(self, element, comp)
         self.type = 'Sword'
-    
+        self.kind = 'p'    
 class Bow(Weapon):
     """Long range physical weapon"""
     def __init__(self, element, comp):
         Weapon.__init__(self, element, comp)
         self.type = 'Bow'
+        self.kind = 'p'
         
 class Wand(Weapon):
     """Long range magical weapon"""
     def __init__(self, element, comp):
         Weapon.__init__(self, element, comp)
         self.type = 'Wand'
-
+        self.kind = 'm'
+        
     def make_pattern(self, origin, distance, pointing):
         """generates a pattern based on an origin, distance, and
         direction. Returns a set of coords"""
@@ -122,4 +124,6 @@ class Glove(Weapon):
     def __init__(self, element, comp):
         Weapon.__init__(self, element, comp)
         self.type = 'Glove'
+        self.kind = 'm'
         self.time = 3
+        
