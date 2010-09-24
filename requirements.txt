@@ -1,1 +1,5 @@
-ipython >= 0.10
+PyYAML==3.09
+distribute==0.6.10
+ipython==0.10
+pygame==1.9.1release
+

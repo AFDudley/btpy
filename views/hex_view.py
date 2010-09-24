@@ -8,8 +8,8 @@
 from math import sin, cos, radians, ceil, floor
 from operator import contains
 import pygame
-#from pygame.locals import *
-from pygame.locals import K_ESCAPE, KEYDOWN, K_w, K_UP, K_DOWN, K_RETURN
+from pygame.locals import *
+#from pygame.locals import K_ESCAPE, KEYDOWN, K_w, K_UP, K_DOWN, K_RETURN
 import binary_tactics.hex_battlefield as battlefield
 import binary_tactics.battle as battle
 
@@ -18,13 +18,15 @@ from binary_tactics.defs import Squad, Loc, noloc
 import binary_tactics.defs as defs
 from binary_tactics.helpers import rand_comp, rand_element
 import stores.yaml_store as yaml_store
+
+
 try:
     import pyconsole
 except ImportError, message:
     import views.pyconsole as pyconsole
 
-#This check doesn't seem to work quite right, but it's close enough.
-if not '__IPYTHON__' in globals():
+#Magic Sprinkles!!!
+if not __builtins__.__IPYTHON__:
     from IPython.iplib import InteractiveShell
     __IPYTHON__ = InteractiveShell('fake')
 
