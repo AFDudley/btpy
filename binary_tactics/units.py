@@ -1,11 +1,17 @@
 from UserList import UserList
 from stone import Stone
-from const import ELEMENTS, E, F, I, W
+from const import ELEMENTS, E, F, I, W, ORTH, OPP
 class Unit(Stone):
     def __init__(self, element, comp, name=None, location=None):
         if not element in ELEMENTS:
             raise Exception("Invalid element: %s, valid elements are %s" \
             % (element, ELEMENTS))
+        if comp[element] == 0:
+            raise ValueError("Units' primary element must be greater than 0.")
+        
+        if comp[OPP[element]] != 0:
+            raise ValueError("Units' opposite element must equal 0.")
+
         Stone.__init__(self, comp)
         self.element = element
         if name == None:
@@ -13,7 +19,22 @@ class Unit(Stone):
         self.name = name
         self.location = location
         self.val = self.value()
-    
+
+    def calcstats(self):
+        self.p    = (2*(self.comp[F] + self.comp[E]) +
+                        self.comp[I] + self.comp[W]) 
+        self.m    = (2*(self.comp[I] + self.comp[W]) +
+                        self.comp[F] + self.comp[E])
+        self.atk  = (2*(self.comp[F] + self.comp[I]) + 
+                        self.comp[E] + self.comp[W]) + (2 * self.value())
+        self.defe = (2*(self.comp[E] + self.comp[W]) + 
+                        self.comp[F] + self.comp[I]) 
+
+        self.pdef = self.p + self.defe + (2 * self.comp[E])
+        self.patk = self.p + self.atk  + (2 * self.comp[F])
+        self.matk = self.m + self.atk  + (2 * self.comp[I])
+        self.mdef = self.m + self.defe + (2 * self.comp[W])
+        self.hp   = 4 * (self.pdef + self.mdef) + self.value()
 class Scient(Unit):
     """A Scient (playable character) unit.
     
@@ -25,6 +46,10 @@ class Scient(Unit):
     
     def __init__(self, element, comp, name=None, weapon=None,
                  weapon_bonus=dict(Stone()), location=None):
+        for orth in ORTH[element]:
+            if comp[orth] > comp[element] / 2:
+                raise ValueError("Scients' orthogonal elements cannot be \
+                                  more than half the primary element's value.")
         Unit.__init__(self, element, comp, name, location)
         self.move = 4
         self.weapon = weapon
@@ -35,23 +60,6 @@ class Scient(Unit):
             + self.weapon_bonus[i]
         self.calcstats()
         #self.equip(self.weapon)
-
-    def calcstats(self):
-        self.p    = (2*(self.comp[F] + self.comp[E]) +
-                        self.comp[I] + self.comp[W]) 
-        self.m    = (2*(self.comp[I] + self.comp[W]) +
-                        self.comp[F] + self.comp[E])
-        self.atk  = (2*(self.comp[F] + self.comp[I]) + 
-                        self.comp[E] + self.comp[W]) + (2 * self.value())
-        self.defe = (2*(self.comp[E] + self.comp[W]) + 
-                        self.comp[F] + self.comp[I]) 
-        
-        self.pdef = self.p + self.defe + (2 * self.comp[E])
-        self.patk = self.p + self.atk  + (2 * self.comp[F])
-        self.matk = self.m + self.atk  + (2 * self.comp[I])
-        self.mdef = self.m + self.defe + (2 * self.comp[W])
-        self.hp   = 4 * (self.pdef + self.mdef) + self.value()
-
     def equip(self, weapon): #TODO move to battlefield
         """
         A function that automagically equips items based on element.
@@ -77,11 +85,62 @@ class Scient(Unit):
             self.weapon = weapon
             
 class Nescient(Unit):
-        def bite(self, target):
-            pass
-        def breath(self, target):
-            pass
-
+    """A non-playable unit."""
+    def calcstats(self):
+        Unit.calcstats(self)
+        self.atk  = (2*(self.comp[F] + self.comp[I]) + 
+                        self.comp[E] + self.comp[W]) + (4 * self.value())
+        self.hp = self.hp * 2
+    
+    def __init__(self, element, comp, name=None, weapon=None,
+                 location=None):
+        for orth in ORTH[element]:
+            if comp[orth] != 0:
+                if comp[OPP[orth]] != 0:
+                    raise ValueError("Nescients' cannot have values greater \
+                                      than zero for both orthogonal elements.")
+            elif comp[orth] > comp[element]:
+                raise ValueError("Nescients' orthogonal value cannot exceed \
+                                  the primary element value.")
+                
+        Unit.__init__(self, element, comp, name, location)
+        self.move = 4
+        #Set nescient type.
+        if self.element == 'Earth':
+            self.kind = 'p'
+            if self.comp[F] == 0:
+                self.type = 'Avalanche' #AOE Full
+            else:
+                self.type = 'Magma' #ranged Full
+                
+        elif self.element == 'Fire':
+            self.kind = 'p'
+            if self.comp[E] == 0:
+                self.type = 'Firestorm' #ranged DOT
+                self.time = 3
+            else:
+                self.type = 'Forestfire' #ranged Full
+                
+        elif self.element == 'Ice':
+            self.kind = 'm'
+            if self.comp[E] == 0:
+                self.type = 'Icestorm' #AOE DOT
+                self.time = 3
+            else:
+                self.type = 'Permafrost' #AOE Full
+        else: #Wind
+            self.kind = 'm'
+            self.time = 3
+            if self.comp[F] == 0:
+                self.type = 'Blizzard' #AOE DOT
+            else:
+                self.type = 'Pyrocumulus' #ranged DOT
+                
+             
+        self.calcstats()
+        #TASTY
+        self.weapon = self
+        
 class Squad(UserList):
     """contains a number of Units. Takes a list of Units"""
     def unit_size(self, object):

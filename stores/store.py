@@ -6,7 +6,6 @@
 #  Copyright (c) 2010 A. Frederick Dudley. All rights reserved.
 #
 """Functions shared between yaml_ and mongo_ store.py"""
-from operator import contains
 import binary_tactics.defs as defs
 
 from binary_tactics.battlefield import Grid, Tile
@@ -15,6 +14,7 @@ c  = ('comp',)
 ec = c + ('element',)
 persisted = {'stone': c, 'sword': ec, 'bow': ec, 'wand': ec, 'glove': ec,
              'scient': ec + ('name','weapon','weapon_bonus','location'),
+             'nescient': ec + ('name', 'location'),
              'squad': ('data', 'name', 'value', 'free_spaces'),
              'tile': c + ('contents',),
              'grid': c + ('tiles','x','y'),
@@ -29,7 +29,7 @@ persisted = {'stone': c, 'sword': ec, 'bow': ec, 'wand': ec, 'glove': ec,
 def get_persisted(obj):
     """Returns a dict of obj attributes that are persisted."""    
     kind = obj.__class__.__name__.lower()
-    if contains(persisted.keys(), kind):
+    if kind in persisted.keys():
         new_dict = {}
         #check values of obj.__dict__ for persisted objects
         for key in persisted[kind]:
@@ -80,7 +80,7 @@ def get_persisted(obj):
                 new_dict[key] = data
 
             #if value are persisted, call self
-            elif contains(persisted.keys(), other_kind):
+            elif other_kind in persisted.keys():
                 new_dict[key] = get_persisted(obj.__dict__[key])
             #else put value into new_dict
             else:

@@ -4,7 +4,7 @@ squad:
       comp: {Earth: 127, Fire: 0, Ice: 255, Wind: 127}
       element: Ice
       name: 'Wizard #0'
-      location: (7,7)
+      location: (7,1)
       weapon:
         wand:
           comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
@@ -13,7 +13,7 @@ squad:
   - scient:
       comp: {Earth: 127, Fire: 0, Ice: 255, Wind: 127}
       element: Ice
-      location: &id001 (None,None)
+      location: (7,2)
       name: 'Archer #0'
       weapon:
         bow:
@@ -23,7 +23,7 @@ squad:
   - scient:
       comp: {Earth: 127, Fire: 0, Ice: 255, Wind: 127}
       element: Ice
-      location: *id001
+      location: (7,3)
       name: 'Pugilist #0'
       weapon:
         sword:
@@ -33,7 +33,7 @@ squad:
   - scient:
       comp: {Earth: 127, Fire: 0, Ice: 255, Wind: 127}
       element: Ice
-      location: *id001
+      location: (8,2)
       name: 'Theurgist #0'
       weapon:
         glove:

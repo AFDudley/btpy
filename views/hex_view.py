@@ -6,7 +6,6 @@
 #  Copyright (c) 2010 A. Frederick Dudley. All rights reserved.
 #
 from math import sin, cos, radians, ceil, floor
-from operator import contains
 import pygame
 from pygame.locals import *
 #from pygame.locals import K_ESCAPE, KEYDOWN, K_w, K_UP, K_DOWN, K_RETURN
@@ -231,7 +230,7 @@ class TopPane(Pane):
                     unit.text.append("HP: " + str(unit.hp))
                     unit.text.append("E, F, I, W")
                     unit.text.append(str(unit.comp[E]) + ", " + str(unit.comp[F]) + ", " + str(unit.comp[I]) +  ", " + str(unit.comp[W]))
-                    if contains(('Sword', 'Bow'), unit.weapon.type):
+                    if unit.weapon.type in ('Sword', 'Bow'):
                         atk = "PA: " + str(unit.patk)
                     else:
                         atk = "MA: " + str(unit.matk)
@@ -397,7 +396,7 @@ class BottomPane(Pane):
             if self.action == 'attack':
                 view.draw_grid('Targets')
                 if view.unit.weapon.type == 'Wand':
-                    area = view.battle.calc_wand_area(view.unit, self.targets[self.cursor_pos])
+                    area = view.battle.calc_AOE(view.unit, self.targets[self.cursor_pos])
                     view.battle.color_tiles(area, green)
                     print "area:", len(area)
                 view.battle.set_tile_color(self.targets[self.cursor_pos], red)

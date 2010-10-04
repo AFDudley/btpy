@@ -1,5 +1,4 @@
 """contains battlefield objects"""
-from operator import contains
 import random
 from math import ceil
 
@@ -55,6 +54,10 @@ class Battlefield(object):
         self.squads = (self.squad1, self.squad2)
         self.units = self.get_units()
         self.direction = {0:'North', 1:'Northeast', 2:'Southeast', 3:'South', 4:'Southwest', 5:'Northwest'}
+        self.ranged = ('Bow',   'Magma',     'Firestorm', 'Forestfire', 'Pyrocumulus')
+        self.DOT    = ('Glove', 'Firestorm', 'Icestorm',  'Blizzard',   'Pyrocumulus')
+        self.AOE    = ('Wand',  'Avalanche', 'Icestorm',  'Blizzard',   'Permafrost',)
+        self.Full   = ('Sword', 'Magma',     'Avalanche', 'Forestfire', 'Permafrost')
         
     def get_units(self):
         """looks in squads, returns all units in squads."""
@@ -122,32 +125,23 @@ class Battlefield(object):
         return pattern
     
     def map_to_grid(self, location, weapon):
+        """returns tiles within range of location using weapon. called in hex_view.py"""
         weapon = weapon
         xpos, ypos = location = location
         tiles = []
-        if weapon.type != 'Wand':
-            if weapon.type != 'Bow':
-                return self.get_adjacent(location)
-            else:
-                #Should pull unit.move from someplace... hardcoded for now.
-                move = 4
-                no_hit = self.make_range(location, move)
-                hit    = self.make_range(location, 2*move)
-                return hit - no_hit
-        
-        else:
-            '''The old way
-            maxes = self.maxes(location)
-            for i in self.direction:
-                for j in  self.make_pattern(location, maxes[i], self.direction[i]):
-                    if self.on_grid(j):
-                        tiles.append(j)
-            '''
-            #lazy hack: wands can now hit everywhere.
-            tiles = set([(x, y) for x in xrange(self.grid.x) for y in xrange(self.grid.y)])
+        if weapon.type in self.ranged:
+            move = 4
+            no_hit = self.make_range(location, move)
+            hit    = self.make_range(location, 2*move)
+            return hit - no_hit
+        elif weapon.type in self.AOE:
+            #lazy hack: AOE can now hit everywhere.
+            tiles  = set([(x, y) for x in xrange(self.grid.x) for y in xrange(self.grid.y)])
             tiles -= set(((location),),)
             return list(tiles)
-            
+        else:
+            return self.get_adjacent(location)
+    
     def make_range(self, location, distance):
         """generates a list of tiles within distance of location."""
         location = location
@@ -180,7 +174,7 @@ class Battlefield(object):
         if self.grid[xsrc][ysrc].contents:
             if not self.grid[xdest][ydest].contents:
                 move = self.grid[xsrc][ysrc].contents.move
-                if contains(self.make_range(src, move), dest):
+                if dest in self.make_range(src, move):
                 #if abs(xsrc-xdest) + abs(ysrc-ydest) <= move:
                     self.grid[xdest][ydest].contents = \
                     self.grid[xsrc][ysrc].contents
@@ -263,6 +257,7 @@ class Battlefield(object):
                     num += 1
         return num
     
+    
     #Attack/Damage stuff
     def dmg(self, atkr, defdr, type):
         """Calculates the damage of an attack"""
@@ -314,8 +309,12 @@ class Battlefield(object):
         return ranges
     
     def maxes(self, src):
-        #NOTE: Currently, wands can hit every tile on the grid so this is really quite moot.
-        #      At some point LOS style blasting might be added at which point this would be needed.
+        '''NOTE: Currently, AOE weapons can hit every tile on the grid so this is
+                 really quite moot.
+                 
+                 At some point LOS style blasting might be added at which
+                 point this would be needed.
+        '''
         #sub-optimal should check ay % 1 and change the + 1 and + 2 accordingly.
         ax, ay = src
         maxes = {
@@ -327,16 +326,17 @@ class Battlefield(object):
                 5: ax + ay/2 + 2,
                 }
         return maxes
-        
-    def calc_wand_area(self, atkr, target):
+    
+    def calc_AOE(self, atkr, target):
+        """Returns the AOE of a spell. Called once in hex_view.py"""
         xpos, ypos = aloc = atkr.location
         dloc = Loc._make(target)
         dists = self.make_distances(aloc, dloc)
         maxes = self.maxes(aloc)
-        
         for i in self.direction:
             pat = self.make_pattern(aloc, maxes[i], self.direction[i])
-            if contains(pat, dloc):
+            if dloc in pat:
+                #all of this could be done in-place.
                 pat_ = self.make_pattern(aloc, dists[i], self.direction[i])
                 new_pat = []
                 for i in pat_:
@@ -347,13 +347,13 @@ class Battlefield(object):
     def calc_damage(self, atkr, defdr):
         """Calcuate damage delt to defdr from atkr. Also calculates the damage of
         all units within a blast range. if weapon has a AOE list of
-        (area, [target, dmg]) is returned. otherwise just dmg is returned"""
+        [[target, dmg]] is returned. otherwise just (target, dmg) is returned"""
         #Broken: dmg_queue is applied at the wrong time in battle.py
         weapon = atkr.weapon
         aloc = atkr.location
         dloc = defdr.location
         in_range = self.map_to_grid(aloc, weapon)
-        if not contains(in_range, dloc):
+        if not(dloc in in_range):
             raise Exception( \
             "Defender's location: %s is outside of attacker's range" %str(dloc))
         else:
@@ -370,12 +370,12 @@ class Battlefield(object):
                 else:
                     return None #No damage.
             else:
+                #This is a lot of work to figure out what direction the target is in.
                 dists = self.make_distances(aloc, dloc)
                 maxes = self.maxes(aloc)
                 for i in self.direction:
                     pat = self.make_pattern(aloc, maxes[i], self.direction[i])
-                    if contains(pat, dloc):
-                        #ranges  = (abs(dloc.x - aloc.x), abs(dloc.y - aloc.y), abs(dloc.x - aloc.x), abs(dloc.y - aloc.y))
+                    if dloc in pat:
                         new_pat = self.make_pattern(aloc, dists[i], self.direction[i])
                         targets = list(set(self.find_units()) & set(new_pat))
                         dmg_list = []
@@ -391,6 +391,7 @@ class Battlefield(object):
                         if len(dmg_list) == 0:
                             return None #No damage.
                         else:
+                            print dmg_list
                             return dmg_list
     
     def apply_dmg(self, target, damage):
@@ -468,3 +469,4 @@ class Battlefield(object):
             if udmg != 0:
                 defdr_HPs.append([i, self.apply_dmg(i, udmg)])
         return defdr_HPs
+    

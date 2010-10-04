@@ -10,7 +10,6 @@
 #Logs are really quite different from game objects and should be stored in a 
 #different db.
 
-from operator import contains
 from ordereddict import OrderedDict
 from pymongo.connection import Connection
 #from pymongo.son_manipulator import AutoReference, NamespaceInjector
@@ -36,7 +35,7 @@ def insert_co(obj, collection):
     """inserts a composite object into collection"""
     #This function is conspicuously similar to get_persisted, could be fixed witawapper[sic]
     kind = obj.__class__.__name__.lower()
-    if contains(persisted.keys(), kind):
+    if kind in persisted.keys():
         new_dict = {}
         #check values of obj.__dict__ for persisted objects
         for key in persisted[kind]:
@@ -95,7 +94,7 @@ def insert_co(obj, collection):
                 new_dict[key] = findtinsert({'comp': odict(obj.__dict__[key])}, collection)
 
             #if value are persisted, call self
-            elif contains(persisted.keys(), other_kind):
+            elif other_kind in persisted.keys():
                 new_dict[key] = insert_co(obj.__dict__[key], collection)
             #else put value into new_dict
             else:

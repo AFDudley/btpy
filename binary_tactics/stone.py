@@ -10,24 +10,25 @@ class Stone(Mapping):
             self.comp = comp.comp
         if comp == None:
             comp = self.comp
-        try:
-            iter(comp)
-            if sorted(self.comp) == sorted(comp):
-                self.comp = dict(comp)
-            else:
-                if len(comp) == 4 or len(comp) == 0:
-                    for element in range(4):
-                        if type(comp[element]) == type(1):
-                            if 0 <= comp[element] < 256:
-                                self.comp[ELEMENTS[element]] = comp[element]                        
-                            else:
-                                raise AttributeError
-                        else:
-                            raise TypeError
+        else:
+            try:
+                iter(comp)
+                if sorted(self.comp) == sorted(comp):
+                    self.comp = dict(comp)
                 else:
-                    raise ValueError
-        except TypeError:
-            raise
+                    if len(comp) == 4 or len(comp) == 0:
+                        for element in range(4):
+                            if type(comp[element]) == type(1):
+                                if 0 <= comp[element] < 256:
+                                    self.comp[ELEMENTS[element]] = comp[element]                        
+                                else:
+                                    raise AttributeError
+                            else:
+                                raise TypeError
+                    else:
+                        raise ValueError
+            except TypeError:
+                raise
         
     def __iter__(self):
          return iter(self.comp)

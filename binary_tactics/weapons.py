@@ -12,7 +12,7 @@ class Weapon(Stone):
     
     def map_to_grid(self, origin, grid_size):
         #TODO move to battlefield
-        """maps pattern to grid centered on origin. 
+        """maps pattern to grid centered on origin.
         Returns list of tiles on grid. (Lots of room for optimization)"""
         orix,oriy = origin
         tiles = []
@@ -27,7 +27,7 @@ class Weapon(Stone):
                 [[attack_pattern.append((x,y)) for y in dist if (no_hit < (abs(x) + abs(y)) < max) ] for x in dist]
             else:
                 attack_pattern = [(0,-1),(1,0),(0,1),(-1,0),(-1,-1),(-1,1),(1,1),(1,-1)]
-
+            
             for i in attack_pattern:
                 x,y = (i[0] + origin[0]),(i[1] + origin[1])
                 if 0 <= x < grid_size[0]:
@@ -48,7 +48,7 @@ class Weapon(Stone):
                     if i % 2:
                         in_range = xrange(-(i/2),((i/2)+1))
                         #rotate pattern based on direction
-                        for j in xrange(len(in_range)): 
+                        for j in xrange(len(in_range)):
                             if pointing == 'North':
                                 pattern.append((src[0] + in_range[j], (src[1] - (1 +(i/2)))))
                             elif pointing =='South':
@@ -75,21 +75,21 @@ class Sword(Weapon):
     def __init__(self, element, comp):
         Weapon.__init__(self, element, comp)
         self.type = 'Sword'
-        self.kind = 'p'    
+        self.kind = 'p'
 class Bow(Weapon):
     """Long range physical weapon"""
     def __init__(self, element, comp):
         Weapon.__init__(self, element, comp)
         self.type = 'Bow'
         self.kind = 'p'
-        
+
 class Wand(Weapon):
     """Long range magical weapon"""
     def __init__(self, element, comp):
         Weapon.__init__(self, element, comp)
         self.type = 'Wand'
         self.kind = 'm'
-        
+    
     def make_pattern(self, origin, distance, pointing):
         """generates a pattern based on an origin, distance, and
         direction. Returns a set of coords"""
@@ -103,15 +103,15 @@ class Wand(Weapon):
             if i % 2:
                 in_range = xrange(-(i/2),((i/2)+1))
                 #rotate pattern based on direction
-                for j in xrange(len(in_range)): 
+                for j in xrange(len(in_range)):
                     if pointing == 'North':
                         pattern.append((src[0] + in_range[j], (src[1] -
                                        (1 +(i/2)))))
                     elif pointing =='South':
-                        pattern.append((src[0] + in_range[j], (src[1] + 
+                        pattern.append((src[0] + in_range[j], (src[1] +
                                        (1 +(i/2)))))
                     elif pointing =='East':
-                        pattern.append((src[0] +  (1 +(i/2)), (src[1] - 
+                        pattern.append((src[0] +  (1 +(i/2)), (src[1] -
                                         in_range[j])))
                     elif pointing =='West':
                         pattern.append((src[0] -  (1 +(i/2)), (src[1] -
@@ -126,4 +126,4 @@ class Glove(Weapon):
         self.type = 'Glove'
         self.kind = 'm'
         self.time = 3
-        
+
