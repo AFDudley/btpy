@@ -352,48 +352,44 @@ class Battlefield(object):
         weapon = atkr.weapon
         aloc = atkr.location
         dloc = defdr.location
+        dmg_lst = []
         in_range = self.map_to_grid(aloc, weapon)
         if not(dloc in in_range):
             raise Exception( \
             "Defender's location: %s is outside of attacker's range" %str(dloc))
         else:
-            #this weapon logic is janky.
-            if weapon.type != 'Wand':
-                dmg = self.dmg(atkr, defdr, weapon.type)
-                if weapon.type == 'Sword':
-                    return dmg
-                if dmg != 0:
-                    if weapon.type == 'Bow':
-                        return dmg / 4
-                    else:
-                        return dmg / weapon.time #assumes weapon.type == 'Glove'
-                else:
-                    return None #No damage.
-            else:
-                #This is a lot of work to figure out what direction the target is in.
-                dists = self.make_distances(aloc, dloc)
-                maxes = self.maxes(aloc)
-                for i in self.direction:
-                    pat = self.make_pattern(aloc, maxes[i], self.direction[i])
-                    if dloc in pat:
-                        new_pat = self.make_pattern(aloc, dists[i], self.direction[i])
-                        targets = list(set(self.find_units()) & set(new_pat))
-                        dmg_list = []
-                        area = len(new_pat)
-                        for i in targets:
-                            defdr = self.grid[i[0]][i[1]].contents
-                            temp_dmg = self.dmg(atkr, defdr, weapon.type)
-                            if temp_dmg != 0:
-                                temp_dmg /= area
-                                dmg_list.append((defdr, temp_dmg))
-                            else:
-                                pass # no damage was dealt, don't append anything.
-                        if len(dmg_list) == 0:
-                            return None #No damage.
+            #calculate how many units will be damaged.
+            if weapon.type in self.AOE:
+                pat = self.calc_AOE(atkr, dloc)
+                targets = list(set(self.find_units()) & set(pat))
+                area = len(pat)
+                for t in targets:
+                    defdr = self.grid[t[0]][t[1]].contents
+                    temp_dmg = self.dmg(atkr, defdr, weapon.type)
+                    if temp_dmg != 0:
+                        #currently the only non-full, non-DOT AOE weapon
+                        if weapon.type != 'Wand':
+                            dmg_lst.append((defdr, temp_dmg))
                         else:
-                            print dmg_list
-                            return dmg_list
-    
+                            temp_dmg /= area
+                            if temp_dmg != 0:
+                                dmg_lst.append((defdr, temp_dmg))
+                    else:
+                        pass # no damage was dealt, don't append anything.
+
+            elif weapon.type in self.ranged:
+                #this is a placeholder until calc_ranged is written.
+                dmg_lst.append((defdr, self.dmg(atkr, defdr, weapon.type) / 4))
+            else: #attack is only hitting one unit.
+                dmg_lst.append((defdr, self.dmg(atkr, defdr, weapon.type)))
+
+            if weapon.type in self.DOT:
+                dmg_lst = [(t[0], t[1] / weapon.time) for t in dmg_lst]
+
+            if len(dmg_lst):
+                return dmg_lst
+            else:
+                return None
     def apply_dmg(self, target, damage):
         """applies damage to target, called by attack() and
         apply_queued() returns damage applied"""
@@ -423,13 +419,14 @@ class Battlefield(object):
         defdr = self.grid[target[0]][target[1]].contents
         dmg = self.calc_damage(atkr, defdr)
         if dmg != None:
-            if isinstance(dmg, int) == True:
+            if isinstance(dmg, int) == True: #with new calc_damage this should never hit
+                print "why did I hit?"
                 if dmg != 0:
                     recieved_dmg = self.apply_dmg(defdr, dmg)
                 else:
                     return [[defdr, 0]]
                 if defdr.hp > 0:
-                    if atkr.weapon.type == 'Glove':
+                    if atkr.weapon.type in self.DOT:
                         self.dmg_queue[defdr].append([dmg, atkr.weapon.time - 1])
                 return [[defdr, recieved_dmg]]
             
