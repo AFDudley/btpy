@@ -259,7 +259,7 @@ class Battlefield(object):
     
     
     #Attack/Damage stuff
-    def dmg(self, atkr, defdr, type):
+    def dmg(self, atkr, defdr):
         """Calculates the damage of an attack"""
         dloc = defdr.location
         damage_dealt = {E: 0, F: 0, I: 0, W: 0}
@@ -365,7 +365,7 @@ class Battlefield(object):
                 area = len(pat)
                 for t in targets:
                     defdr = self.grid[t[0]][t[1]].contents
-                    temp_dmg = self.dmg(atkr, defdr, weapon.type)
+                    temp_dmg = self.dmg(atkr, defdr)
                     if temp_dmg != 0:
                         #currently the only non-full, non-DOT AOE weapon
                         if weapon.type != 'Wand':
@@ -379,9 +379,9 @@ class Battlefield(object):
 
             elif weapon.type in self.ranged:
                 #this is a placeholder until calc_ranged is written.
-                dmg_lst.append((defdr, self.dmg(atkr, defdr, weapon.type) / 4))
+                dmg_lst.append((defdr, self.dmg(atkr, defdr) / 4))
             else: #attack is only hitting one unit.
-                dmg_lst.append((defdr, self.dmg(atkr, defdr, weapon.type)))
+                dmg_lst.append((defdr, self.dmg(atkr, defdr)))
 
             if weapon.type in self.DOT:
                 dmg_lst = [(t[0], t[1] / weapon.time) for t in dmg_lst]
@@ -419,27 +419,19 @@ class Battlefield(object):
         defdr = self.grid[target[0]][target[1]].contents
         dmg = self.calc_damage(atkr, defdr)
         if dmg != None:
-            if isinstance(dmg, int) == True: #with new calc_damage this should never hit
-                print "why did I hit?"
-                if dmg != 0:
-                    recieved_dmg = self.apply_dmg(defdr, dmg)
-                else:
-                    return [[defdr, 0]]
-                if defdr.hp > 0:
-                    if atkr.weapon.type in self.DOT:
-                        self.dmg_queue[defdr].append([dmg, atkr.weapon.time - 1])
-                return [[defdr, recieved_dmg]]
-            
-            else:
-                defdr_HPs = []
+            defdr_HPs = []
+            if atkr.weapon.type in self.DOT:
                 for i in dmg:
-                    if i[0].hp > 0:
-                        defdr_HPs.append([i[0], self.apply_dmg(i[0], i[1]) ])
-                return defdr_HPs
-        
-        else:
-            #no damage
-            return []
+                    if i[0].hp > 0: #can be removed?
+                        defdr_HPs.append([i[0], self.apply_dmg(i[0], i[1])])
+                        self.dmg_queue[defdr].append([i[1], (atkr.weapon.time - 1)])
+            else:
+                for i in dmg:
+                    if i[0].hp > 0: #can be removed?
+                        defdr_HPs.append([i[0], self.apply_dmg(i[0], i[1])])
+            return defdr_HPs
+        else: #no damage
+            return []    
     
     def get_dmg_queue(self):
         """returns a copy of the dmg_queue."""

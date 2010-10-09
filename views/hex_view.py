@@ -520,6 +520,7 @@ class BattlePane(Pane, battlefield.Battlefield):
         topleft = ((temp.x + 8),(temp.y + 8))
         self.grid[xpos][ypos].contents.rect.topleft = topleft
         self.set_tile_color(src, grey)
+        return True #need this for logging.
     
     def place_unit(self, unit, dest):
         battlefield.Battlefield.place_unit(self, unit, dest)
@@ -750,6 +751,10 @@ class View:
             self.make_tile_sets(self.unit)
             self.last_action_type = self.current_action['type']
             self.transition(view.middle)
+        
+        if view.game.state['num'] % 4 == 0: #buggy?
+            for x in view.battle.dmg_queue.iteritems(): print x
+            
         for i in text:
             print i
             view.console.output(i)

@@ -252,6 +252,7 @@ class Game(object):
         
         if num % 4 == 0:
             self.apply_queued()
+            text.append(self.log['applied'][0]['text'])
         else:
             self.state.check(self)
         return self.last_message()
@@ -267,5 +268,6 @@ class Game(object):
         self.state['game_over'] = True
         self.log['states'].append(self.state)
         self.log.close(self.winner, condition)
+        print self.log['condition']
         raise Exception("Game Over")
 
