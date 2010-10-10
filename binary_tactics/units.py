@@ -138,8 +138,14 @@ class Nescient(Unit):
                 
              
         self.calcstats()
-        #TASTY
-        self.weapon = self
+        #these locations need to be set by the battlefield.
+        self.head  = location
+        self.left  = None
+        self.right = None
+        self.tail  = None
+        self.facing = 'North' #ugh.
+        
+        self.weapon = self #hack for attack logic.
         
 class Squad(UserList):
     """contains a number of Units. Takes a list of Units"""

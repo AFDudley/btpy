@@ -1,45 +1,45 @@
 squad:
   data:
   - scient:
-      comp: {Earth: 0, Fire: 127, Ice: 127, Wind: 255}
-      element: Wind
-      location: (None,None)
+      comp: {Earth: 127, Fire: 0, Ice: 255, Wind: 127}
+      element: Ice
       name: 'Wizard #0'
+      location: (7,2)
       weapon:
         wand:
           comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
-          element: Wind
-      weapon_bonus: &id001 {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+          element: Ice
+      weapon_bonus: &id002 {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
   - scient:
-      comp: {Earth: 0, Fire: 127, Ice: 127, Wind: 255}
-      element: Wind
-      location: (None,None)
+      comp: {Earth: 127, Fire: 0, Ice: 255, Wind: 127}
+      element: Ice
+      location: (7,1)
       name: 'Archer #0'
       weapon:
         bow:
           comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
-          element: Wind
-      weapon_bonus: *id001
+          element: Ice
+      weapon_bonus: *id002
   - scient:
-      comp: {Earth: 0, Fire: 127, Ice: 127, Wind: 255}
-      element: Wind
-      location: (None,None)
+      comp: {Earth: 127, Fire: 0, Ice: 255, Wind: 127}
+      element: Ice
+      location: (7,3)
       name: 'Pugilist #0'
       weapon:
         sword:
           comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
-          element: Wind
-      weapon_bonus: *id001
+          element: Ice
+      weapon_bonus: *id002
   - scient:
-      comp: {Earth: 0, Fire: 127, Ice: 127, Wind: 255}
-      element: Wind
-      location: (None,None)
+      comp: {Earth: 127, Fire: 0, Ice: 255, Wind: 127}
+      element: Ice
+      location: (8,2)
       name: 'Theurgist #0'
       weapon:
         glove:
           comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
-          element: Wind
-      weapon_bonus: *id001
+          element: Ice
+      weapon_bonus: *id002
   free_spaces: 4
-  name: Wind Maxes
+  name: Ice Maxes
   value: 2036

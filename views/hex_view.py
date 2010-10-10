@@ -7,17 +7,16 @@
 #
 from math import sin, cos, radians, ceil, floor
 import pygame
-from pygame.locals import *
+from pygame.locals import * #need them all so the game doesn't crash when someone presses the wrong key :D
 #from pygame.locals import K_ESCAPE, KEYDOWN, K_w, K_UP, K_DOWN, K_RETURN
 import binary_tactics.hex_battlefield as battlefield
-import binary_tactics.battle as battle
+import binary_tactics.hex_battle as battle
 
 from binary_tactics.const import E,F,I,W, ELEMENTS, OPP, ORTH
 from binary_tactics.defs import Squad, Loc, noloc
 import binary_tactics.defs as defs
 from binary_tactics.helpers import rand_comp, rand_element
 import stores.yaml_store as yaml_store
-
 
 try:
     import pyconsole
@@ -346,8 +345,8 @@ class MiddlePane(Pane):
     
     def process_return(self):
         if self.text[self.cursor_pos][0] != 'Cancel':
-            type = self.text[self.cursor_pos][0].lower()
-            view.set_action(view.current_action['unit'], type, view.current_action['target'])
+            atype = self.text[self.cursor_pos][0].lower()
+            view.set_action(view.current_action['unit'], atype, view.current_action['target'])
             view.transition(view.bottom)
         else:
             #TODO: keep the privous view.top.cursor_pos; harder than it sounds.
@@ -513,8 +512,8 @@ class BattlePane(Pane, battlefield.Battlefield):
                     self.grid[x][y].contents.draw_text()
                     self.contentimgs.add(self.grid[x][y].contents)
     
-    def move_unit(self, src, dest):
-        battlefield.Battlefield.move_unit(self, src, dest)
+    def move_scient(self, src, dest):
+        battlefield.Battlefield.move_scient(self, src, dest)
         xpos, ypos = dest
         temp = self.grid[xpos][ypos].rect
         topleft = ((temp.x + 8),(temp.y + 8))
@@ -522,8 +521,8 @@ class BattlePane(Pane, battlefield.Battlefield):
         self.set_tile_color(src, grey)
         return True #need this for logging.
     
-    def place_unit(self, unit, dest):
-        battlefield.Battlefield.place_unit(self, unit, dest)
+    def place_scient(self, unit, dest):
+        battlefield.Battlefield.place_scient(self, unit, dest)
         xpos, ypos = dest
         temp = self.grid[xpos][ypos].rect
         topleft = ((temp.x + 8),(temp.y + 8))
@@ -545,11 +544,11 @@ class BattlePane(Pane, battlefield.Battlefield):
         for unit in squad:
             dude = BattlePane.Scient(scient=unit)
             if dude.location == noloc:
-                self.rand_place_unit(dude)
+                self.rand_place_scient(dude)
             else:
                 loc = dude.location
                 dude.location = noloc
-                self.place_unit(dude, loc)
+                self.place_scient(dude, loc)
             out.append(dude)
         return out
 
@@ -728,9 +727,9 @@ class View:
             view.battle.color_tiles(self.targets, white)
         else:
             pass
-    def set_action(self, unit, type, target):
+    def set_action(self, unit, atype, target):
         """sets the properties of the current action"""
-        self.current_action = battle.Action(unit, type, target)
+        self.current_action = battle.Action(unit, atype, target)
     
     def send_action(self):
         """sends the current action to the game"""
@@ -752,8 +751,8 @@ class View:
             self.last_action_type = self.current_action['type']
             self.transition(view.middle)
         
-        if view.game.state['num'] % 4 == 0: #buggy?
-            for x in view.battle.dmg_queue.iteritems(): print x
+        #if view.game.state['num'] % 4 == 0: #buggy?
+           #for x in view.battle.dmg_queue.iteritems(): print x
             
         for i in text:
             print i
@@ -770,6 +769,7 @@ class View:
 ###
 if __name__ == '__main__':
     print "Copyright (c) 2010 A. Frederick Dudley. All rights reserved. PLEASE DO NOT REDISTRIBUTE"
+    print "Player 1 is the attacker."
     pygame.init()
     FONT =  pygame.font.Font('views/DroidSansMono.ttf', 12)
     screen = pygame.display.set_mode([850, 600])
@@ -777,8 +777,8 @@ if __name__ == '__main__':
     grid = BattlePane.Grid(tiles=(16,16), tilesize=35, hexparams=get_hex_params(35))
     view = View(screen, grid)
     view.state = view.get_key()
-    view.game.player1.name = "Player 1"
-    view.game.player2.name = "Player 2"
+    view.game.player1.name = "Attacker"
+    view.game.player2.name = "Defender"
     view.console.active = 0
     paneimgs = pygame.sprite.RenderUpdates()
     for pane in (view.top, view.middle, view.bottom, view.battle):

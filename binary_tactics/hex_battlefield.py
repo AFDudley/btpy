@@ -5,7 +5,7 @@ from math import ceil
 from const import E, F, I, W
 from defs import Loc, noloc
 from stone import Stone
-from weapons import Sword, Bow, Wand, Glove
+from units import Scient, Nescient
 
 class Tile(Stone):
     """Tiles contain units or stones and are used to make battlefields."""
@@ -158,8 +158,18 @@ class Battlefield(object):
         group = set()
         for x in tiles: group |= x
         return group
-    
-    def move_unit(self, src, dest):
+    def place_object(self, obj, dest):
+        """places an object on a tile."""
+        if isinstance(obj, Scient):
+            return self.place_scient(obj, dest)
+        elif isinstance(obj, Nescient):
+            return self.place_nescient(obj, dest)
+        elif isinstance(obj, Stone):
+            pass
+        else:
+            raise TypeError("obj is not a game item.")
+            
+    def move_scient(self, src, dest):
         """move unit from src tile to dest tile"""
         if self.on_grid(src):
             xsrc, ysrc = src
@@ -175,7 +185,6 @@ class Battlefield(object):
             if not self.grid[xdest][ydest].contents:
                 move = self.grid[xsrc][ysrc].contents.move
                 if dest in self.make_range(src, move):
-                #if abs(xsrc-xdest) + abs(ysrc-ydest) <= move:
                     self.grid[xdest][ydest].contents = \
                     self.grid[xsrc][ysrc].contents
                     self.grid[xdest][ydest].contents.location = Loc(xdest, ydest)
@@ -188,8 +197,8 @@ class Battlefield(object):
         else:
             raise Exception("There is nothing at %s" %str(src))
     
-    def place_unit(self, unit, tile):
-        """Places unit at tile, if already on grid, move_unit is called"""
+    def place_scient(self, unit, tile):
+        """Places unit at tile, if already on grid, move_scient is called"""
         if self.on_grid(tile):
             xpos, ypos = tile
         else:
@@ -208,7 +217,7 @@ class Battlefield(object):
             elif self.grid[xpos][ypos].contents != None:
                 raise Exception("(%s, %s) is not empty" %(xpos, ypos))
         else:
-            return self.move_unit(unit.location, tile)
+            return self.move_scient(unit.location, tile)
     
     def find_units(self):
         """returns a list of units in grid."""
@@ -219,7 +228,7 @@ class Battlefield(object):
                     lst.append((x, y)) #maybe this should be a loc?
         return lst
     
-    def rand_place_unit(self, unit):
+    def rand_place_scient(self, unit):
         """Randomly place a unit on the grid."""
         #readable?
         inset = 0 #place units in a smaller area, for testing.
@@ -232,7 +241,7 @@ class Battlefield(object):
         else:
             while unit.location == noloc:
                 try:
-                    self.place_unit(unit, Randpos())
+                    self.place_scient(unit, Randpos())
                     break
                 except Exception:
                     pass
@@ -240,7 +249,7 @@ class Battlefield(object):
     def rand_place_squad(self, squad):
         """place the units in a squad randomly on the battlefield"""
         for unit in range(len(squad)):
-            self.rand_place_unit(squad[unit])
+            self.rand_place_scient(squad[unit])
     
     def flush_units(self):
         """
@@ -422,12 +431,13 @@ class Battlefield(object):
             defdr_HPs = []
             if atkr.weapon.type in self.DOT:
                 for i in dmg:
-                    if i[0].hp > 0: #can be removed?
-                        defdr_HPs.append([i[0], self.apply_dmg(i[0], i[1])])
+                    if i[0].hp > 0:
                         self.dmg_queue[defdr].append([i[1], (atkr.weapon.time - 1)])
+                        defdr_HPs.append([i[0], self.apply_dmg(i[0], i[1])])
+            
             else:
                 for i in dmg:
-                    if i[0].hp > 0: #can be removed?
+                    if i[0].hp > 0:
                         defdr_HPs.append([i[0], self.apply_dmg(i[0], i[1])])
             return defdr_HPs
         else: #no damage
