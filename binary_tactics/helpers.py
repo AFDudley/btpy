@@ -2,7 +2,8 @@
 import random
 #import const   
 from const import ELEMENTS, E, F, W, I, ORTH, KINDS, OPP, COMP
-from defs import Scient, Squad, Stone
+from stone import Stone
+from units import Scient, Nescient, Squad
 
 def t2c(tup):
     """Converts a tuple to a comp"""
@@ -73,12 +74,19 @@ def rand_comp(suit=None, kind=None):
                 random.randint(1, 255)
             return comp
 
-def rand_unit(suit=None): #may change to rand_unit(suit, kind)
+def rand_unit(suit=None, kind='Scient'): #may change to rand_unit(suit, kind)
     """Returns a random Scient of suit. Random suit used if none given."""
+
     if not suit in ELEMENTS:
         suit = rand_element()
-    return Scient(suit, rand_comp(suit, 'Scient'))
-
+        comp = rand_comp(suit, kind)
+    else:
+        comp = rand_comp(suit, kind)
+    if kind == 'Scient':
+        return Scient(suit, comp)
+    else:
+        return Nescient(suit, comp)
+        
 def rand_squad(suit=None):
     """Returns a Squad of five random Scients of suit. Random suit used
        if none given."""

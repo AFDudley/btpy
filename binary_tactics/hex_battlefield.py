@@ -43,7 +43,7 @@ class Grid(Stone):
 
 class Battlefield(object):
     """contains grid, units and the logic for damage and movement."""
-    def __init__(self, grid=None, squad1=None, squad2=None):
+    def __init__(self, grid=Grid(), squad1=None, squad2=None):
         #grid is a tuple of tuples containing tiles
         self.game_id = 0 #?
         self.grid = grid
@@ -105,6 +105,107 @@ class Battlefield(object):
                 out.append(loc)
         return set(out)
     
+    def make_body(self, right, direction):
+        """makes a nescient body facing direction from right loc"""
+        rx, ry = right
+        if ry & 1: 
+            facing = {'North': {'head':(rx, ry - 1), 'left':(rx - 1, ry), 'tail':(rx, ry + 1)},
+                      'South': {'head':(rx + 1, ry + 1), 'left':(rx + 1, ry), 'tail':(rx + 1, ry - 1)},
+                      'Northeast': {'head': (rx + 1, ry - 1), 'left':(rx, ry - 1), 'tail':(rx - 1, ry)}, 
+                      'Southeast': {'head': (rx + 1, ry), 'left':(rx + 1, ry - 1), 'tail':(rx, ry - 1)}, 
+                      'Southwest': {'head':(rx, ry + 1) , 'left':(rx + 1, ry + 1), 'tail':(rx + 1, ry)},
+                      'Northwest': {'head': (rx - 1, ry), 'left':(rx, ry + 1), 'tail':(rx + 1, ry + 1)}}
+        else:
+            facing = {'North': {'head':(rx - 1, ry - 1), 'left':(rx - 1, ry), 'tail':(rx - 1, ry + 1)},
+                      'South': {'head':(rx, ry + 1), 'left':(rx + 1, ry), 'tail':(rx, ry - 1)},
+                      'Northeast': {'head': (rx, ry - 1), 'left':(rx - 1, ry - 1), 'tail':(rx - 1, ry)}, 
+                      'Southeast': {'head': (rx + 1, ry), 'left':(rx, ry - 1), 'tail':(rx - 1, ry - 1)}, 
+                      'Southwest': {'head': (rx - 1, ry + 1), 'left':(rx, ry + 1), 'tail':(rx + 1, ry)},
+                      'Northwest': {'head': (rx - 1, ry), 'left':(rx - 1, ry + 1), 'tail':(rx, ry + 1)}}
+        
+        new_body = facing[direction]
+        new_body.update({'right':(rx, ry)})
+        return new_body
+    
+    def body_on_grid(self, body):
+        """checks if a body is on_grid"""
+        body = body
+        for part in body:
+            if not self.on_grid(body[part]):
+                return False
+            else: return True
+            
+    def can_move_nescient(self, body, nescient):
+        """checks if nescient can move to body."""       
+        for part in body:
+            xdestp, ydestp = body[part]
+            if self.grid[xdestp][ydestp].contents != None:
+                if self.grid[xdestp][ydestp].contents != nescient:
+                    if type(self.grid[xdestp][ydestp].contents) != type(Stone()):
+                        return False
+                    else: pass
+                else: pass
+            else: pass
+        return True
+
+    def move_nescient(self, new_body, nescient):
+        """places new_body on grid, place body in nescient."""
+        new_body = new_body
+        for part in new_body:
+            xdestp, ydestp = new_body[part]
+            if self.grid[xdestp][ydestp].contents != None:
+                if self.grid[xdestp][ydestp].contents != nescient:
+                    if type(self.grid[xdestp][ydestp].contents) != type(Stone()):
+                        raise Exception("Not enough space to move Nescient.")
+                    else:
+                        self.grid[xdestp][ydestp].contents = nescient
+                else:
+                    pass
+            else:
+                self.grid[xdestp][ydestp].contents = nescient
+        nescient.body = new_body
+        nescient.location = nescient.body['right']
+        return True
+               
+    def place_nescient(self, nescient, dest):
+        """place a nescient so that its right is at dest."""
+        facing = nescient.facing
+        if facing == None:
+            facing = 'North'
+        xdest, ydest = dest = dest
+        if self.on_grid(dest): #is dest on grid?
+            new_body = self.make_body(dest, facing)
+            if self.body_on_grid(new_body):
+                nescient.facing = facing #ick.
+                return self.move_nescient(new_body, nescient)
+            else:
+                raise Exception("A body part is not on grid.")
+        else:
+            raise Exception("Destination %s is not on grid" %dest)
+    
+    def get_rotations(self, nescient):
+        """returns list of directions nescient can rotate."""
+        drctns = []
+        sntcrd = dict(zip(self.direction.values(), self.direction.keys()))
+        nbdr = nescient.body['right']
+        for direction in sntcrd:
+            if self.can_move_nescient(self.make_body(nbdr, direction), nescient):
+                drctns.append(direction) #might want to return body as well.
+        return drctns
+        
+    def rotate(self, nescient, direction):
+        """rotates Nescient so that head is facing direction"""
+        nes = nescient
+        new_body = self.make_body(nes.body['right'], direction)
+        if self.body_on_grid(new_body):
+            if self.move_nescient(new_body, nescient):
+                nescient.facing = direction
+                return True
+            else:
+                raise Exception("Move Failed.")
+        else:
+            raise Exception('nescient cannot rotate to that direction')
+            
     def make_pattern(self, location, distance, pointing):
         """generates a pattern based on an origin, distance, and
         direction. Returns a set of coords"""
@@ -146,7 +247,6 @@ class Battlefield(object):
         """generates a list of tiles within distance of location."""
         location = location
         dist = distance
-        
         tiles = []
         #so far from optimal
         tiles.append(self.get_adjacent(location))
@@ -158,10 +258,30 @@ class Battlefield(object):
         group = set()
         for x in tiles: group |= x
         return group
+    
     def place_object(self, obj, dest):
         """places an object on a tile."""
+        if self.on_grid(dest):
+            xpos, ypos = dest
+        else:
+            raise Exception("Tile %s is off grid" %dest)
+            
         if isinstance(obj, Scient):
-            return self.place_scient(obj, dest)
+            if obj.location == noloc:
+                if self.grid[xpos][ypos].contents == None:
+                    self.grid[xpos][ypos].contents = obj
+                    obj.location = Loc(xpos, ypos)
+                    self.dmg_queue[obj] = [] #append unit to dmg_queue
+                    return True
+                    
+                elif unit.location == Loc(xpos, ypos):
+                    raise Exception("This unit is already on (%s,%s)" %(xpos, ypos))
+                    
+                elif self.grid[xpos][ypos].contents != None:
+                    raise Exception("(%s, %s) is not empty" %(xpos, ypos))
+            else:
+                return self.move_scient(obj.location, dest)
+            
         elif isinstance(obj, Nescient):
             return self.place_nescient(obj, dest)
         elif isinstance(obj, Stone):
@@ -266,7 +386,6 @@ class Battlefield(object):
                     num += 1
         return num
     
-    
     #Attack/Damage stuff
     def dmg(self, atkr, defdr):
         """Calculates the damage of an attack"""
@@ -353,11 +472,15 @@ class Battlefield(object):
                         new_pat.append(i)
                 return new_pat
     
+    def calc_ranged(self, atkr, target):
+        """UGH"""
+        #use something like get_rotations to target 4 tiles at a time.
+        #maybe it should magically hit 4 contigious tiles?
+        pass
     def calc_damage(self, atkr, defdr):
         """Calcuate damage delt to defdr from atkr. Also calculates the damage of
         all units within a blast range. if weapon has a AOE list of
         [[target, dmg]] is returned. otherwise just (target, dmg) is returned"""
-        #Broken: dmg_queue is applied at the wrong time in battle.py
         weapon = atkr.weapon
         aloc = atkr.location
         dloc = defdr.location
@@ -434,7 +557,6 @@ class Battlefield(object):
                     if i[0].hp > 0:
                         self.dmg_queue[defdr].append([i[1], (atkr.weapon.time - 1)])
                         defdr_HPs.append([i[0], self.apply_dmg(i[0], i[1])])
-            
             else:
                 for i in dmg:
                     if i[0].hp > 0:

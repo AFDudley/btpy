@@ -15,6 +15,7 @@ import binary_tactics.hex_battle as battle
 from binary_tactics.const import E,F,I,W, ELEMENTS, OPP, ORTH
 from binary_tactics.defs import Squad, Loc, noloc
 import binary_tactics.defs as defs
+from binary_tactics.units import Scient, Nescient
 from binary_tactics.helpers import rand_comp, rand_element
 import stores.yaml_store as yaml_store
 
@@ -67,7 +68,20 @@ def get_hex_params(recw):
     rech = s + (2*hexh)
     size = [roof(recw), roof(rech)]
     return r,s,hexh,rech,size
-    
+
+def make_hex(hexparams, colr):
+    """returns a Surface containing a hextile"""
+    r,s,hexh,rech,size = hexparams
+    recw = 2 * r
+    pl = [(0, hexh), (r,0), (recw,hexh), (recw, rech-hexh), (.5*recw, rech), (0, rech - hexh)]
+    pl2 = [(1, 1+hexh), (.5*recw,2), (recw-2,hexh+1), (recw-2, rech-hexh-1), (.5*recw, rech-2), (2, rech - hexh-1)]
+    hexa = pygame.Surface(size)
+    hexa.fill(black)
+    hexa.set_colorkey(black)
+    pygame.draw.polygon(hexa, darkg, pl,)
+    pygame.draw.polygon(hexa, colr, pl2,)
+    return hexa
+        
 def rand_unit(suit=None): #may change to rand_unit(suit, kind)
     """Returns a random Scient of suit. Random suit used if none given."""
     if not suit in ELEMENTS:
@@ -457,13 +471,11 @@ class BattlePane(Pane, battlefield.Battlefield):
         self.contentimgs = pygame.sprite.RenderUpdates()
         self.player1 = battle.Player()
         self.player2 = battle.Player()
-        self.player1.squad_list = [self.trans_squad(yaml_store.load('yaml/squad1.yaml'))]
-        self.player2.squad_list = [self.trans_squad(yaml_store.load('yaml/squad2.yaml'))]
+        self.player1.squads = [self.trans_squad(yaml_store.load('yaml/squad1.yaml'))]
+        self.player2.squads = [self.trans_squad(yaml_store.load('yaml/squad2.yaml'))]
         
-        self.squad1 = self.player1.squad_list[0]
-        self.squad2 = self.player2.squad_list[0]
-        #self.rand_place_squad(self.squad1)
-        #self.rand_place_squad(self.squad2)
+        self.squad1 = self.player1.squads[0]
+        self.squad2 = self.player2.squads[0]
         
         self.squad1.name = 'p1'
         self.squad1.num  = '1'
@@ -475,9 +487,6 @@ class BattlePane(Pane, battlefield.Battlefield):
         for u in self.units:
             u.draw_text()
         self.get_contents_image()
-
-
-
     
     def update(self):
         Pane.update(self)
@@ -503,32 +512,34 @@ class BattlePane(Pane, battlefield.Battlefield):
             self.set_tile_color(i, color)
     
     def get_contents_image(self):
-        for x in range(self.grid.x):
-            for y in range(self.grid.y):
+        for x in xrange(self.grid.x):
+            for y in xrange(self.grid.y):
                 if self.grid[x][y].contents:
-                    topleft = ((self.grid[x][y].rect.x), \
-                               (self.grid[x][y].rect.y))
-                    self.grid[x][y].contents.rect.topleft = topleft
+                    self.grid[x][y].contents.rect.topleft = \
+                    self.grid[x][y].rect.x, self.grid[x][y].rect.y
                     self.grid[x][y].contents.draw_text()
                     self.contentimgs.add(self.grid[x][y].contents)
     
     def move_scient(self, src, dest):
         battlefield.Battlefield.move_scient(self, src, dest)
         xpos, ypos = dest
-        temp = self.grid[xpos][ypos].rect
-        topleft = ((temp.x + 8),(temp.y + 8))
-        self.grid[xpos][ypos].contents.rect.topleft = topleft
+        self.grid[xpos][ypos].contents.rect.topleft = \
+        self.grid[xpos][ypos].rect.x, self.grid[xpos][ypos].rect.y
         self.set_tile_color(src, grey)
         return True #need this for logging.
     
-    def place_scient(self, unit, dest):
-        battlefield.Battlefield.place_scient(self, unit, dest)
+    def place_object(self, unit, dest):
+        battlefield.Battlefield.place_object(self, unit, dest)
         xpos, ypos = dest
-        temp = self.grid[xpos][ypos].rect
-        topleft = ((temp.x + 8),(temp.y + 8))
-        self.grid[xpos][ypos].contents.rect.topleft = topleft
-        self.contentimgs.add(self.grid[xpos][ypos].contents)
-    
+        self.grid[xpos][ypos].contents.rect.topleft = \
+        self.grid[xpos][ypos].rect.x, self.grid[xpos][ypos].rect.y
+        try:
+            for part in self.grid[xpos][ypos].contents.body.values():
+                print part[0]
+                self.contentimgs.add(self.grid[part[0]][part[1]].contents)
+        except:
+            self.contentimgs.add(self.grid[xpos][ypos].contents)
+                
     def bury(self, unit):
         unit.remove(unit.groups())
         battlefield.Battlefield.bury(self, unit)
@@ -544,26 +555,26 @@ class BattlePane(Pane, battlefield.Battlefield):
         for unit in squad:
             dude = BattlePane.Scient(scient=unit)
             if dude.location == noloc:
-                self.rand_place_scient(dude)
+                self.rand_place_object(dude)
             else:
                 loc = dude.location
                 dude.location = noloc
-                self.place_scient(dude, loc)
+                self.place_object(dude, loc)
             out.append(dude)
         return out
 
-    class Scient(pygame.sprite.Sprite, defs.Scient):
+    class Scient(pygame.sprite.Sprite, Scient):
         """tricky"""
         def __init__(self, element=None, comp=None, scient=None, hexparams=get_hex_params(35)):
             if scient != None:
-                defs.Scient.__init__(self, scient.element, scient.comp, scient.name,
+                Scient.__init__(self, scient.element, scient.comp, scient.name,
                                 scient.weapon, scient.weapon_bonus, scient.location)
             else:
                 if element == None:
                     element = rand_element()
                 if comp == None:
                     comp = rand_comp(suit=element, kind='Scient')
-                defs.Scient.__init__(self, comp=comp, element=element)
+                Scient.__init__(self, comp=comp, element=element)
             pygame.sprite.Sprite.__init__(self)
             self.hexparams = hexparams
             r,s,hexh,rech,size = self.hexparams
@@ -571,8 +582,6 @@ class BattlePane(Pane, battlefield.Battlefield):
             self.image = pygame.Surface(size)
             self.image.fill(COLORS[self.element])
             self.image.fill(black)
-            #self.image.fill([0,255,255])
-            #self.rect = self.image.get_rect()
             if self.weapon.type == 'Sword':
                 x = r/2
                 y = hexh
@@ -588,7 +597,7 @@ class BattlePane(Pane, battlefield.Battlefield):
 
         
         def __repr__(self):
-            return defs.Scient.__repr__(self)
+            return Scient.__repr__(self)
         
         def draw_text(self):
             """a crude, crude hack."""
@@ -598,6 +607,36 @@ class BattlePane(Pane, battlefield.Battlefield):
             COLORS[self.element])
             self.image.blit(textrect, (self.size[0]/2 - 4, self.size[1]/3))
     
+    class Nescient(pygame.sprite.Sprite, Nescient):
+        """trickier"""
+        def __init__(self, element=None, comp=None, nescient=None, hexparams=get_hex_params(35)):
+            if nescient != None:
+                Nescient.__init__(self, nescient.element, nescient.comp, nescient.name,
+                                nescient.weapon, nescient.weapon_bonus, nescient.location)
+            else:
+                if element == None:
+                    element = rand_element()
+                if comp == None:
+                    comp = rand_comp(suit=element, kind='Nescient')
+                Nescient.__init__(self, comp=comp, element=element)
+            pygame.sprite.Sprite.__init__(self)
+            self.hexparams = hexparams
+            self.image = make_hex(self.hexparams, COLORS[self.element])
+            self.rect = self.image.get_rect()
+            self.image.set_colorkey(black)
+            self.text = []
+
+        def __repr__(self):
+            return Nescient.__repr__(self)
+
+        def draw_text(self):
+            """a crude, crude hack."""
+            self.font = FONT
+            self.font_color = [0, 0, 0]
+            textrect = self.font.render(self.squad.num, True, self.font_color, \
+            COLORS[self.element])
+            self.image.blit(textrect, (self.size[0]/2 - 4, self.size[1]/3))
+
     class Tile(pygame.sprite.Sprite, battlefield.Tile): 
         """it's a battlefield tile and a pygame sprite, yo"""
         def make_hex(self, hexparams, colr):
@@ -617,12 +656,12 @@ class BattlePane(Pane, battlefield.Battlefield):
             pygame.sprite.Sprite.__init__(self)
             battlefield.Tile.__init__(self)
             self.hexparams = hexparams
-            self.image = self.make_hex(self.hexparams, colr)
+            self.image = make_hex(self.hexparams, colr)
             self.rect = self.image.get_rect()
             self.rect.topleft = topleft
         
         def set_color(self, color):
-            self.image = self.make_hex(self.hexparams, color)
+            self.image = make_hex(self.hexparams, color)
             #self.image.fill(color)
         
 
@@ -783,7 +822,16 @@ if __name__ == '__main__':
     paneimgs = pygame.sprite.RenderUpdates()
     for pane in (view.top, view.middle, view.bottom, view.battle):
         paneimgs.add(pane)
-    
+    ############
+    def bye():
+        view.clean()
+        view.battle.flush_units()
+    right = (7,6)
+    body = view.battle.make_body(right, 'North')
+    rotate = view.battle.rotate
+    draw   = view.battle.set_tile_color
+    n = BattlePane.Nescient(E, (4,4,0,0))
+    ############### 
     while pygame.key.get_pressed()[K_ESCAPE] == False:
         pygame.event.pump()
         screen.fill([0,0,0])
@@ -791,7 +839,6 @@ if __name__ == '__main__':
         paneimgs.update()
         paneimgs.draw(screen)
         view.console.draw()
-        
         
         if view.console.active == 0:
             for event in pygame.event.get():

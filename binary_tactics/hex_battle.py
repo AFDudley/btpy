@@ -19,40 +19,11 @@ from datetime import datetime
 from collections import namedtuple
 from binary_tactics.battlefield import  Battlefield, Grid
 from binary_tactics.helpers import rand_squad
-from binary_tactics import defs 
-
-from stores.store import get_persisted
+from binary_tactics.units import Unit
+from binary_tactics.player import Player
 
 def now():
     return datetime.utcnow()
-
-class Player(dict):
-    """object that contains player information (insecure)"""
-    #just basic battlefield stuff, no world stuff.
-    def __init__(self, name=None, squad_list=[]):
-        dict.__init__(self, name=name, squad_list=squad_list)
-    
-    #laze beams:
-    @apply
-    def name():
-        def fget(self):
-            return self['name']
-        def fset(self, value):
-            self['name'] = value
-        return property(**locals())
-    
-    @apply
-    def squad_list():
-        def fget(self):
-            return self['squad_list']
-        def fset(self, value):
-            self['squad_list'] = value
-        return property(**locals())
-
-    #ya see... what i'm going to do is take this here shoehorn...
-    @property
-    def __dict__(self):
-        return self
 
 class Action(dict):
     #'when' needs more thought.
@@ -141,7 +112,7 @@ class State(dict):
                 self['hp_count'] = 0
 
             #game over check:
-            if self['hp_count'] >= 3:
+            if self['hp_count'] == 4:
                 game.winner = game.player2
                 game.end("Player1 failed to deal sufficent damage.")
             else:
@@ -180,12 +151,12 @@ class Game(object):
         self.battlefield = battlefield
         #player/battlefield logic for testing
         if self.player1 == None:
-            self.player1 = Player('p1', squad_list=[rand_squad()])
+            self.player1 = Player('p1', squads=[rand_squad()])
         if self.player2 == None:
-            self.player2 = Player('p2', squad_list=[rand_squad()])
+            self.player2 = Player('p2', squads=[rand_squad()])
         if self.battlefield == None:
-            self.battlefield = Battlefield(grid, self.player1.squad_list[0],
-                                           self.player2.squad_list[0])        
+            self.battlefield = Battlefield(grid, self.player1.squads[0],
+                                           self.player2.squads[0])        
         self.state = State()
         self.players = (self.player1, self.player2)
         self.map = self.unit_map() 
@@ -208,7 +179,7 @@ class Game(object):
     def map_text(self, text):
         if text != None:
             for t in text:
-                if isinstance(t[0], defs.Unit):
+                if isinstance(t[0], Unit):
                     t[0] = str(id(t[0]))
             return text
         

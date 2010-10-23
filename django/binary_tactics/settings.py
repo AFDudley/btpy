@@ -2,7 +2,7 @@
 import os
 import django
 from mongoengine import connect
-connect(db='binary_tactics', host='173.203.203.77', username='rix', password='suckthis')
+connect(db='binary_tactics', host='173.203.203.77', username='rix', password='fhpxguvf'.decode('rot13'))
 DJANGO_ROOT = os.path.dirname(os.path.realpath(django.__file__))
 SITE_ROOT = os.path.dirname(os.path.realpath(__file__))
 

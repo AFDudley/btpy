@@ -19,6 +19,8 @@ class Unit(Stone):
         self.name = name
         self.location = location
         self.val = self.value()
+        def __repr__(self):
+            return self.name
 
     def calcstats(self):
         self.p    = (2*(self.comp[F] + self.comp[E]) +
@@ -44,22 +46,6 @@ class Scient(Unit):
       F: fire, I: ice, W: wind}
     """
     
-    def __init__(self, element, comp, name=None, weapon=None,
-                 weapon_bonus=dict(Stone()), location=None):
-        for orth in ORTH[element]:
-            if comp[orth] > comp[element] / 2:
-                raise ValueError("Scients' orthogonal elements cannot be \
-                                  more than half the primary element's value.")
-        Unit.__init__(self, element, comp, name, location)
-        self.move = 4
-        self.weapon = weapon
-        self.weapon_bonus = weapon_bonus
-        self.equip_limit = {E:1, F:1 ,I:1 ,W:1}
-        for i in self.equip_limit:
-            self.equip_limit[i] = self.equip_limit[i] + self.comp[i] \
-            + self.weapon_bonus[i]
-        self.calcstats()
-        #self.equip(self.weapon)
     def equip(self, weapon): #TODO move to battlefield
         """
         A function that automagically equips items based on element.
@@ -83,7 +69,26 @@ class Scient(Unit):
                 self.weapon = weapon
             '''
             self.weapon = weapon
-            
+    
+    def __init__(self, element, comp, name=None, weapon=None,
+                 weapon_bonus=dict(Stone()), location=None):
+        for orth in ORTH[element]:
+            if comp[orth] > comp[element] / 2:
+                raise ValueError("Scients' orthogonal elements cannot be \
+                                  more than half the primary element's value.")
+        Unit.__init__(self, element, comp, name, location)
+        self.move = 4
+        self.weapon = weapon
+        self.weapon_bonus = weapon_bonus
+        self.equip_limit = {E:1, F:1 ,I:1 ,W:1}
+        for i in self.equip_limit:
+            self.equip_limit[i] = self.equip_limit[i] + self.comp[i] \
+            + self.weapon_bonus[i]
+        self.calcstats()
+        
+        #equiping weapons should be done someplace else.
+        #self.equip(self.weapon)
+
 class Nescient(Unit):
     """A non-playable unit."""
     def calcstats(self):
@@ -93,7 +98,9 @@ class Nescient(Unit):
         self.hp = self.hp * 2
     
     def __init__(self, element, comp, name=None, weapon=None,
-                 location=None):
+                 location=None, facing=None, 
+                 body={'head': None, 'left':None, 'right':None, 'tail':None}):
+        comp = Stone(comp)
         for orth in ORTH[element]:
             if comp[orth] != 0:
                 if comp[OPP[orth]] != 0:
@@ -139,12 +146,9 @@ class Nescient(Unit):
              
         self.calcstats()
         #these locations need to be set by the battlefield.
-        self.head  = location
-        self.left  = None
-        self.right = None
-        self.tail  = None
-        self.facing = 'North' #ugh.
-        
+        self.location  = location
+        self.facing = facing
+        self.body = body
         self.weapon = self #hack for attack logic.
         
 class Squad(UserList):
@@ -175,6 +179,8 @@ class Squad(UserList):
                 self.append(x)
         else:
             self.append(data)
+        self.data = self.datadata
+        del self.data
             
     def __setitem__(self, key, val):
         #need to change how value of a squad is calculated.

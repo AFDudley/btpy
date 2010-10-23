@@ -1,27 +1,45 @@
 from binary_tactics.battlefield import Tile, Grid
-from binary_tactics.battle import player
+from binary_tactics.player import Player
+
+from stores.mongo_store import fintinsert, odict, get_dict
+from pymongo.connection import Connection
+from pymongo.database import Database
+from pymongo.objectid import ObjectId
+#database testing stuff:
+
+def make_db(host='bt.hipeland.org', username='rix',
+            password='fhpxguvf'.decode('rot13')):
+    if not db:
+        try:
+            global db = Database(Connection(host), 'binary_tactics')
+            db.authenticate(username, password)
+            return db
+        except:
+            raise
+    else:
+        return db
+exists = {'$exists': True}
 
 class World(object):
     """Object that contains all the fields within a world.""" 
-    def __init__(self, name, x=16, y=16):
-        self.name = name
-        self.x, self.y = self.size = (x, y)
-        self.fields = {}
-        for i in range(x):
-            bar = {}
-            for j in range(y):
-                bar.update({j: Grid()})
-            self.fields.update({i: bar})
+    #should map to mongodb
+    def __init__(self):
+        self.db = make_db()
+        self.grids = self.db.binary_tactics.find({'grid': exists})
+        self.players = self.db.binary_tactics.find({'player': exists})
+        #logs should be in their own DB...
+        self.logs = self.db.binary_tactics.find({'log': exists})
+        
+    def battles(self):
+        """Returns list of active battles"""
+        pass
+        
+    def get_field(self, x, y):
+        """returns datafor field (x, y)"""
+        pass
+        
+    def get_players(self):
+        """returns a list of all players in database."""
+        pass
 
-    def __iter__(self):
-        return iter(self.fields)
-    def __contains__(self, value):
-        return value in self.fields
-    def __getitem__(self,key):
-        return self.fields[key]
-    def __setitem__(self,key,value):
-        self.fields[key] = value
-    def __len__(self):
-        return len(self.fields)
-    def __repr__(self):
-        return dict.__repr__(self.fields)        
+

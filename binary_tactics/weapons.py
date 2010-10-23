@@ -1,14 +1,11 @@
 from stone import Stone
 class Weapon(Stone):
     """Scients Equip weapons to do damage"""
-    def __init__(self, element, comp, type=None):
-        #this should return the correct weapon based on type. (?)
+    def __init__(self, element, comp, wep_type):
+        #this should return the correct weapon based on . (?)
         Stone.__init__(self, comp)
-        self.type ='None'
+        self.type = wep_type
         self.element = element
-    
-    def __repr__(self):
-        return dict.__repr__(self.__dict__)
     
     def map_to_grid(self, origin, grid_size):
         #TODO move to battlefield
@@ -73,21 +70,18 @@ class Weapon(Stone):
 class Sword(Weapon):
     """Close range physial weapon"""
     def __init__(self, element, comp):
-        Weapon.__init__(self, element, comp)
-        self.type = 'Sword'
+        Weapon.__init__(self, element, comp, 'Sword')
         self.kind = 'p'
 class Bow(Weapon):
     """Long range physical weapon"""
     def __init__(self, element, comp):
-        Weapon.__init__(self, element, comp)
-        self.type = 'Bow'
+        Weapon.__init__(self, element, comp, 'Bow')
         self.kind = 'p'
 
 class Wand(Weapon):
     """Long range magical weapon"""
     def __init__(self, element, comp):
-        Weapon.__init__(self, element, comp)
-        self.type = 'Wand'
+        Weapon.__init__(self, element, comp, 'Wand')
         self.kind = 'm'
     
     def make_pattern(self, origin, distance, pointing):
@@ -122,8 +116,7 @@ class Wand(Weapon):
 class Glove(Weapon):
     """Close range magical weapon"""
     def __init__(self, element, comp):
-        Weapon.__init__(self, element, comp)
-        self.type = 'Glove'
+        Weapon.__init__(self, element, comp, 'Glove')
         self.kind = 'm'
         self.time = 3
 
