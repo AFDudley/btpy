@@ -5,7 +5,7 @@ from math import ceil
 from const import E, F, I, W
 from defs import Loc, noloc
 from stone import Stone
-from units import Scient, Nescient
+from units import Scient, Nescient, Part
 
 class Tile(Stone):
     """Tiles contain units or stones and are used to make battlefields."""
@@ -105,6 +105,11 @@ class Battlefield(object):
                 out.append(loc)
         return set(out)
     
+    def make_parts(self, part_locs):
+        new_body = {}
+        for part in part_locs:
+            new_body[part] = Part(None, part_locs[part])
+        return new_body
     def make_body(self, right, direction):
         """makes a nescient body facing direction from right loc"""
         rx, ry = right
@@ -123,24 +128,24 @@ class Battlefield(object):
                       'Southwest': {'head': (rx - 1, ry + 1), 'left':(rx, ry + 1), 'tail':(rx + 1, ry)},
                       'Northwest': {'head': (rx - 1, ry), 'left':(rx - 1, ry + 1), 'tail':(rx, ry + 1)}}
         
-        new_body = facing[direction]
-        new_body.update({'right':(rx, ry)})
-        return new_body
+        part_locs = facing[direction]
+        part_locs.update({'right':(rx, ry)})
+        return self.make_parts(part_locs)
     
     def body_on_grid(self, body):
         """checks if a body is on_grid"""
         body = body
         for part in body:
-            if not self.on_grid(body[part]):
+            if not self.on_grid(body[part].location):
                 return False
             else: return True
-            
+        
     def can_move_nescient(self, body, nescient):
         """checks if nescient can move to body."""       
         for part in body:
-            xdestp, ydestp = body[part]
+            xdestp, ydestp = body[part].location
             if self.grid[xdestp][ydestp].contents != None:
-                if self.grid[xdestp][ydestp].contents != nescient:
+                if self.grid[xdestp][ydestp].contents not in nescient.body.values():
                     if type(self.grid[xdestp][ydestp].contents) != type(Stone()):
                         return False
                     else: pass
@@ -152,19 +157,19 @@ class Battlefield(object):
         """places new_body on grid, place body in nescient."""
         new_body = new_body
         for part in new_body:
-            xdestp, ydestp = new_body[part]
+            xdestp, ydestp = new_body[part].location
             if self.grid[xdestp][ydestp].contents != None:
-                if self.grid[xdestp][ydestp].contents != nescient:
+                if self.grid[xdestp][ydestp].contents not in nescient.body.values():
                     if type(self.grid[xdestp][ydestp].contents) != type(Stone()):
                         raise Exception("Not enough space to move Nescient.")
                     else:
-                        self.grid[xdestp][ydestp].contents = nescient
+                        self.grid[xdestp][ydestp].contents = new_body[part]
                 else:
                     pass
             else:
-                self.grid[xdestp][ydestp].contents = nescient
-        nescient.body = new_body
-        nescient.location = nescient.body['right']
+                self.grid[xdestp][ydestp].contents = new_body[part]
+        nescient.take_body(new_body)
+        nescient.location = nescient.body['right'].location
         return True
                
     def place_nescient(self, nescient, dest):
@@ -187,7 +192,7 @@ class Battlefield(object):
         """returns list of directions nescient can rotate."""
         drctns = []
         sntcrd = dict(zip(self.direction.values(), self.direction.keys()))
-        nbdr = nescient.body['right']
+        nbdr = nescient.body['right'].location
         for direction in sntcrd:
             if self.can_move_nescient(self.make_body(nbdr, direction), nescient):
                 drctns.append(direction) #might want to return body as well.
@@ -196,7 +201,7 @@ class Battlefield(object):
     def rotate(self, nescient, direction):
         """rotates Nescient so that head is facing direction"""
         nes = nescient
-        new_body = self.make_body(nes.body['right'], direction)
+        new_body = self.make_body(nes.body['right'].location, direction)
         if self.body_on_grid(new_body):
             if self.move_nescient(new_body, nescient):
                 nescient.facing = direction
@@ -396,7 +401,7 @@ class Battlefield(object):
                 for element in damage_dealt:
                     dmg = (atkr.p + atkr.patk + (2 * atkr.comp[element]) +
                     atkr.weapon.comp[element]) - (defdr.p + defdr.pdef +
-                    (2 * defdr.comp[element]) + self.grid[dloc.x][dloc.y].comp[element])
+                    (2 * defdr.comp[element]) + self.grid[dloc[0]][dloc[1]].comp[element])
                     dmg = max(dmg, 0)
                     damage_dealt[element] = dmg
                 damage = sum(damage_dealt.values())
@@ -405,7 +410,7 @@ class Battlefield(object):
                 for element in damage_dealt:
                     dmg = (atkr.m + atkr.matk + (2 * atkr.comp[element]) +
                     atkr.weapon.comp[element]) - (defdr.m + defdr.mdef +
-                    (2 * defdr.comp[element]) + self.grid[dloc.x][dloc.y].comp[element])
+                    (2 * defdr.comp[element]) + self.grid[dloc[0]][dloc[1]].comp[element])
                     dmg = max(dmg, 0)
                     damage_dealt[element] = dmg
                 
@@ -549,6 +554,8 @@ class Battlefield(object):
     def attack(self, atkr, target):
         """calls calc_damage, applies result, Handles death."""
         defdr = self.grid[target[0]][target[1]].contents
+        if isinstance(defdr, Part):
+            defdr = defdr.nescient
         dmg = self.calc_damage(atkr, defdr)
         if dmg != None:
             defdr_HPs = []

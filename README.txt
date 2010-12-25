@@ -3,8 +3,8 @@ Requirements:
 * PyYAML
 * ipython
 
-views/battle_view.py is the working demo, run it with:
-$ ipython views/battle_view.py
+views/hex_view.py is the working demo, run it with:
+$ ipython views/hex_view.py
 
 squad1.yaml contains the squad used by Player1 (p1)
 squad2.yaml contains the squad used by Player2 (p2)

@@ -17,7 +17,7 @@ yet it assumes that there are two players... the problems with this code go on..
 '''
 from datetime import datetime
 from collections import namedtuple
-from binary_tactics.battlefield import  Battlefield, Grid
+from binary_tactics.hex_battlefield import  Battlefield, Grid
 from binary_tactics.helpers import rand_squad
 from binary_tactics.units import Unit
 from binary_tactics.player import Player
@@ -30,7 +30,7 @@ class Action(dict):
     def __init__(self, unit=None, type='pass', target=None, when=None, num=None):
         dict.__init__(self, unit=unit, type=type, target=target, num=num, 
                       when=now())
-
+    
     @property
     def __dict__(self):
         return self
@@ -38,10 +38,11 @@ class Action(dict):
 class Message(dict):
     def __init__(self, num, text):
         dict.__init__(self, num=num, text=text, when=now())
-
+    
     @property
     def __dict__(self):
         return self
+    
 
 class Log(dict):
     def __init__(self, players, units, grid):
@@ -61,32 +62,32 @@ class Log(dict):
         self['applied']    = []
         self['condition']  = None
         self['init_locs']  = self.init_locs()
-        
-
+    
     @property
     def __dict__(self):
         return self
-        
+    
     def init_locs(self):
         #calling this in init is most likely not going to work as intended.
         locs = {}
         for u in self['units'].keys():
             locs.update({u: self['units'][u].location})
         return locs
-
+    
     def close(self, winner, condition):
         """Writes final timestamp, called when game is over."""
         self['end_time'] = now()
         self['winner'] = winner
         self['condition'] = condition
-
+    
     def to_english(self):
         pass
+    
 
 class State(dict):
     """A dictionary containing the current game state."""
     def __init__(self, num=1, pass_count=0, hp_count=0, old_squad2_hp=0,
-                  queued={},game_over=False):
+                 queued={},game_over=False):
         dict.__init__(self, num=num, pass_count=pass_count,
                       hp_count=hp_count, old_squad2_hp=old_squad2_hp,
                       queued=queued,game_over=game_over)
@@ -110,7 +111,7 @@ class State(dict):
                 self['hp_count'] += 1
             else:
                 self['hp_count'] = 0
-
+            
             #game over check:
             if self['hp_count'] == 4:
                 game.winner = game.player2
@@ -126,7 +127,7 @@ class State(dict):
         if game.battlefield.squad2.hp() == 0:
             game.winner = game.player1
             game.end("Player2's squad is dead")
-
+        
         if self['pass_count'] >= 8:
             game.winner = game.player2
             game.end("Both sides passed")
@@ -135,13 +136,11 @@ class State(dict):
         self['queued'] = game.map_queue()
         
         game.log['states'].append(State(**self))
-
+        
         #game is not over, state is stored, update state.
-
+        
         self['num'] += 1
     
-
-
 class Game(object):
     """Almost-state-machine that maintains game state."""
     def __init__(self, grid=Grid(), player1=None, player2=None, battlefield=None):
@@ -156,7 +155,7 @@ class Game(object):
             self.player2 = Player('p2', squads=[rand_squad()])
         if self.battlefield == None:
             self.battlefield = Battlefield(grid, self.player1.squads[0],
-                                           self.player2.squads[0])        
+                                           self.player2.squads[0])
         self.state = State()
         self.players = (self.player1, self.player2)
         self.map = self.unit_map() 
@@ -164,31 +163,31 @@ class Game(object):
         self.units = self.map_unit()
         self.log = Log(self.players, self.units, self.grid)
         self.state['old_squad2_hp'] = self.battlefield.squad2.hp()
-        
+    
     def unit_map(self):
         """mapping of unit ids to objects, used for serialization."""
-        map = {}
-        for unit in self.battlefield.units: map[unit] = id(unit)
-        return map
-        
+        mapping = {}
+        for unit in self.battlefield.units: mapping[unit] = id(unit)
+        return mapping
+    
     def map_unit(self):
         units = {}
         for (k,v) in self.map.items(): units[v] = k
         return units
-
+    
     def map_text(self, text):
         if text != None:
             for t in text:
                 if isinstance(t[0], Unit):
                     t[0] = str(id(t[0]))
             return text
-        
+    
     def map_action(self, action):
         """replaces unit refrences to referencing their hash."""
         new = Action(**action)
         new['unit'] = str(id(new['unit']))
         return new
-        
+    
     def map_queue(self):
         """apply unit mapping to units in queue."""
         old = self.battlefield.get_dmg_queue()
@@ -199,14 +198,14 @@ class Game(object):
             return new
         else:
             return None
-        
+    
     def last_message(self):
         text = self.log['messages'][-1]['text']
         if text != None:
             return self.log['messages'][-1]['text']
         else:
             return ["There was no message."]
-        
+    
     def process_action(self, action):
         action['when'] = now()
         action['num']  = num = self.state['num']
@@ -217,7 +216,7 @@ class Game(object):
                                               action['target'])
             if text:
                 text = [["%s moved to %s" %(id(action['unit']), action['target'])]]
-            
+        
         elif action['type'] == 'attack':
             text = self.battlefield.attack(action['unit'], action['target'])
         else:
@@ -238,7 +237,10 @@ class Game(object):
         text = self.battlefield.apply_queued()
         self.log['applied'].append(Message(self.state['num'], self.map_text(text)))
         self.state.check(self)
-            
+    
+    def current_state(self):
+        """Returns location and HP of all units. As well as proximity to winning conditions."""
+        pass
     def end(self, condition):
         """game over state, handles log closing, updating player stats, TBD"""
         self.state['game_over'] = True
@@ -246,4 +248,4 @@ class Game(object):
         self.log.close(self.winner, condition)
         print self.log['condition']
         raise Exception("Game Over")
-
+    

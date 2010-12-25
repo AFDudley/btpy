@@ -89,13 +89,38 @@ class Scient(Unit):
         #equiping weapons should be done someplace else.
         #self.equip(self.weapon)
 
+class Part(object):
+    '''
+    @property
+    def pdef(self):
+        return self.nescient.pdef
+    '''
+    def hp_fget(self):
+        return self.nescient.hp
+        
+    def hp_fset(self, hp):
+        self.nescient.hp = hp
+        
+    hp = property(hp_fget, hp_fset)
+        
+    def __init__(self, nescient, location=None):
+        self.nescient = nescient
+        self.location = location
+
 class Nescient(Unit):
     """A non-playable unit."""
+    
+    def take_body(self, new_body):
+        """Takes locations from new_body and applies them to body."""
+        for part in new_body:
+            new_body[part].nescient = self
+            self.body = new_body
+            
     def calcstats(self):
         Unit.calcstats(self)
         self.atk  = (2*(self.comp[F] + self.comp[I]) + 
                         self.comp[E] + self.comp[W]) + (4 * self.value())
-        self.hp = self.hp * 2
+        self.hp = self.hp * 4 #This is an open question.
     
     def __init__(self, element, comp, name=None, weapon=None,
                  location=None, facing=None, 
@@ -109,7 +134,7 @@ class Nescient(Unit):
             elif comp[orth] > comp[element]:
                 raise ValueError("Nescients' orthogonal value cannot exceed \
                                   the primary element value.")
-                
+            
         Unit.__init__(self, element, comp, name, location)
         self.move = 4
         #Set nescient type.
@@ -145,12 +170,14 @@ class Nescient(Unit):
                 
              
         self.calcstats()
-        #these locations need to be set by the battlefield.
-        self.location  = location
-        self.facing = facing
+        for part in body: #MESSY!!!!
+            body[part].nescient = self
         self.body = body
+        self.location  = location #...
+        self.facing = facing
         self.weapon = self #hack for attack logic.
-        
+
+       
 class Squad(UserList):
     """contains a number of Units. Takes a list of Units"""
     def unit_size(self, object):

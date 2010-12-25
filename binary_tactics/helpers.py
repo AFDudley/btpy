@@ -44,7 +44,7 @@ def max_comp(suit, kind='Scient'):
         return comp
         
     
-def rand_comp(suit=None, kind=None):
+def rand_comp(suit=None, kind=None, max_v=255):
     """Returns a random comp in 'suit' for use instaniating 'kind'
        If 'suit' is not valid, random element used.
        If 'kind' is not valid stone is used
@@ -58,25 +58,24 @@ def rand_comp(suit=None, kind=None):
     
     if kind == 'Stone':
         for element in comp:
-            comp[element] = random.randint(0, 255)
+            comp[element] = random.randint(0, max_v)
         return comp
     else:
         if kind == 'Scient':
-            comp[suit] = random.randint(1, 255)
+            comp[suit] = random.randint(1, max_v)
             for picked in ORTH[suit]:
                 #NOTE: if comp[suit] = 1 orths will be 0.
                 comp[picked] = random.randint(0, (comp[suit] / 2))
             return comp
         
         else: #Nescient is currently the only other kind
-            comp[suit] = random.randint(1, 255)
+            comp[suit] = random.randint(1, max_v)
             comp[random.choice(ORTH[suit])] = \
-                random.randint(1, 255)
+                random.randint(1, comp[suit])
             return comp
 
-def rand_unit(suit=None, kind='Scient'): #may change to rand_unit(suit, kind)
+def rand_unit(suit=None, kind=random.choice(('Scient', 'Nescient'))):
     """Returns a random Scient of suit. Random suit used if none given."""
-
     if not suit in ELEMENTS:
         suit = rand_element()
         comp = rand_comp(suit, kind)
