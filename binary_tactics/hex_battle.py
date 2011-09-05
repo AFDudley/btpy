@@ -80,8 +80,49 @@ class Log(dict):
         self['winner'] = winner
         self['condition'] = condition
     
-    def to_english(self):
-        pass
+    def to_english(self, number):
+        "returns a string of english containing an action and mission set from ply number."
+        num = number
+        s = "Failed to parse."
+        try:
+            action  = self['actions'][num]
+            message = self['messages'][num]
+        except:
+            raise Exception("number out of range")
+        #really slow lookup but will for any number of players or squads on field.
+        #fix is to store unit-player mapping in log.
+        for player in self['players']:
+            for squad in player.squads:
+                if squad == self['units'][int(action['unit'])].squad:
+                    actor = player
+        s = actor.name 
+        if action['type'] == 'move':
+            s += "'s " + self['units'][int(action['unit'])].name
+            s += " moved to " + str(action['target'])
+        elif action['type'] == 'attack':
+            s += "'s " + self['units'][int(action['unit'])].name
+            dmg = message['text'][0][1]
+            #slow lookup
+            target_squad = self['units'][int(message['text'][0][0])].squad
+            for player in self['players']:
+                for squad in player.squads:
+                    if squad == target_squad:
+                        target_owner = player
+            whom = target_owner.name + "'s " + self['units'][int(message['text'][0][0])].name
+            if type(dmg) == int:
+                if dmg > 0:
+                    s += " dealt " + str(dmg)
+                    s += " points of damage to " + whom
+                else:
+                    s += " healed " + whom
+                    s += " for " + str(abs(dmg)) + " points"
+            elif type(dmg) == str:
+                s += " killed " + whom
+                
+        elif action['type'] == 'pass':
+            s += " passed"
+        s += " at " + message['when'].isoformat(' ') + "."
+        return s
     
 
 class State(dict):
@@ -185,7 +226,10 @@ class Game(object):
     def map_action(self, action):
         """replaces unit refrences to referencing their hash."""
         new = Action(**action)
-        new['unit'] = str(id(new['unit']))
+        if new['unit'] != None:
+            new['unit'] = str(id(new['unit']))
+        else:
+            raise TypeError("Acting unit cannont be 'NoneType'")
         return new
     
     def map_queue(self):

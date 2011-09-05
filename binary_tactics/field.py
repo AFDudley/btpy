@@ -17,4 +17,6 @@ class Field(object):
             for y in xrange(self.grid.y):
                 for suit, value in self.grid[x][y].comp.iteritems():
                     stones[suit] += value
+        for suit, value in stones.iteritems():
+            stones[suit] /= 8 #8 seems like a good number... 
         return stones
