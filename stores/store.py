@@ -6,26 +6,33 @@
 #  Copyright (c) 2010 A. Frederick Dudley. All rights reserved.
 #
 """Functions shared between yaml_ and mongo_ store.py"""
-import binary_tactics.defs as defs
-
-from binary_tactics.battlefield import Grid, Tile
+from binary_tactics.defs import Loc
+from binary_tactics.units import Scient, Squad, Nescient, Part
+from binary_tactics.hex_battlefield import Grid, Tile
+from binary_tactics.player import Player
+from binary_tactics.weapons import *
 
 c  = ('comp',)
 ec = c + ('element',)
 persisted = {'stone': c, 'sword': ec, 'bow': ec, 'wand': ec, 'glove': ec,
              'scient': ec + ('name','weapon','weapon_bonus','location'),
-             'nescient': ec + ('name', 'location'),
+             'nescient': ec + ('name', 'location', 'body', 'facing'),
+             'body': ('head', 'left', 'right', 'tail'),
+             'part': ('location',),
              'squad': ('data', 'name', 'value', 'free_spaces'),
              'tile': c + ('contents',),
              'grid': c + ('tiles','x','y'),
-             'player': ('name', 'squad_list'),
-             'log': ('applied', 'start_time', 'winner', 'messages', 'actions',
-                     'states', 'players', 'grid', 'end_time', 'condition',
-                     'units', 'init_locs',),
-             'action': ('when', 'type', 'target', 'unit'),
-             'message': ('text', 'num', 'when'),
-             'state': ('pass_count', 'num', 'hp_count', 'queued', 'old_squad2_hp', 'game_over'),}
-             
+             'player': ('fields', 'name', 'squads', 'stones', 'units', 'weapons'),
+             }
+not_persisted_now = {'log': ('applied', 'start_time', 'winner', 'messages', 'actions',
+                             'states', 'players', 'grid', 'end_time', 'condition',
+                             'units', 'init_locs',),
+                     'action': ('when', 'type', 'target', 'unit'),
+                     'message': ('text', 'num', 'when'),
+                     'state': ('pass_count', 'num', 'hp_count', 'queued',
+                               'old_squad2_hp', 'game_over'),
+}
+
 def get_persisted(obj):
     """Returns a dict of obj attributes that are persisted."""    
     kind = obj.__class__.__name__.lower()
@@ -59,7 +66,13 @@ def get_persisted(obj):
                     new_dict['queued'] = que
                 else:
                     new_dict['queued'] = {}
-            
+                    
+            elif key == 'body':
+                new_dict['body'] = {}
+                for (n, s) in obj.__dict__[key].items():
+                    print n, s
+                    new_dict['body'][n] = get_persisted(s)
+                
             elif key == 'squad_list':
                 sl = []
                 for s in obj.__dict__[key]:
@@ -88,12 +101,20 @@ def get_persisted(obj):
         return {kind: new_dict} 
     else:
         return obj
-                     
 def convert_dict(dict):
     """takes a dict and returns composite objects."""
     key, value = dict.items()[0]
     if key == 'tile':
-        return Tile(**eval("".join(str(value).replace("u'", "'"))))
+        #this obviously dramatically slows down the instanciation of a
+        #previously instanciated grid, but when would this be done in real-time?
+        if value['contents'] == None:
+            return Tile(**eval("".join(str(value).replace("u'", "'"))))
+        else:
+            contents = convert_dict(value['contents'])
+            del value['contents']
+            tile = Tile(**eval("".join(str(value).replace("u'", "'"))))
+            tile.contents = contents
+            return tile
     elif key == 'grid':
         #It's dat eval hammer, boy!!! WOOO!!!
         comp = eval("".join(str(value['comp']).replace("u'", "'")))
@@ -108,7 +129,7 @@ def convert_dict(dict):
         return Grid(comp, x, y, tiles)
         
     elif key == 'squad':
-        squad = defs.Squad(name=value['name'])
+        squad = Squad(name=value['name'])
         data = value['data']
         for unit in data:
             squad.append(convert_dict(unit))
@@ -119,19 +140,33 @@ def convert_dict(dict):
         scient['element'] = value['element']
         scient['comp'] = value['comp']
         scient['name'] = value['name']
-        scient = defs.Scient(**scient)
-        scient.weapon = convert_dict(value['weapon'])
-        scient.location = defs.Loc(value['location'][0], value['location'][1])
+        scient = Scient(**scient)
+        if not value['weapon'] == None:
+            scient.weapon = convert_dict(value['weapon'])
+        if not value['location'] == None:
+            scient.location = Loc(value['location'][0], value['location'][1])
         return scient
-
+    elif key == 'nescient':
+        nescient = {}
+        nescient['element'] = value['element']
+        nescient['comp'] = value['comp']
+        nescient['name'] = value['name']
+        nescient['facing'] = value['facing']
+        nescient['body'] = {}
+        for part in value['body'].keys():
+            nescient['body'][part] = Part(None, value['body'][part]['part']['location'])
+        nescient = Nescient(**nescient)
+        if not value['location'] == None:
+            nescient.location = Loc(value['location'][0], value['location'][1])
+        return nescient
     elif key == 'player':
-        from binary_tactics.battle import Player
-        squad_list = []
-        for squad in value['squad_list']:
-            squad_list.append(convert_dict(squad))
-        return Player(value['name'], squad_list)
+
+        squads = []
+        for squad in value['squads']:
+            squads.append(convert_dict(squad))
+        return Player(value['name'], squads)
 
     else:
         #for weapons
-        return eval(u'defs.'+ key.capitalize())(**eval(''.join(str(value).replace("u'", "'"))))
+        return eval(key.capitalize())(**eval(''.join(str(value).replace("u'", "'"))))
     

@@ -1,11 +1,11 @@
 """contains battlefield objects"""
 import random
-from math import ceil
+from math import ceil, sqrt
 
 from const import E, F, I, W
 from defs import Loc, noloc
 from stone import Stone
-from units import Scient, Nescient
+from units import Scient, Nescient, Part
 
 class Tile(Stone):
     """Tiles contain units or stones and are used to make battlefields."""
@@ -14,20 +14,88 @@ class Tile(Stone):
         self.contents = contents
 
 class Grid(Stone):
-    """Tiles are stones, Grids most likely should be too."""
-    def __init__(self, comp=None, x=16, y=16, tiles=None):
-        Stone.__init__(self)
+    """A grid is a collection of tiles."""
+    #The code for generating a set of tiles based on a comp could use clean up
+    def __init__(self, comp=Stone(), x=16, y=16, tiles=None):
+        Stone.__init__(self, comp)
         self.x, self.y = self.size = (x, y)
-        if tiles == None:
-            self.tiles = {}
-            for i in range(x):
-                row = {}
-                for j in range(y):
-                    row.update({j: Tile()})
-                self.tiles.update({i: row})
+        if self.value() == 0:
+            if tiles == None:
+                self.tiles = {}
+                for i in range(x):
+                    row = {}
+                    for j in range(y):
+                        row.update({j: Tile()})
+                    self.tiles.update({i: row})
+            else:
+                for x in xrange(self.x):
+                    for y in xrange(self.y):
+                        for suit, value in tiles[x][y].iteritems():
+                            self.comp[suit] += value
+                for suit in self.comp.keys():
+                    self.comp[suit] /= self.x * self.y 
+                self.tiles = tiles
         else:
-            self.tiles = tiles
-    
+            #needs to check for comp/tiles match currently assumes if comp, no tiles.
+            #creates a pool of comp points to pull from.
+            pool = {}
+            for suit, value in self.comp.iteritems():
+                pool[suit] = value * self.x * self.y 
+            #pulls comp points from the pool using basis and skew to determine the range of random
+            #values used create tiles. Tiles are then shuffled.
+            tiles_l = []
+            for i in xrange(x-1):
+                row_l = []
+                for j in xrange(y):
+                    """This is pretty close, needs tweeking."""
+                    new_tile = {}
+                    for suit, value in pool.iteritems():
+                        '''This determines the range of the tile comps.'''
+                        #good enough for the time being.
+                        basis = self.comp[suit]
+                        skew  = 2*random.randint(2,8)
+                        pull  = random.randint(basis-skew, basis+skew)
+                        nv = min(pull, pool[suit])
+                        pool[suit] -= nv
+                        new_tile[suit] = nv
+                    row_l.append(new_tile)
+                row = {}
+                random.shuffle(row_l) #shuffles tiles in temp. row.
+                tiles_l.append(row_l)
+            #special error correcting row
+            row_e = []
+            for k in xrange(y): 
+                new_tile = {}
+                for suit, value in pool.iteritems():
+                    if pool[suit] != 0:
+                        fract = pool[suit]/max(1, k)
+                    else:
+                        fract = 0
+                    nv = min(fract, pool[suit])
+                    pool[suit] -= nv
+                    new_tile[suit] = nv
+                row_e.append(new_tile)
+            #hacks upon hacks pt2
+            del row_e[-1]
+            half = {}
+            for suit, value in row_e[-1].iteritems():
+                half[suit] = int(value/2)
+                row_e[-1][suit] -= half[suit]
+            row_e.append(half)
+            tiles_l.append(row_e)
+            self.tiles = {}
+            random.shuffle(tiles_l) #shuffles temp rows.
+            for x in xrange(self.x):
+                row = {}
+                for y in xrange(self.y): #This shuffles the tiles before putting them in the grid.
+                    r_index = random.choice(range(len(tiles_l))) # pick a row
+                    c_index = random.choice(range(len(tiles_l[r_index]))) #pick a tile
+                    row.update({y: Tile(tiles_l[r_index][c_index])}) #place tile in grid
+                    del tiles_l[r_index][c_index] #remove used tile
+                    if len(tiles_l[r_index]) == 0: #remove empty rows from tiles_l
+                        del tiles_l[r_index]
+                self.tiles.update({x: row})
+            del tiles_l
     def __iter__(self):
         return iter(self.tiles)
     def __contains__(self, value):
@@ -43,7 +111,7 @@ class Grid(Stone):
 
 class Battlefield(object):
     """contains grid, units and the logic for damage and movement."""
-    def __init__(self, grid=None, squad1=None, squad2=None):
+    def __init__(self, grid=Grid(), squad1=None, squad2=None):
         #grid is a tuple of tuples containing tiles
         self.game_id = 0 #?
         self.grid = grid
@@ -105,6 +173,112 @@ class Battlefield(object):
                 out.append(loc)
         return set(out)
     
+    def make_parts(self, part_locs):
+        new_body = {}
+        for part in part_locs:
+            new_body[part] = Part(None, part_locs[part])
+        return new_body
+    def make_body(self, right, direction):
+        """makes a nescient body facing direction from right loc"""
+        rx, ry = right
+        if ry & 1: 
+            facing = {'North': {'head':(rx, ry - 1), 'left':(rx - 1, ry), 'tail':(rx, ry + 1)},
+                      'South': {'head':(rx + 1, ry + 1), 'left':(rx + 1, ry), 'tail':(rx + 1, ry - 1)},
+                      'Northeast': {'head': (rx + 1, ry - 1), 'left':(rx, ry - 1), 'tail':(rx - 1, ry)}, 
+                      'Southeast': {'head': (rx + 1, ry), 'left':(rx + 1, ry - 1), 'tail':(rx, ry - 1)}, 
+                      'Southwest': {'head':(rx, ry + 1) , 'left':(rx + 1, ry + 1), 'tail':(rx + 1, ry)},
+                      'Northwest': {'head': (rx - 1, ry), 'left':(rx, ry + 1), 'tail':(rx + 1, ry + 1)}}
+        else:
+            facing = {'North': {'head':(rx - 1, ry - 1), 'left':(rx - 1, ry), 'tail':(rx - 1, ry + 1)},
+                      'South': {'head':(rx, ry + 1), 'left':(rx + 1, ry), 'tail':(rx, ry - 1)},
+                      'Northeast': {'head': (rx, ry - 1), 'left':(rx - 1, ry - 1), 'tail':(rx - 1, ry)}, 
+                      'Southeast': {'head': (rx + 1, ry), 'left':(rx, ry - 1), 'tail':(rx - 1, ry - 1)}, 
+                      'Southwest': {'head': (rx - 1, ry + 1), 'left':(rx, ry + 1), 'tail':(rx + 1, ry)},
+                      'Northwest': {'head': (rx - 1, ry), 'left':(rx - 1, ry + 1), 'tail':(rx, ry + 1)}}
+        
+        part_locs = facing[direction]
+        part_locs.update({'right':(rx, ry)})
+        return self.make_parts(part_locs)
+    
+    def body_on_grid(self, body):
+        """checks if a body is on_grid"""
+        body = body
+        for part in body:
+            if not self.on_grid(body[part].location):
+                return False
+            else: return True
+        
+    def can_move_nescient(self, body, nescient):
+        """checks if nescient can move to body."""       
+        for part in body:
+            xdestp, ydestp = body[part].location
+            if self.grid[xdestp][ydestp].contents != None:
+                if self.grid[xdestp][ydestp].contents not in nescient.body.values():
+                    if type(self.grid[xdestp][ydestp].contents) != type(Stone()):
+                        return False
+                    else: pass
+                else: pass
+            else: pass
+        return True
+
+    def move_nescient(self, new_body, nescient):
+        """places new_body on grid, place body in nescient."""
+        new_body = new_body
+        for part in new_body:
+            xdestp, ydestp = new_body[part].location
+            if self.grid[xdestp][ydestp].contents != None:
+                if self.grid[xdestp][ydestp].contents not in nescient.body.values():
+                    if type(self.grid[xdestp][ydestp].contents) != type(Stone()):
+                        raise Exception("Not enough space to move Nescient.")
+                    else:
+                        self.grid[xdestp][ydestp].contents = new_body[part]
+                else:
+                    pass
+            else:
+                self.grid[xdestp][ydestp].contents = new_body[part]
+        nescient.take_body(new_body)
+        nescient.location = nescient.body['right'].location
+        return True
+               
+    def place_nescient(self, nescient, dest):
+        """place a nescient so that its right is at dest."""
+        facing = nescient.facing
+        if facing == None:
+            facing = 'North'
+        xdest, ydest = dest = dest
+        if self.on_grid(dest): #is dest on grid?
+            new_body = self.make_body(dest, facing)
+            if self.body_on_grid(new_body):
+                nescient.facing = facing #ick.
+                return self.move_nescient(new_body, nescient)
+            else:
+                raise Exception("A body part is not on grid.")
+        else:
+            raise Exception("Destination %s is not on grid" %dest)
+    
+    def get_rotations(self, nescient):
+        """returns list of directions nescient can rotate."""
+        drctns = []
+        sntcrd = dict(zip(self.direction.values(), self.direction.keys()))
+        nbdr = nescient.body['right'].location
+        for direction in sntcrd:
+            if self.can_move_nescient(self.make_body(nbdr, direction), nescient):
+                drctns.append(direction) #might want to return body as well.
+        return drctns
+        
+    def rotate(self, nescient, direction):
+        """rotates Nescient so that head is facing direction"""
+        nes = nescient
+        new_body = self.make_body(nes.body['right'].location, direction)
+        if self.body_on_grid(new_body):
+            if self.move_nescient(new_body, nescient):
+                nescient.facing = direction
+                return True
+            else:
+                raise Exception("Move Failed.")
+        else:
+            raise Exception('nescient cannot rotate to that direction')
+            
     def make_pattern(self, location, distance, pointing):
         """generates a pattern based on an origin, distance, and
         direction. Returns a set of coords"""
@@ -146,7 +320,6 @@ class Battlefield(object):
         """generates a list of tiles within distance of location."""
         location = location
         dist = distance
-        
         tiles = []
         #so far from optimal
         tiles.append(self.get_adjacent(location))
@@ -158,10 +331,30 @@ class Battlefield(object):
         group = set()
         for x in tiles: group |= x
         return group
+    
     def place_object(self, obj, dest):
         """places an object on a tile."""
+        if self.on_grid(dest):
+            xpos, ypos = dest
+        else:
+            raise Exception("Tile %s is off grid" %dest)
+            
         if isinstance(obj, Scient):
-            return self.place_scient(obj, dest)
+            if obj.location == noloc:
+                if self.grid[xpos][ypos].contents == None:
+                    self.grid[xpos][ypos].contents = obj
+                    obj.location = Loc(xpos, ypos)
+                    self.dmg_queue[obj] = [] #append unit to dmg_queue
+                    return True
+                    
+                elif unit.location == Loc(xpos, ypos):
+                    raise Exception("This unit is already on (%s,%s)" %(xpos, ypos))
+                    
+                elif self.grid[xpos][ypos].contents != None:
+                    raise Exception("(%s, %s) is not empty" %(xpos, ypos))
+            else:
+                return self.move_scient(obj.location, dest)
+            
         elif isinstance(obj, Nescient):
             return self.place_nescient(obj, dest)
         elif isinstance(obj, Stone):
@@ -266,7 +459,6 @@ class Battlefield(object):
                     num += 1
         return num
     
-    
     #Attack/Damage stuff
     def dmg(self, atkr, defdr):
         """Calculates the damage of an attack"""
@@ -277,7 +469,7 @@ class Battlefield(object):
                 for element in damage_dealt:
                     dmg = (atkr.p + atkr.patk + (2 * atkr.comp[element]) +
                     atkr.weapon.comp[element]) - (defdr.p + defdr.pdef +
-                    (2 * defdr.comp[element]) + self.grid[dloc.x][dloc.y].comp[element])
+                    (2 * defdr.comp[element]) + self.grid[dloc[0]][dloc[1]].comp[element])
                     dmg = max(dmg, 0)
                     damage_dealt[element] = dmg
                 damage = sum(damage_dealt.values())
@@ -286,7 +478,7 @@ class Battlefield(object):
                 for element in damage_dealt:
                     dmg = (atkr.m + atkr.matk + (2 * atkr.comp[element]) +
                     atkr.weapon.comp[element]) - (defdr.m + defdr.mdef +
-                    (2 * defdr.comp[element]) + self.grid[dloc.x][dloc.y].comp[element])
+                    (2 * defdr.comp[element]) + self.grid[dloc[0]][dloc[1]].comp[element])
                     dmg = max(dmg, 0)
                     damage_dealt[element] = dmg
                 
@@ -353,11 +545,15 @@ class Battlefield(object):
                         new_pat.append(i)
                 return new_pat
     
+    def calc_ranged(self, atkr, target):
+        """UGH"""
+        #use something like get_rotations to target 4 tiles at a time.
+        #maybe it should magically hit 4 contigious tiles?
+        pass
     def calc_damage(self, atkr, defdr):
         """Calcuate damage delt to defdr from atkr. Also calculates the damage of
         all units within a blast range. if weapon has a AOE list of
         [[target, dmg]] is returned. otherwise just (target, dmg) is returned"""
-        #Broken: dmg_queue is applied at the wrong time in battle.py
         weapon = atkr.weapon
         aloc = atkr.location
         dloc = defdr.location
@@ -426,6 +622,8 @@ class Battlefield(object):
     def attack(self, atkr, target):
         """calls calc_damage, applies result, Handles death."""
         defdr = self.grid[target[0]][target[1]].contents
+        if isinstance(defdr, Part):
+            defdr = defdr.nescient
         dmg = self.calc_damage(atkr, defdr)
         if dmg != None:
             defdr_HPs = []
@@ -434,7 +632,6 @@ class Battlefield(object):
                     if i[0].hp > 0:
                         self.dmg_queue[defdr].append([i[1], (atkr.weapon.time - 1)])
                         defdr_HPs.append([i[0], self.apply_dmg(i[0], i[1])])
-            
             else:
                 for i in dmg:
                     if i[0].hp > 0:

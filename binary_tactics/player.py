@@ -13,3 +13,4 @@ class Inventory(object):
     """objet which contains player inventory information"""
     def __init__(self):
         pass
+
