@@ -80,8 +80,20 @@ class Log(dict):
         self['winner'] = winner
         self['condition'] = condition
     
-    def to_english(self, number):
-        "returns a string of english containing an action and mission set from ply number."
+    def get_owner(self, unit_num):
+        """takes unit number returns player/owner."""
+        #slow lookup
+        target_squad = self['units'][unit_num].squad
+        for player in self['players']:
+            for squad in player.squads:
+                if squad == target_squad:
+                    owner = player
+        return owner
+    
+    def to_english(self, number, time=True):
+        """returns a string of english containing an action and mission set from ply number."""
+        #still missing DOT, AOE messages, game over messages, etc.
+        #oops, this needs to be done client side.
         num = number
         s = "Failed to parse."
         try:
@@ -89,7 +101,7 @@ class Log(dict):
             message = self['messages'][num]
         except:
             raise Exception("number out of range")
-        #really slow lookup but will for any number of players or squads on field.
+        #really slow lookup but will work for any number of players or squads on field.
         #fix is to store unit-player mapping in log.
         for player in self['players']:
             for squad in player.squads:
@@ -100,38 +112,69 @@ class Log(dict):
             s += "'s " + self['units'][int(action['unit'])].name
             s += " moved to " + str(action['target'])
         elif action['type'] == 'attack':
-            s += "'s " + self['units'][int(action['unit'])].name
-            dmg = message['text'][0][1]
-            #slow lookup
-            target_squad = self['units'][int(message['text'][0][0])].squad
-            for player in self['players']:
-                for squad in player.squads:
-                    if squad == target_squad:
-                        target_owner = player
-            whom = target_owner.name + "'s " + self['units'][int(message['text'][0][0])].name
-            if type(dmg) == int:
-                if dmg > 0:
-                    s += " dealt " + str(dmg)
-                    s += " points of damage to " + whom
-                else:
-                    s += " healed " + whom
-                    s += " for " + str(abs(dmg)) + " points"
-            elif type(dmg) == str:
-                s += " killed " + whom
-                
+            if len(message['text']) > 1: #this catches both DOT and AOE :(
+                if message['text'][0][0] != message['text'][1][0]: #if it is an AOE attack?
+                    s += "'s " + self['units'][int(action['unit'])].name + ":"
+                    for text in message['text']:
+                        s += "\n"
+                        dmg = text[1]
+                        target_owner = self.get_owner(int(text[0]))
+                        whom = target_owner.name + "'s " + self['units'][int(text[0])].name
+                        if type(dmg) == int:
+                            if dmg > 0:
+                                s += " dealt " + str(dmg)
+                                s += " points of damage to " + whom 
+                            else:
+                                s += " healed " + whom
+                                s += " for " + str(abs(dmg)) + " points"
+                        elif type(dmg) == str:
+                            s += " killed " + whom
+                else: #it's a DOT attack.
+                    pass
+            else:
+                s += "'s " + self['units'][int(action['unit'])].name
+                dmg = message['text'][0][1]
+                target_owner = self.get_owner(int(message['text'][0][0]))
+                whom = target_owner.name + "'s " + self['units'][int(message['text'][0][0])].name
+                if type(dmg) == int:
+                    if dmg > 0:
+                        s += " dealt " + str(dmg)
+                        s += " points of damage to " + whom 
+                    else:
+                        s += " healed " + whom
+                        s += " for " + str(abs(dmg)) + " points"
+                elif type(dmg) == str:
+                    s += " killed " + whom
         elif action['type'] == 'pass':
             s += " passed"
-        s += " at " + message['when'].isoformat(' ') + "."
-        return s
-    
+        if time: s += " at " + message['when'].isoformat(' ')
+        s += "."
+        if num % 4 == 0 and num != 0: #MODULO!!!!
+            idx = num / 4
+            applied = self['applied'][idx]
+            if len(applied['text']) > 0: #was damage was applied.
+                if time:
+                    s += "\n  " + "At " + applied['when'].isoformat(' ') + ":"
+                for (unit, dmg) in applied['text']:
+                    s += "\n    "
+                    s += self.get_owner(int(unit)).name + "'s " + self['units'][int(unit)].name + " was "
+                    if type(dmg) == int:
+                        if dmg > 0:
+                            s += "damaged " + str(dmg) + " points "
+                        else:
+                            s += "healed " + str(abs(dmg)) + " points "
+                        s += "by the queue."
+                    else:
+                        s += "killed by damage from the queue."
+        print s
 
 class State(dict):
     """A dictionary containing the current game state."""
     def __init__(self, num=1, pass_count=0, hp_count=0, old_squad2_hp=0,
-                 queued={},game_over=False):
+                 queued={}, locs={}, HPs={}, game_over=False):
         dict.__init__(self, num=num, pass_count=pass_count,
                       hp_count=hp_count, old_squad2_hp=old_squad2_hp,
-                      queued=queued,game_over=game_over)
+                      queued=queued, locs=locs, HPs=HPs, game_over=game_over)
     
     @property
     def __dict__(self):
@@ -173,8 +216,10 @@ class State(dict):
             game.winner = game.player2
             game.end("Both sides passed")
         
-        #self['queued'] = game.battlefield.get_dmg_queue()
         self['queued'] = game.map_queue()
+        #self['HPs']    = game.HPs()
+        #self['locs']   = game.map_locs()
+        self['HPs'], self['locs'] = game.update_unit_info()
         
         game.log['states'].append(State(**self))
         
@@ -216,6 +261,49 @@ class Game(object):
         for (k,v) in self.map.items(): units[v] = k
         return units
     
+    def map_locs(self):
+        """maps unit name unto locations, only returns live units"""
+        locs = {}
+        for unit in self.map:
+            loc = unit.location
+            if loc[0] >= 0:
+                locs[self.map[unit]] = loc
+        return locs
+    
+    def HPs(self):
+        """Hit points by unit."""
+        HPs ={}
+        for unit in self.map:
+            hp = unit.hp
+            if hp > 0:
+                HPs[self.map[unit]] = hp
+        return HPs
+
+    def update_unit_info(self):
+        """returns HPs, Locs."""
+        HPs   = {}
+        locs  = {}
+        
+        for unit in self.map:
+            num = self.map[unit]
+            loc = unit.location
+            if loc[0] >= 0:
+                locs[num] = loc
+                HPs[num] = unit.hp
+            
+        return HPs, locs
+        
+    def map_queue(self):
+        """apply unit mapping to units in queue."""
+        old = self.battlefield.get_dmg_queue()
+        if isinstance(old, dict):
+            new = {}
+            for key in old.keys():
+                new[str(id(key))] = old[key]
+            return new
+        else:
+            return None
+    
     def map_text(self, text):
         if text != None:
             for t in text:
@@ -231,18 +319,7 @@ class Game(object):
         else:
             raise TypeError("Acting unit cannont be 'NoneType'")
         return new
-    
-    def map_queue(self):
-        """apply unit mapping to units in queue."""
-        old = self.battlefield.get_dmg_queue()
-        if isinstance(old, dict):
-            new = {}
-            for key in old.keys():
-                new[str(id(key))] = old[key]
-            return new
-        else:
-            return None
-    
+        
     def last_message(self):
         text = self.log['messages'][-1]['text']
         if text != None:
@@ -271,7 +348,8 @@ class Game(object):
         
         if num % 4 == 0:
             self.apply_queued()
-            text.append(self.log['applied'][0]['text'])
+            #why would I do this??!!?!?!
+            #text.append(self.log['applied'][0]['text'])
         else:
             self.state.check(self)
         return self.last_message()
@@ -285,6 +363,7 @@ class Game(object):
     def current_state(self):
         """Returns location and HP of all units. As well as proximity to winning conditions."""
         pass
+        
     def end(self, condition):
         """game over state, handles log closing, updating player stats, TBD"""
         self.state['game_over'] = True

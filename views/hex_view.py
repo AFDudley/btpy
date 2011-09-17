@@ -840,15 +840,15 @@ class View:
             self.last_action_type = self.current_action['type']
             self.transition(view.middle)
         
-        if view.game.state['num'] % 4 == 0: #buggy?
-            print "***"
+        """if view.game.state['num'] % 4 == 0: #buggy?
             #for x in view.battle.dmg_queue.iteritems(): print x
-            print view.game.state
-            print "***"
         for i in text:
             print i
-            view.console.output(i)
-    
+            view.console.output(i)"""
+        #slightly redundant to_english prints to console.
+        msg = view.game.log.to_english(self.current_action['num'] - 1, time=0)
+        view.console.output(msg)
+        
     def transition(self, dest_state):
         """transitions from current_state to dest_state"""
         self.current_state.active = False
