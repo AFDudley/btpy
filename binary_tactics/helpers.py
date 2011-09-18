@@ -1,10 +1,14 @@
 """Helper functions"""
 import random
+import string
 #import const   
 from const import ELEMENTS, E, F, W, I, ORTH, KINDS, OPP, COMP
 from stone import Stone
 from units import Scient, Nescient, Squad
 
+def rand_string(len=8):
+    return ''.join(random.choice(string.letters) for i in xrange(len))
+    
 def t2c(tup):
     """Converts a tuple to a comp"""
     if len(tup) != 4: raise Exception("Incorrect number of values in tuple")
@@ -73,35 +77,57 @@ def rand_comp(suit=None, kind=None, max_v=255):
             comp[random.choice(ORTH[suit])] = \
                 random.randint(1, comp[suit])
             return comp
-
-def rand_unit(suit=None, kind=random.choice(('Scient', 'Nescient'))):
+            
+def rand_unit(suit=None, kind=None):
     """Returns a random Scient of suit. Random suit used if none given."""
+    kinds = ('Scient', 'Nescient')
+    if not kind in kinds:
+        kind = random.choice(kinds)
+        
     if not suit in ELEMENTS:
         suit = rand_element()
         comp = rand_comp(suit, kind)
     else:
         comp = rand_comp(suit, kind)
+    
     if kind == 'Scient':
-        return Scient(suit, comp)
+        return Scient(suit, comp, rand_string())
     else:
-        return Nescient(suit, comp)
+        return Nescient(suit, rand_comp(suit,'Nescient'), rand_string())
         
-def rand_squad(suit=None):
+
+    
+    
+def rand_squad(suit=None, kind='Scient'):
     """Returns a Squad of five random Scients of suit. Random suit used
        if none given."""
-    
+    #please clean me up.
     squad = Squad()
-    size = 5
-    if not suit in ELEMENTS:
-        for _ in range(size):
-            squad.append(rand_unit(rand_element()))
-        return squad
-    
-    else:
-        for _ in range(size):
-            squad.append(rand_unit(suit))
-        return squad
+    if kind == 'Scient':
+        size = 5
+        if not suit in ELEMENTS:
+            for _ in range(size):
+                squad.append(rand_unit(rand_element(), kind))
 
+        
+        else:
+            for _ in range(size):
+                squad.append(rand_unit(suit, kind))
+
+    else:
+        if not suit in ELEMENTS:
+            while squad.free_spaces >=2:
+                squad.append(rand_unit(rand_element()))
+            if squad.free_spaces == 1:
+                squad.append(rand_unit(rand_element(), kind='Scient'))
+        else:
+            while squad.free_spaces >=2:
+                squad.append(rand_unit(suit))
+            if squad.free_spaces == 1:
+                squad.append(rand_unit(suit, kind='Scient'))
+    squad.name = rand_string()
+    return squad
+        
 def print_rand_squad(suit=None):
     squad = rand_squad(suit)
     for unit in squad:

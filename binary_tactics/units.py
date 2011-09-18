@@ -171,7 +171,7 @@ class Nescient(Unit):
              
         self.calcstats()
         for part in body: #MESSY!!!!
-            body[part].nescient = self
+            body[part] = Part(self)
         self.body = body
         self.location  = location #...
         self.facing = facing
