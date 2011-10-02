@@ -17,18 +17,19 @@ def hp():
         for u in s:
             print "     %s\n    %s" %(u.name, u.hp)
         print ""
+
 p1   = Player(name='p1', squads=[load('yaml/ice_maxes.yaml')])
 p2   = Player(name='p2', squads=[load('yaml/fire_maxes.yaml')])
 
 game = Game(player1=p1, player2=p2,
             battlefield=Battlefield(squad1=p1.squads[0], squad2=p2.squads[0]),)
 
-
 btl = game.battlefield
 
 for s in range(2):
     for x in range(4):
         btl.place_object(btl.squads[s][x], defs.Loc(x, s))
+
 game.log['init_locs'] = game.log.init_locs()
 
 def show_squad(squad):
@@ -40,6 +41,7 @@ def show_squads():
         print "%s:" %s.name
         show_squad(s)
         print ""
+
 
 game.process_action(Action(btl.squad1[0], 'move'  , (2,2)))
 game.process_action(Action(btl.squad1[0], 'attack', (2,1)))

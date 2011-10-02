@@ -23,10 +23,11 @@ from binary_tactics.units import Unit
 from binary_tactics.player import Player
 
 def now():
-    return datetime.utcnow()
+    return str(datetime.utcnow())
 
 class Action(dict):
     #'when' needs more thought.
+    #type needs to != 'pass'
     def __init__(self, unit=None, type='pass', target=None, when=None, num=None):
         dict.__init__(self, unit=unit, type=type, target=target, num=num, 
                       when=now())
@@ -36,8 +37,8 @@ class Action(dict):
         return self
 
 class Message(dict):
-    def __init__(self, num, text):
-        dict.__init__(self, num=num, text=text, when=now())
+    def __init__(self, num, result):
+        dict.__init__(self, num=num, result=result, when=now())
     
     @property
     def __dict__(self):
@@ -89,8 +90,8 @@ class Log(dict):
                 if squad == target_squad:
                     owner = player
         return owner
-    
-    def to_english(self, number, time=True):
+    '''  
+    def to_english(self, number, time=True): #BROKEN!!!!!
         """returns a string of english containing an action and mission set from ply number."""
         #still missing DOT, AOE messages, game over messages, etc.
         #oops, this needs to be done client side.
@@ -112,14 +113,14 @@ class Log(dict):
             s += "'s " + self['units'][int(action['unit'])].name
             s += " moved to " + str(action['target'])
         elif action['type'] == 'attack':
-            if len(message['text']) > 1: #this catches both DOT and AOE :(
-                if message['text'][0][0] != message['text'][1][0]: #if it is an AOE attack?
+            if len(message['result']) > 1: #this catches both DOT and AOE :(
+                if message['result'][0][0] != message['result'][1][0]: #if it is an AOE attack?
                     s += "'s " + self['units'][int(action['unit'])].name + ":"
-                    for text in message['text']:
+                    for result in message['result']:
                         s += "\n"
-                        dmg = text[1]
-                        target_owner = self.get_owner(int(text[0]))
-                        whom = target_owner.name + "'s " + self['units'][int(text[0])].name
+                        dmg = result[1]
+                        target_owner = self.get_owner(int(result[0]))
+                        whom = target_owner.name + "'s " + self['units'][int(result[0])].name
                         if type(dmg) == int:
                             if dmg > 0:
                                 s += " dealt " + str(dmg)
@@ -133,9 +134,9 @@ class Log(dict):
                     pass
             else:
                 s += "'s " + self['units'][int(action['unit'])].name
-                dmg = message['text'][0][1]
-                target_owner = self.get_owner(int(message['text'][0][0]))
-                whom = target_owner.name + "'s " + self['units'][int(message['text'][0][0])].name
+                dmg = message['result'][0][1]
+                target_owner = self.get_owner(int(message['result'][0][0]))
+                whom = target_owner.name + "'s " + self['units'][int(message['result'][0][0])].name
                 if type(dmg) == int:
                     if dmg > 0:
                         s += " dealt " + str(dmg)
@@ -147,15 +148,15 @@ class Log(dict):
                     s += " killed " + whom
         elif action['type'] == 'pass':
             s += " passed"
-        if time: s += " at " + message['when'].isoformat(' ')
+        if time: s += " at " + message['when'] #.isoformat(' ')
         s += "."
         if num % 4 == 0 and num != 0: #MODULO!!!!
             idx = num / 4
             applied = self['applied'][idx]
-            if len(applied['text']) > 0: #was damage was applied.
+            if len(applied['result']) > 0: #was damage was applied.
                 if time:
-                    s += "\n  " + "At " + applied['when'].isoformat(' ') + ":"
-                for (unit, dmg) in applied['text']:
+                    s += "\n  " + "At " + applied['when'] + ":"
+                for (unit, dmg) in applied['result']:
                     s += "\n    "
                     s += self.get_owner(int(unit)).name + "'s " + self['units'][int(unit)].name + " was "
                     if type(dmg) == int:
@@ -167,6 +168,7 @@ class Log(dict):
                     else:
                         s += "killed by damage from the queue."
         print s
+       '''
 
 class State(dict):
     """A dictionary containing the current game state."""
@@ -304,26 +306,26 @@ class Game(object):
         else:
             return None
     
-    def map_text(self, text):
-        if text != None:
-            for t in text:
+    def map_result(self, result):
+        if result != None:
+            for t in result:
                 if isinstance(t[0], Unit):
-                    t[0] = str(id(t[0]))
-            return text
+                    t[0] = id(t[0])
+            return result
     
     def map_action(self, action):
         """replaces unit refrences to referencing their hash."""
         new = Action(**action)
         if new['unit'] != None:
-            new['unit'] = str(id(new['unit']))
+            new['unit'] = id(new['unit'])
         else:
             raise TypeError("Acting unit cannont be 'NoneType'")
         return new
         
     def last_message(self):
-        text = self.log['messages'][-1]['text']
+        text = self.log['messages'][-1]['result']
         if text != None:
-            return self.log['messages'][-1]['text']
+            return self.log['messages'][-1]['result']
         else:
             return ["There was no message."]
     
@@ -336,7 +338,7 @@ class Game(object):
             text = self.battlefield.move_scient(action['unit'].location,
                                               action['target'])
             if text:
-                text = [["%s moved to %s" %(id(action['unit']), action['target'])]]
+                text = [[id(action['unit']), action['target']]]
         
         elif action['type'] == 'attack':
             text = self.battlefield.attack(action['unit'], action['target'])
@@ -344,7 +346,8 @@ class Game(object):
             raise Exception("Action is of unkown type")
         
         self.log['actions'].append(self.map_action(action))
-        self.log['messages'].append(Message(num, self.map_text(text)))
+        self.log['messages'].append(Message(num, self.map_result(text)))
+        #self.log['messages'].append(Message(num, text))
         
         if num % 4 == 0:
             self.apply_queued()
@@ -352,18 +355,27 @@ class Game(object):
             #text.append(self.log['applied'][0]['text'])
         else:
             self.state.check(self)
-        return self.last_message()
+        return {'command': self.log['actions'][-1], 'response': self.log['messages'][-1]}
     
     def apply_queued(self):
         """queued damage is applied to units from this state"""
         text = self.battlefield.apply_queued()
-        self.log['applied'].append(Message(self.state['num'], self.map_text(text)))
+        self.log['applied'].append(Message(self.state['num'], self.map_result(text)))
         self.state.check(self)
     
     def current_state(self):
         """Returns location and HP of all units. As well as proximity to winning conditions."""
         pass
         
+    def initial_state(self):
+        """Returns stuff to create the client side of the game"""
+        return {'start_time': self.log['start_time'],
+                'players': self.log['players'],
+                'units': self.log['units'],
+                'grid': self.log['grid'],
+                'init_locs': self.log['init_locs'],
+                }
+                
     def end(self, condition):
         """game over state, handles log closing, updating player stats, TBD"""
         self.state['game_over'] = True

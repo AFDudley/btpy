@@ -1,7 +1,18 @@
-#from binary_tactics.player import Player
+from ZODB.FileStorage import FileStorage
+from ZODB.DB import DB
+import transaction
+#ZODB needs to log stuff
+import logging
+logging.basicConfig()
+
+import binary_tactics.stone
+from binary_tactics.wstone import Stone
+binary_tactics.stone.Stone = Stone #Monkey Patch
 from binary_tactics.grid import Grid
 from binary_tactics.units import Squad
 from binary_tactics.hex_battle import Game
+from helpers import *
+
 class Stronghold(object):
     def __init__(self):
         self.stones  = {}
@@ -38,24 +49,49 @@ class wPlayer(object):
         self.treaties = None
         
 
-class World(wPlayer):
-    def __init__(self, username, x=8, y=8):
-        wPlayer.__init__(self, username=username, wFields={})
+class World(object): #needs a better name. 
+    def __init__(self, storage_name='ZODB/Data.fs', x=8, y=8):
         self.x = x
         self.y = y
+        self.storage = FileStorage(storage_name)
+        self.db = DB(self.storage)
+        self.connection = self.open_connection(self.db)
+        self.root = self.get_root(self.connection)
+        self.player = self.attach_player_object()
         
+    def open_connection(self, db):
+        return db.open()
+        
+    def get_root(self, connection):
+        return connection.root()
+    
+    def add_player(self, player):
+        if not(player.username in self.root.keys()):
+            self.root['Players'][player.username] = player
+            return transaction.commit()
+        else:
+            raise Exception("A player with that name is already registered, \
+                             use another name.")
+    
     def make_wFields(self):
-        """creates a world player and wFields"""
+        """creates all wFields used in a game."""
         #right now the World and the wFields are square, they should both be hexagons.
+        wf = {}
         for coord_x in xrange(self.x):
             for coord_y in xrange(self.y):
                 world_coord = (coord_x, coord_y)
-                self.wFields[str(world_coord)] = wField(world_coord)
-     
-class Mover(object):
-    def __init__(self, transaction):
-        self.transaction = transaction
+                wf[str(world_coord)] = wField(world_coord)
+        return wf
     
+    def attach_player_object(self):
+        """Attempts to attach the world object in zodb, creates new one otherwise."""
+        try:
+            #this needs deeper checking... or to be part of a thoughtout object model?
+            return self.root["Players"]["World"]
+        except Exception as excpt:
+            if 'World' in excpt.args:
+                return self.add_player(wPlayer('World', self.make_wFields()))
+        
     def move_squad(self, src, squad_name, dest):
         """Moves a squad from a stronghold to a queue."""
         #src and dest are both wGrids
@@ -66,21 +102,4 @@ class Mover(object):
         except:
             print "the move didn't work."
             
-class Conductor(object):
-    """Conducts a set of actions"""
-    def __init__(self):
-        self.wField = None
-
-class BattleConductor(Conductor):
-    """Conducts battles."""
-    def __init__(self):
-        Conductor.__init__(self)
-        self.wField  = None
-        self.Player1 = None
-        self.Player2 = None
-        self.game    = None
-        
-    def create_game(self, self.wField.grid, self.player1, self.player2,):
-        """creates a hex_battle.Game"""
-        self.game = Game(self.wField.grid, self.player1, self.player2)
         

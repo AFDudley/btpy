@@ -71,7 +71,7 @@ class Scient(Unit):
             self.weapon = weapon
     
     def __init__(self, element, comp, name=None, weapon=None,
-                 weapon_bonus=dict(Stone()), location=None):
+                 weapon_bonus=None, location=None):
         for orth in ORTH[element]:
             if comp[orth] > comp[element] / 2:
                 raise ValueError("Scients' orthogonal elements cannot be \
@@ -79,8 +79,11 @@ class Scient(Unit):
         Unit.__init__(self, element, comp, name, location)
         self.move = 4
         self.weapon = weapon
-        self.weapon_bonus = weapon_bonus
-        self.equip_limit = {E:1, F:1 ,I:1 ,W:1}
+        if weapon_bonus == None:
+            self.weapon_bonus = Stone()
+        else:
+            self.weapon_bonus = weapon_bonus
+        self.equip_limit = Stone({E:1, F:1 ,I:1 ,W:1})
         for i in self.equip_limit:
             self.equip_limit[i] = self.equip_limit[i] + self.comp[i] \
             + self.weapon_bonus[i]

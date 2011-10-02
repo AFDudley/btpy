@@ -6,11 +6,11 @@
 #  Copyright (c) 2010 A. Frederick Dudley. All rights reserved.
 #
 
-from binary_tactics import defs
+from binary_tactics.stone import Stone
 from binary_tactics.const import ELEMENTS
 class test_stone:
     def setUp(self):
-        self.stone = defs.Stone()
+        self.stone = Stone()
     
     def tearDown(self):
         del self.stone
