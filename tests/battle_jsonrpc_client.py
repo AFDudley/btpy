@@ -27,12 +27,14 @@ def request(url, func, *args):
         return "error: %s" % result
     else:
         return response.get("result", response.get("error"))
-
+"""
 url = "http://localhost:8888/jsonrpc"
 print "echo:", request(url, "echo", "foo bar")
 print "sort:", request(url, "sort", ["foo", "bar"])
 print "count:", request(url, "count", ["foo", "bar"])
 print "geoip_lookup:", request(url, "geoip_lookup", "google.com")
+"""
 
 battle = "http://localhost:8888/battle"
 print request(battle, "get_state")
+print request(battle, "process_action", ['btl.squad1[0]', 'move', '(2,2)'])
