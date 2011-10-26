@@ -71,9 +71,10 @@ class LoginHandler(BaseHandler):
         password = hashlib.md5(p).hexdigest()
         try:
             #user = yield self.settings.mongo.mydb.users.find_one({"u":u, "p":password}, fields=["u"])
-            user = yield u
+            stored_pw = yield self.settings.redis.get("cyclone:%s" % usr)
+            assert password == stored_pw
         except Exception, e:
-            log.err("mongo can't find_one({u:%s, p:%s}): %s" % (u, password, e))
+            log.err("Login Failed")
             raise cyclone.web.HTTPError(503)
         
         if user:
