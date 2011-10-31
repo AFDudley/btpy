@@ -1,6 +1,8 @@
-from ZODB.FileStorage import FileStorage
-from ZODB.DB import DB
+from ZEO import ClientStorage
+#from ZODB.FileStorage import FileStorage
+from ZODB import DB
 import transaction
+import persistent
 #ZODB needs to log stuff
 import logging
 logging.basicConfig()
@@ -11,7 +13,7 @@ binary_tactics.stone.Stone = Stone #Monkey Patch
 from binary_tactics.grid import Grid
 from binary_tactics.units import Squad
 from binary_tactics.hex_battle import Game
-from helpers import *
+from binary_tactics.helpers import *
 
 class Stronghold(object):
     def __init__(self):
@@ -40,20 +42,22 @@ class wField(object):
         else:
             return self.stronghold.squads.values()[0]
                
-class wPlayer(object):
+class wPlayer(persistent.Persistent):
     """Object that contains player infomration."""
-    def __init__(self, username=None, wFields=None):
+    def __init__(self, username=None, password=None, wFields=None):
+        persistent.Persistent.__init__(self)
         self.username = username
+        self.password = password
         self.wFields  = wFields
         self.roads    = None
         self.treaties = None
         
-
 class World(object): #needs a better name. 
-    def __init__(self, storage_name='ZODB/Data.fs', x=8, y=8):
+    #This model is wrong. the world needs to be the persisted object assigned to root.
+    def __init__(self, storage_name=('localhost', 9100), x=8, y=8):
         self.x = x
         self.y = y
-        self.storage = FileStorage(storage_name)
+        self.storage = ClientStorage.ClientStorage(storage_name)
         self.db = DB(self.storage)
         self.connection = self.open_connection(self.db)
         self.root = self.get_root(self.connection)
@@ -68,6 +72,7 @@ class World(object): #needs a better name.
     def add_player(self, player):
         if not(player.username in self.root.keys()):
             self.root['Players'][player.username] = player
+            self.root._p_changed = 1
             return transaction.commit()
         else:
             raise Exception("A player with that name is already registered, \
@@ -83,7 +88,7 @@ class World(object): #needs a better name.
                 wf[str(world_coord)] = wField(world_coord)
         return wf
     
-    def attach_player_object(self):
+    def attach_player_object(self): #broken
         """Attempts to attach the world object in zodb, creates new one otherwise."""
         try:
             #this needs deeper checking... or to be part of a thoughtout object model?
@@ -102,4 +107,3 @@ class World(object): #needs a better name.
         except:
             print "the move didn't work."
             
-        

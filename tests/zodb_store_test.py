@@ -1,6 +1,4 @@
-from binary_tactics.world import *
+from equanimity.world import *
 
 if __name__ == '__main__':
     world = World()
-
-    

@@ -1,21 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-#
-# Copyright 2010 Alexandre Fiori
-# based on the original Tornado by Facebook
-#
-# Licensed under the Apache License, Version 2.0 (the "License"); you may
-# not use this file except in compliance with the License. You may obtain
-# a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
-
 import json, urllib
 
 def request(url, func, *args):
@@ -36,5 +18,6 @@ print "geoip_lookup:", request(url, "geoip_lookup", "google.com")
 """
 
 battle = "http://localhost:8888/battle"
-print request(battle, "get_state")
-print request(battle, "process_action", ['btl.squad1[0]', 'move', '(2,2)'])
+q = request(battle, "get_state")
+l = request("http://localhost:8888/jsonrpc/login", "login", {"u":"rix", "p":"xir"})
+v = request(battle, "process_action", ['btl.squad1[0]', 'move', '(2,2)'])

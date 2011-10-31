@@ -1,6 +1,7 @@
 import sys
 import base64
 import functools
+import hashlib
 
 import cyclone.web
 import cyclone.redis
@@ -12,6 +13,11 @@ from binary_tactics.hex_battle import *
 from stores.yaml_store import *
 from binary_tactics.hex_battlefield import Battlefield
 from binary_tactics.player import Player
+
+from equanimity.world import wPlayer
+from ZEO import ClientStorage
+from ZODB import DB
+import transaction
 
 class BaseHandler(cyclone.web.RequestHandler):
     def get_current_user(self):
@@ -28,7 +34,7 @@ class MainHandler(BaseHandler):
 
 class SignupHandler(BaseHandler):
     def get(self):
-        err = self._get_argument("e", None)
+        err = self.get_argument("e", None)
         self.finish("""
             <html><body><form action="/signup" method="post">
             Desired username: <input type="text" name="u"></br>
@@ -42,16 +48,19 @@ class SignupHandler(BaseHandler):
     def post(self):
         u = self.get_argument("u")
         p = self.get_argument("p")
-        password = hashlib.md5(p).hexdigest() #If I actaully cared I would do this client-side or via ssl.
+        password = hashlib.md5(p).hexdigest() #NOT SECURE!!!
+        print "password: %s" % password 
+        print "password encoded: %s" % password.encode("utf-8")
         try:
-            password = yield self.settings.redis.get("cyclone:%s" % usr)
+            assert self.settings.zeo.get(u)
             log.err("User already exists")
             raise cyclone.web.HTTPError(400, "User already Exists")
-        except Exception, e:
-            yield self.settings.redis.set("cyclone:%s" % u, password.encode("utf-8"))
         
+        except Exception, e:
+            self.settings.zeo.set(u, password.encode("utf-8"))
             self.set_secure_cookie("user", cyclone.escape.json_encode(u))
             self.redirect("/")
+                
 class LoginHandler(BaseHandler):
     def get(self):
         err = self.get_argument("e", None)
@@ -70,16 +79,15 @@ class LoginHandler(BaseHandler):
         p = self.get_argument("p")
         password = hashlib.md5(p).hexdigest()
         try:
-            #user = yield self.settings.mongo.mydb.users.find_one({"u":u, "p":password}, fields=["u"])
-            stored_pw = yield self.settings.redis.get("cyclone:%s" % usr)
+            stored_pw = yield self.settings.zeo.get(u)
             assert password == stored_pw
+                
         except Exception, e:
-            log.err("Login Failed")
+            log.err("Login Failed: %r" % e)
             raise cyclone.web.HTTPError(503)
         
-        if user:
-            user["_id"] = str(user["_id"])
-            self.set_secure_cookie("user", cyclone.escape.json_encode(user))
+        if u:
+            self.set_secure_cookie("user", cyclone.escape.json_encode(u))
             self.redirect("/")
         else:
             self.redirect("/auth/login?e=invalid")
@@ -91,26 +99,60 @@ class LogoutHandler(BaseHandler):
         self.redirect("/")
 
 class BattleHandler(BaseJSONHandler):
+    @cyclone.web.authenticated
     @defer.inlineCallbacks
-    def jsonrpc_process_action(self, args):
-        #obviously this needs to be more robust.
-        #so nasty.
-        action = Action(eval(args[0]), args[1], eval(args[2]))
-        result = yield game.process_action(action)
-        defer.returnValue(result)
-
-    @defer.inlineCallbacks
-    def jsonrpc_get_state(self):
-        state = yield game.state
-        defer.returnValue(state)
-
+    def jsonrpc_register(self):
+        """Takes a cookie and registers it in a battlefield."""
+        pass
+        
     @defer.inlineCallbacks
     def jsonrpc_initial_state(self):
         init_state = yield game.initial_state()
         defer.returnValue(str(init_state))
-
+        
+    @defer.inlineCallbacks
+    def jsonrpc_get_state(self):
+        state = yield game.state
+        defer.returnValue(state)
+        
+    @cyclone.web.authenticated
+    @defer.inlineCallbacks
+    def jsonrpc_process_action(self, args):
+        err = self.get_argument("e", None)
+        print self.get_current_user()
+        try:
+            #obviously this needs to be more robust.
+            #so nasty.
+            action = Action(eval(args[0]), args[1], eval(args[2]))
+            result = yield game.process_action(action)
+            defer.returnValue(result)
+        except Exception , e:
+            log.err("process_action failed: %r" % e)
+            raise cyclone .web.HTTPError(500, "%r" % e.args[0])
+            
+class Zeo(object):
+    def __init__(self, addr=('localhost', 9100)):
+        self.addr = addr
+        self.storage = ClientStorage.ClientStorage(self.addr)
+        self.db = DB(self.storage)
+        self.conn = self.db.open()
+        self.root = self.conn.root()
+        
+    def get(self, username): #FIX
+        self.conn.sync()
+        return self.root['Players'][username].password
+        
+    def set(self, username, password): #FIX
+        try:
+            self.conn.sync()
+            assert not self.root['Players'][username].password
+        except Exception: #this exception looks dangerous
+            self.root['Players'][username] = wPlayer(username, password)
+            self.root._p_changed = 1
+            return transaction.commit()
+            
 def main():
-    redis = cyclone.redis.lazyRedisConnectionPool()
+    zeo = Zeo()
     application = cyclone.web.Application([
         (r"/", MainHandler),
         (r"/signup", SignupHandler),
@@ -118,7 +160,10 @@ def main():
         (r"/auth/logout", LogoutHandler),
         (r"/battle", BattleHandler),
     ],
-    redis=redis)
+    zeo = zeo,
+    login_url="/auth/login",
+    cookie_secret="secret!!!!"
+    )
     
     reactor.listenTCP(8888, application)
     reactor.run()
@@ -137,6 +182,6 @@ if __name__ == "__main__":
             btl.place_object(btl.squads[s][x], defs.Loc(x, s))
     
     game.log['init_locs'] = game.log.init_locs()
-    print game.state
     log.startLogging(sys.stdout)
     main()
+    
