@@ -1,6 +1,6 @@
 from collections import Mapping
 from persistent import Persistent
-from const import ELEMENTS, E, F, I, W
+from binary_tactics.const import ELEMENTS, E, F, I, W
 
 class Stone(Persistent, Mapping):
     """ugh."""

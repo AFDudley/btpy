@@ -8,7 +8,7 @@ import logging
 logging.basicConfig()
 
 import binary_tactics.stone
-from binary_tactics.wstone import Stone
+from equanimity.wstone import Stone
 binary_tactics.stone.Stone = Stone #Monkey Patch
 from binary_tactics.grid import Grid
 from binary_tactics.units import Squad
@@ -53,19 +53,32 @@ class wPlayer(persistent.Persistent):
         self.treaties = None
         
 class World(object): #needs a better name. 
-    #This model is wrong. the world needs to be the persisted object assigned to root.
-    def __init__(self, storage_name=('localhost', 9100), x=8, y=8):
-        self.x = x
-        self.y = y
+    def __init__(self, storage_name=('localhost', 9100),x=8, y=8):
         self.storage = ClientStorage.ClientStorage(storage_name)
         self.db = DB(self.storage)
         self.connection = self.open_connection(self.db)
         self.root = self.get_root(self.connection)
-        self.player = self.attach_player_object()
+	self.create_world(x, y)
+	#FIX ME
+	self.x = self.root['x']
+	self.y = self.root['y']
+	self.player = self.attach_player_object()
         
     def open_connection(self, db):
         return db.open()
         
+    def create_world(self, x, y):
+        """Creates a world in ZODB."""
+        #attach player should be in here as well
+	#because this si where the world player should be created.
+	try:
+            assert self.root['Players']
+	    return
+	except:
+	    self.root['Players'] = persistent.mapping.PersistentMapping()
+	    self.root['x'] = x
+	    self.root['y'] = y
+
     def get_root(self, connection):
         return connection.root()
     
