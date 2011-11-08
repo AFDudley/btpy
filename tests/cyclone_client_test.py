@@ -38,16 +38,22 @@ class test_client():
 	headers = {'Content-type': 'application/x-www-form-urlencoded'}
         return self.http.request(url, 'POST', headers=headers, body=body)
 
-    def test_move(self, cookie):
+    def battle(self, method, params, cookie):
         url = 'http://' + self.addr + '/battle'
-        body = json.dumps({"method":"process_action",
-	                   "params":[['btl.squad1[0]',
-			              'move', '(2,2)']],
-	                   "id":1})
+        body = json.dumps({"method": method, "params":params, "id":1})
 	headers = {'Cookie': cookie}
 	return self.http.request(url, 'POST', headers=headers, body=body)
+    
+    def test_move(self, cookie):
+        params = [['btl.squad1[0]', 'move', '(2,2)']]
+        return self.battle("process_action", params, cookie)
 
+    def register(self, cookie):
+        params = []
+	return self.battle("register", params, cookie)
 if __name__ == "__main__":
+   
     t = test_client()
-    response = t.test_move(t.login('rix', 'xir')[0]['set-cookie'])
-    print response
+    cookie = t.login('rix', 'xir')[0]['set-cookie']
+    #print t.test_move(cookie)
+    print t.register(cookie)

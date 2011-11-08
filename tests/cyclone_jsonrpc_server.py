@@ -103,8 +103,9 @@ class BattleHandler(BaseJSONHandler):
     @defer.inlineCallbacks
     def jsonrpc_register(self):
         """Takes a cookie and registers it in a battlefield."""
-        pass
-        
+        current_user = yield self.get_current_user()
+        defer.returnValue(current_user)
+
     @defer.inlineCallbacks
     def jsonrpc_initial_state(self):
         init_state = yield game.initial_state()
