@@ -23,6 +23,7 @@ class Stronghold(persistent.Persistent):
         self.squads  = persistent.mapping.PersistentMapping() 
         #needs a value limit based on the value of the grid that contains it.
         self.defenders = Squad(name='local defenders')
+        self.defender_locs = persistent.list.PersistentList()
     
 
 class wField(persistent.Persistent):
@@ -31,7 +32,7 @@ class wField(persistent.Persistent):
         self.owner = owner
         self.grid = Grid()
         self.stronghold  = Stronghold()
-        self.battlequeue = []
+        self.battlequeue = persistent.list.PersistentList()
         self.producers   = None #stuctures, input stones, output composites.
         self.value       = None
         self.expected_yield = None
@@ -39,11 +40,13 @@ class wField(persistent.Persistent):
     def get_defenders(self):
         """gets the defenders of a wField, returns a random squad from stronghold
            if no defenders set."""
-        if self.stronghold.defenders.value() > 0:
+        if self.stronghold.defenders.value > 0:
             return self.stronghold.defenders
-        else:
-            return self.stronghold.squads.values()[0]
-    
+        else: #not really random.
+            try:
+                return self.stronghold.squads.values()[0]
+            except:
+                raise Exception("no squads available to defend Field.")
 
 class wPlayer(persistent.Persistent):
     """Object that contains player infomration."""
@@ -119,6 +122,6 @@ class World(object):
         except:
             print "the move didn't work."
         
-    def start_battle(self, wField):
+    def start_battle(self, field_loc):
         """Starts a battle on a wField. FOR TESTING"""
         pass
