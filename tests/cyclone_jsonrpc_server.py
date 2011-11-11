@@ -9,11 +9,6 @@ import cyclone.redis
 from twisted.python import log
 from twisted.internet import reactor, defer
 
-from binary_tactics.hex_battle import *
-from stores.yaml_store import *
-from binary_tactics.hex_battlefield import Battlefield
-from binary_tactics.player import Player
-
 from equanimity.world import wPlayer
 from ZEO import ClientStorage
 from ZODB import DB
@@ -49,8 +44,6 @@ class SignupHandler(BaseHandler):
         u = self.get_argument("u")
         p = self.get_argument("p")
         password = hashlib.md5(p).hexdigest() #NOT SECURE!!!
-        print "password: %s" % password 
-        print "password encoded: %s" % password.encode("utf-8")
         try:
             assert self.settings.zeo.get(u)
             log.err("User already exists")
@@ -105,7 +98,7 @@ class BattleHandler(BaseJSONHandler):
         """Takes a cookie and registers it in a battlefield."""
         current_user = yield self.get_current_user()
         defer.returnValue(current_user)
-
+        
     @defer.inlineCallbacks
     def jsonrpc_initial_state(self):
         init_state = yield game.initial_state()
@@ -129,7 +122,7 @@ class BattleHandler(BaseJSONHandler):
             defer.returnValue(result)
         except Exception , e:
             log.err("process_action failed: %r" % e)
-            raise cyclone .web.HTTPError(500, "%r" % e.args[0])
+            raise cyclone.web.HTTPError(500, "%r" % e.args[0])
             
 class Zeo(object):
     def __init__(self, addr=('localhost', 9100)):
@@ -151,7 +144,7 @@ class Zeo(object):
             self.root['Players'][username] = wPlayer(username, password)
             self.root._p_changed = 1
             return transaction.commit()
-            
+    
 def main():
     zeo = Zeo()
     application = cyclone.web.Application([
@@ -168,9 +161,13 @@ def main():
     
     reactor.listenTCP(8888, application)
     reactor.run()
-    
-if __name__ == "__main__":
+
+if __name__ == "__main__":    
     #battle setup.
+    from binary_tactics.hex_battle import *
+    from stores.yaml_store import *
+    from binary_tactics.hex_battlefield import Battlefield
+    from binary_tactics.player import Player
     p1   = Player(name='p1', squads=[load('yaml/ice_maxes.yaml')])
     p2   = Player(name='p2', squads=[load('yaml/fire_maxes.yaml')])
     game = Game(player1=p1, player2=p2,

@@ -15,25 +15,27 @@ from binary_tactics.units import Squad
 from binary_tactics.hex_battle import Game
 from binary_tactics.helpers import *
 
-class Stronghold(object):
-    def __init__(self):
-        self.stones  = {}
-        self.weapons = {}
-        self.units   = {}
-        self.squads  = {} #this needs some intelligence.
+class Stronghold(persistent.Persistent):
+    def __init__(self): #placeholder containers, need something smarter.
+        self.stones  = persistent.list.PersistentList()
+        self.weapons = persistent.list.PersistentList()
+        self.units   = persistent.list.PersistentList()
+        self.squads  = persistent.mapping.PersistentMapping() 
         #needs a value limit based on the value of the grid that contains it.
         self.defenders = Squad(name='local defenders')
+    
 
-class wField(object):
-    def __init__(self, world_coord):
-        self.grid = Grid()
+class wField(persistent.Persistent):
+    def __init__(self, world_coord, owner):
         self.world_coord = world_coord
+        self.owner = owner
+        self.grid = Grid()
         self.stronghold  = Stronghold()
         self.battlequeue = []
         self.producers   = None #stuctures, input stones, output composites.
         self.value       = None
         self.expected_yield = None
-        
+    
     def get_defenders(self):
         """gets the defenders of a wField, returns a random squad from stronghold
            if no defenders set."""
@@ -41,44 +43,29 @@ class wField(object):
             return self.stronghold.defenders
         else:
             return self.stronghold.squads.values()[0]
-               
+    
+
 class wPlayer(persistent.Persistent):
     """Object that contains player infomration."""
-    def __init__(self, username=None, password=None, wFields=None):
+    def __init__(self, username=None, password=None):
         persistent.Persistent.__init__(self)
         self.username = username
         self.password = password
-        self.wFields  = wFields
+        self.wFields  = persistent.mapping.PersistentMapping()
+        self.cookie   = None
         self.roads    = None
         self.treaties = None
-        
-class World(object): #needs a better name. 
+
+class World(object):
     def __init__(self, storage_name=('localhost', 9100),x=8, y=8):
         self.storage = ClientStorage.ClientStorage(storage_name)
         self.db = DB(self.storage)
         self.connection = self.open_connection(self.db)
         self.root = self.get_root(self.connection)
-	self.create_world(x, y)
-	#FIX ME
-	self.x = self.root['x']
-	self.y = self.root['y']
-	self.player = self.attach_player_object()
-        
+    
     def open_connection(self, db):
         return db.open()
-        
-    def create_world(self, x, y):
-        """Creates a world in ZODB."""
-        #attach player should be in here as well
-	#because this si where the world player should be created.
-	try:
-            assert self.root['Players']
-	    return
-	except:
-	    self.root['Players'] = persistent.mapping.PersistentMapping()
-	    self.root['x'] = x
-	    self.root['y'] = y
-
+    
     def get_root(self, connection):
         return connection.root()
     
@@ -91,32 +78,47 @@ class World(object): #needs a better name.
             raise Exception("A player with that name is already registered, \
                              use another name.")
     
-    def make_wFields(self):
-        """creates all wFields used in a game."""
-        #right now the World and the wFields are square, they should both be hexagons.
-        wf = {}
-        for coord_x in xrange(self.x):
-            for coord_y in xrange(self.y):
-                world_coord = (coord_x, coord_y)
-                wf[str(world_coord)] = wField(world_coord)
-        return wf
+    def award_field(self, old_owner, wField_coords, new_owner):
+        """Transfers a field from one owner to another."""
+        #this should be atomic.
+        self.root['Players'][new_owner].wFields[str(wField_coords)] = \
+        self.root['Players'][old_owner].wFields[str(wField_coords)]
+        del self.root['Players'][old_owner].wFields[str(wField_coords)]
+        self.root['Players'][new_owner].wFields[str(wField_coords)].owner =\
+        new_owner
+        return transaction.commit()
+        
+    def populate_defenders(self, wField):
+        """populates the stronghold defenders of a field with random scients.
+        (should be nescients)"""
+        #this function should calcuate the composition of the units based on the
+        #composition of the field, that will be handled in due time.
+        #should verify that defenders is empty.
+        squad = wField.stronghold.defenders
+        while squad.free_spaces > 4:
+            squad.append(rand_unit())
+        wField.stronghold._p_changed = 1 #overloading squad fixes this.
+        return transaction.commit()
     
-    def attach_player_object(self): #broken
-        """Attempts to attach the world object in zodb, creates new one otherwise."""
-        try:
-            #this needs deeper checking... or to be part of a thoughtout object model?
-            return self.root["Players"]["World"]
-        except Exception as excpt:
-            if 'World' in excpt.args:
-                return self.add_player(wPlayer('World', self.make_wFields()))
+    def populate_squads(self, wField, squad=None):
+        """puts a squad into a stronghold. FOR TESTING"""
+        if squad==None: squad = rand_squad()
+        wField.stronghold.squads[squad.name] = squad
+        wField.stronghold._p_changed = 1
+        return transaction.commit()
         
     def move_squad(self, src, squad_name, dest):
         """Moves a squad from a stronghold to a queue."""
-        #src and dest are both wGrids
+        #src and dest are both wFields
+        #TODO: check for adjacency.
+        squad = src.stronghold.squads[squad_name]
         try:
-            dest.battlequeue.append((squad_name.owner,
-                                     src.stronghold.squads[squad_name]))
-            return self.transaction.commit()
+            dest.battlequeue.append((src.owner, squad))
+            del src.stronghold.squads[squad_name]
+            return transaction.commit()
         except:
             print "the move didn't work."
-            
+        
+    def start_battle(self, wField):
+        """Starts a battle on a wField. FOR TESTING"""
+        pass
