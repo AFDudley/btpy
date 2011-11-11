@@ -27,12 +27,12 @@ class BattleHandler(BaseJSONHandler):
         
     @defer.inlineCallbacks
     def jsonrpc_initial_state(self):
-        init_state = yield game.initial_state()
+        init_state = yield self.settings.game.initial_state()
         defer.returnValue(str(init_state))
         
     @defer.inlineCallbacks
     def jsonrpc_get_state(self):
-        state = yield game.state
+        state = yield self.settings.game.state
         defer.returnValue(state)
         
     @cyclone.web.authenticated
@@ -44,7 +44,7 @@ class BattleHandler(BaseJSONHandler):
             #obviously this needs to be more robust.
             #so nasty.
             action = Action(eval(args[0]), args[1], eval(args[2]))
-            result = yield game.process_action(action)
+            result = yield self.settings.game.process_action(action)
             defer.returnValue(result)
         except Exception , e:
             log.err("process_action failed: %r" % e)
@@ -87,16 +87,14 @@ def main():
         btl.rand_place_squad(squad)
     
     game.log['init_locs'] = game.log.init_locs()
-    application = cyclone.web.Application([
-        (r"/battle", BattleHandler),
-    ],
+    application = cyclone.web.Application([(r"/", BattleHandler)],
     zeo = zeo,
     game = game,
     login_url="/auth/login",
     cookie_secret="secret!!!!"
     )
     
-    reactor.listenTCP(8888, application)
+    reactor.listenTCP(8890, application)
     reactor.run()
 
 if __name__ == "__main__":    

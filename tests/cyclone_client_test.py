@@ -2,24 +2,6 @@ import json
 import urllib
 import httplib2
 
-def request(url, func, *args):
-    req = json.dumps({"method":func, "params":args, "id":1})
-    result = urllib.urlopen(url, req).read()
-    print req
-    print result
-    try:
-        response = json.loads(result)
-        print response
-    except:
-        return "error: %s" % result
-    else:
-        return response.get("result", response.get("error"))
-
-#battle = "http://localhost:8888/battle"
-#g = request(battle, "get_state")
-#l = request("http://localhost:8888/jsonrpc/login", "login", {"u":"rix", "p":"xir"})
-#p = request(battle, "process_action", ['btl.squad1[0]', 'move', '(2,2)'])
-
 class test_client():
     def __init__(self, addr='localhost:8888'):
         self.addr = addr
@@ -27,7 +9,7 @@ class test_client():
         self.http = httplib2.Http()
         
     def signup(self, u, p):
-        url = 'http://' + self.addr + '/signup'
+        url = 'http://' + self.addr + '/auth/signup'
         body = urllib.urlencode({'u': u, 'p': p})
         headers = {'Content-type': 'application/x-www-form-urlencoded'}
         return self.http.request(url, 'POST', headers=headers, body=body)
@@ -54,6 +36,6 @@ class test_client():
         
 if __name__ == "__main__":
     t = test_client()
-    cookie = t.login('rix', 'xir')[0]['set-cookie']
-    #print t.test_move(cookie)
+    #cookie = t.login('rix', 'xir')[0]['set-cookie']
+    cookie = t.login('atkr', 'atkr')[0]['set-cookie']
     foo = t.register(cookie)[1]

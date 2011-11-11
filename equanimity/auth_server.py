@@ -45,7 +45,7 @@ class SignupHandler(BaseHandler):
         except Exception, e:
             self.settings.zeo.set(u, password.encode("utf-8"))
             self.set_secure_cookie("user", cyclone.escape.json_encode(u))
-            self.redirect("/")
+            #self.redirect("/")
                 
 class LoginHandler(BaseHandler):
     def get(self):
@@ -74,7 +74,7 @@ class LoginHandler(BaseHandler):
         
         if u:
             self.set_secure_cookie("user", cyclone.escape.json_encode(u))
-            self.redirect("/")
+            #self.redirect("/")
         else:
             self.redirect("/auth/login?e=invalid")
         
@@ -82,7 +82,7 @@ class LogoutHandler(BaseHandler):
     @cyclone.web.authenticated
     def get(self):
         self.clear_cookie("user")
-        self.redirect("/")
+        #self.redirect("/")
 
             
 class Zeo(object):
@@ -109,17 +109,18 @@ class Zeo(object):
 def main():
     zeo = Zeo()
     application = cyclone.web.Application([
-        (r"/", MainHandler),
+        #(r"/", MainHandler),
+        #proxied handlers
         (r"/signup", SignupHandler),
-        (r"/auth/login", LoginHandler),
-        (r"/auth/logout", LogoutHandler),
+        (r"/login", LoginHandler),
+        (r"/logout", LogoutHandler),
     ],
     zeo=zeo,
     login_url="/auth/login",
     cookie_secret="secret!!!!"
     )
     
-    reactor.listenTCP(8888, application)
+    reactor.listenTCP(8889, application)
     reactor.run()
 
 if __name__ == "__main__":    
