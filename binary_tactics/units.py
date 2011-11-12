@@ -229,7 +229,7 @@ class Squad(UserList):
         del self.data[key].squad
         temp = self[key].value()
         self.free_spaces += self.unit_size(self[key])
-        self.data.__delitem__(self, key)
+        self.data.__delitem__(key)
         self.value -= temp
         
     def append(self, item):

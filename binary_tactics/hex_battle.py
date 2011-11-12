@@ -22,6 +22,9 @@ from binary_tactics.helpers import rand_squad
 from binary_tactics.units import Unit
 from binary_tactics.player import Player
 
+from stores.store import *
+import json
+
 def now():
     return str(datetime.utcnow())
 
@@ -44,7 +47,25 @@ class Message(dict):
     def __dict__(self):
         return self
     
+class Initial_state(dict):
+    """A hack for serialization."""
+    def __init__(self, log):
+        #self.start_time = log['start_time']
+        #self.players    = log['players']
+        #self.units      = log['units']
+        #self.grid       = log['grid']
+        #self['init_locs']  = log['init_locs']
+        dict.__init__(self, init_locs=log['init_locs'],
+                            start_time=log['start_time'],
+                            units=log['units'],
+                            grid=log['grid'],
+                            owners=log['owners'],)
+        #self['owners'] = self.get_owners(log)
 
+    @property
+    def __dict__(self):
+        return self
+            
 class Log(dict):
     def __init__(self, players, units, grid):
         """Records inital game state, timestamps log."""
@@ -62,7 +83,8 @@ class Log(dict):
         self['messages']   = [] 
         self['applied']    = []
         self['condition']  = None
-        self['init_locs']  = self.init_locs()
+        self['owners']     = None
+        self['init_locs']  = None
     
     @property
     def __dict__(self):
@@ -84,12 +106,20 @@ class Log(dict):
     def get_owner(self, unit_num):
         """takes unit number returns player/owner."""
         #slow lookup
-        target_squad = self['units'][unit_num].squad
+        target_squad = self['units'][unit_num].squad.name
         for player in self['players']:
             for squad in player.squads:
-                if squad == target_squad:
+                if squad.name == target_squad:
                     owner = player
         return owner
+        
+    #LAZE BEAMS!!!!
+    def get_owners(self):
+        """mapping of unit number to player/owner."""
+        owners = {}
+        for unit in self['units'].keys():
+            owners[unit] = self.get_owner(unit).name
+        return owners
     '''  
     def to_english(self, number, time=True): #BROKEN!!!!!
         """returns a string of english containing an action and mission set from ply number."""
@@ -250,6 +280,7 @@ class Game(object):
         self.winner = None
         self.units = self.map_unit()
         self.log = Log(self.players, self.units, self.grid)
+        self.log['owners'] = self.log.get_owners()
         self.state['old_squad2_hp'] = self.battlefield.squad2.hp()
     
     def unit_map(self):
@@ -369,13 +400,8 @@ class Game(object):
         
     def initial_state(self):
         """Returns stuff to create the client side of the game"""
-        return {'start_time': self.log['start_time'],
-                'players': self.log['players'],
-                'units': self.log['units'],
-                'grid': self.log['grid'],
-                'init_locs': self.log['init_locs'],
-                }
-                
+        return Initial_state(self.log)
+    
     def end(self, condition):
         """game over state, handles log closing, updating player stats, TBD"""
         self.state['game_over'] = True

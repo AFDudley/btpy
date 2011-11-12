@@ -36,6 +36,5 @@ class test_client():
         
 if __name__ == "__main__":
     t = test_client()
-    #cookie = t.login('rix', 'xir')[0]['set-cookie']
     cookie = t.login('atkr', 'atkr')[0]['set-cookie']
     foo = t.register(cookie)[1]

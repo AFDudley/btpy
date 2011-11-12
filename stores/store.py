@@ -22,7 +22,8 @@ persisted = {'stone': c, 'sword': ec, 'bow': ec, 'wand': ec, 'glove': ec,
              'squad': ('data', 'name', 'value', 'free_spaces'),
              'tile': c + ('contents',),
              'grid': c + ('tiles','x','y'),
-             'player': ('fields', 'name', 'squads', 'stones', 'units', 'weapons'),
+             #'player': ('name', 'squads'),
+             'initial_state': ('start_time', 'init_locs', 'units', 'grid', 'owners')
              }
 not_persisted_now = {'log': ('applied', 'start_time', 'winner', 'messages', 'actions',
                              'states', 'players', 'grid', 'end_time', 'condition',
@@ -36,11 +37,13 @@ not_persisted_now = {'log': ('applied', 'start_time', 'winner', 'messages', 'act
 def get_persisted(obj):
     """Returns a dict of obj attributes that are persisted."""    
     kind = obj.__class__.__name__.lower()
+    #print "kind: %s" % kind
     if kind in persisted.keys():
         new_dict = {}
         #check values of obj.__dict__ for persisted objects
         for key in persisted[kind]:
             other_kind = obj.__dict__[key].__class__.__name__.lower()
+            #print "other_kind: %s" % other_kind
             #catch grid case
             if key == 'tiles':
                 new_dict['tiles'] = {}
@@ -70,7 +73,7 @@ def get_persisted(obj):
             elif key == 'body':
                 new_dict['body'] = {}
                 for (n, s) in obj.__dict__[key].items():
-                    print n, s
+                    #print n, s
                     new_dict['body'][n] = get_persisted(s)
                 
             elif key == 'squad_list':
@@ -146,6 +149,8 @@ def convert_dict(dict):
         if not value['location'] == None:
             scient.location = Loc(value['location'][0], value['location'][1])
         return scient
+        
+    
     elif key == 'nescient':
         nescient = {}
         nescient['element'] = value['element']
@@ -159,14 +164,13 @@ def convert_dict(dict):
         if not value['location'] == None:
             nescient.location = Loc(value['location'][0], value['location'][1])
         return nescient
+        
     elif key == 'player':
-
         squads = []
         for squad in value['squads']:
             squads.append(convert_dict(squad))
         return Player(value['name'], squads)
-
+        
     else:
         #for weapons
         return eval(key.capitalize())(**eval(''.join(str(value).replace("u'", "'"))))
-    

@@ -1,4 +1,12 @@
+'''
+TODO:
+    write world_server that calls this dynamically.
+    Write a serializing wrapper around battle.
+    Filter information based on authenticated player.
+    write frontend.
+'''
 import sys
+import json
 import cyclone.web
 
 from twisted.python import log
@@ -9,9 +17,13 @@ from ZEO import ClientStorage
 from ZODB import DB
 import transaction
 
-from binary_tactics.hex_battle import *
+from binary_tactics.hex_battle import Game
 from binary_tactics.hex_battlefield import Battlefield
+from binary_tactics.player import Player
 from binary_tactics.defs import Loc
+
+from stores.store import get_persisted
+import copy
         
 class BaseJSONHandler(cyclone.web.JsonrpcRequestHandler):
     def get_current_user(self):
@@ -27,13 +39,19 @@ class BattleHandler(BaseJSONHandler):
         
     @defer.inlineCallbacks
     def jsonrpc_initial_state(self):
-        init_state = yield self.settings.game.initial_state()
-        defer.returnValue(str(init_state))
+        #hill larry ous
+        init_state = yield get_persisted(self.settings.game.initial_state())
+        defer.returnValue(init_state)
         
     @defer.inlineCallbacks
     def jsonrpc_get_state(self):
         state = yield self.settings.game.state
         defer.returnValue(state)
+        
+    @defer.inlineCallbacks
+    def jsonrpc_game_log(self):
+        log = yield self.settings.game.log
+        defer.returnValue(str(log))
         
     @cyclone.web.authenticated
     @defer.inlineCallbacks
@@ -74,17 +92,22 @@ class Zeo(object):
 def main():
     zeo    = Zeo()
     world  = zeo.root
-    wField = world['Fields'][str(sys.argv[1])]
-    grid = wField.grid
-    attacker, squad1 = wField.battlequeue[0]
-    squad2 = wField.get_defenders()
-    #player1 is attacker
-    game = Game(player1=attacker, player2=wField.owner,
-                battlefield=Battlefield(grid, squad1, squad2))
+    f = copy.deepcopy(world['Fields'][str(sys.argv[1])])
+    atkr_name, squad1 = f.battlequeue[0]
+    squad2 = f.get_defenders()
+    #TODO rewrite player and hex_battle
+    atkr = Player(atkr_name, [squad1])
+    dfndr = Player(f.owner, [squad2])
+    game = Game(player1=atkr, player2=dfndr,
+                battlefield=Battlefield(f.grid, squad1, squad2))
     btl = game.battlefield
     #obviously for testing only.
-    for squad in btl.squads:
-        btl.rand_place_squad(squad)
+    for s in btl.squads: #location wonkiness in hex_battlefield.
+        for u in s:
+            u.location = Loc(None, None)
+    for s in range(2):
+        for x in range(4):
+            btl.place_object(btl.squads[s][x], Loc(x, s))
     
     game.log['init_locs'] = game.log.init_locs()
     application = cyclone.web.Application([(r"/", BattleHandler)],
@@ -100,3 +123,4 @@ def main():
 if __name__ == "__main__":    
     log.startLogging(sys.stdout)
     main()
+    game = main.settings.game
