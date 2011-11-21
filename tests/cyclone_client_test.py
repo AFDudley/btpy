@@ -26,8 +26,8 @@ class test_client():
         headers = {'Cookie': cookie}
         return self.http.request(url, 'POST', headers=headers, body=body)
     
-    def test_move(self, cookie):
-        params = [['btl.squad1[0]', 'move', '(2,2)']]
+    def test_move(self, unit, cookie):
+        params = [[unit, 'move', '(2,2)']]
         return self.battle("process_action", params, cookie)
     
     def register(self, cookie):
@@ -38,3 +38,6 @@ if __name__ == "__main__":
     t = test_client()
     cookie = t.login('atkr', 'atkr')[0]['set-cookie']
     foo = t.register(cookie)[1]
+    
+    #No auth battle:
+    b = t.battle("initial_state", [], "" )

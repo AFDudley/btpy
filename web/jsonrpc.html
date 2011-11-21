@@ -1,0 +1,34 @@
+<!DOCTYPE HTML>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>get initial game state and store it.</title>
+        <script src="http://bitwise:8888/battle/static/dojo-release-1.7.0/dojo/dojo.js"
+                data-dojo-config="isDebug: true,parseOnLoad: true">
+        </script>
+        <script type="text/javascript" src="http://bitwise:8888/battle/static/documentcloud-underscore-8c34614/underscore.js">
+        </script>
+        <script>
+            
+            dojo.require("dojox.rpc.Service");
+            dojo.require("dojox.rpc.JsonRPC");
+            dojo.require("dojo.store.Memory");
+            function gameState(result) {
+                this.grid = result.initial_state.grid.grid;
+                this.init_locs = result.initial_state.init_locs;
+                this.owners = result.initial_state.owners;
+                this.start_time = result.initial_state.start_time;
+                this.units = result.initial_state.units;
+            };
+            var services = new dojox.rpc.Service("http://bitwise:8888/battle/static/battle.smd");
+            var get_initial = services.initial_state()
+            get_initial.then(function(result) {game = new gameState(result)})
+            var process_action = services.process_action(['units.keys()[0]', 'move', '(2,2)'])
+            console.log(process_action)
+            console.log(_)
+        </script>
+    </head>
+    <body>
+        <p>Love yourself first.</p>
+    </body>
+</html>

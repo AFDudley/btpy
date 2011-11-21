@@ -108,14 +108,17 @@ class Zeo(object):
     
 def main():
     zeo = Zeo()
+    static_path = "./web"
     application = cyclone.web.Application([
-        #(r"/", MainHandler),
+        (r"/static/(.*)", cyclone.web.StaticFileHandler, {"path": static_path}),
         #proxied handlers
         (r"/signup", SignupHandler),
         (r"/login", LoginHandler),
         (r"/logout", LogoutHandler),
     ],
     zeo=zeo,
+    static_path = static_path,
+    debug=True,
     login_url="/auth/login",
     cookie_secret="secret!!!!"
     )

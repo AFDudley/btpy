@@ -1,0 +1,19 @@
+{
+    "SMDVersion": "2.0",
+    "contentType": "application/json",
+    "target": "http://bitwise:8888/battle",
+    "envelope": "JSON-RPC-1.0",
+    "services": {
+        "initial_state": {
+            parameters: [],
+        },
+        "get_state": {
+            parameter: [],
+        },
+        "process_action": {
+            parameters: [],
+            returns: {"type": "string"}
+            },
+    },
+   "transport": "POST"
+}
