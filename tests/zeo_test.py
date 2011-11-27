@@ -6,4 +6,4 @@ addr = 'localhost', 9100
 storage = ClientStorage.ClientStorage(addr)
 db = DB(storage)
 conn = db.open()
-root = conn.root()
+world = conn.root()

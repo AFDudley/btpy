@@ -23,11 +23,8 @@ def make_wFields(x, y):
             wField(world_coord, 'World')
     transaction.commit() #required for wf1
     
-def create_world(version, x, y):
-    version = 0.0
-    try:
-        assert world['version'] == version
-    except:
+def create_world(version=0.0, x=2, y=2):
+    def do_it():
         world['version'] = version
         world['x'] = x
         world['y'] = y
@@ -37,8 +34,15 @@ def create_world(version, x, y):
         world['Players'] = persistent.mapping.PersistentMapping()
         player = wPlayer('World', None)
         world['Players']['World'] = player
-        make_wFields(8, 8)
-
+        make_wFields(world['x'], world['y'])
         transaction.commit()
+    try: #If the world version is the same, do nothing.
+       if world['version'] == version:
+           print "The ZODB already contains a world of that version."
+       else: do_it()
+    except: do_it()
+    return world
 
-        
+if __name__ == '__main__':
+    print create_world(0.0, 2,2)
+    

@@ -78,7 +78,7 @@ def rand_comp(suit=None, kind=None, max_v=255):
                 random.randint(1, comp[suit])
             return comp
             
-def rand_unit(suit=None, kind=None):
+def rand_unit(suit=None, kind='Scient'):
     """Returns a random Scient of suit. Random suit used if none given."""
     kinds = ('Scient', 'Nescient')
     if not kind in kinds:

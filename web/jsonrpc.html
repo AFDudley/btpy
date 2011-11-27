@@ -1,12 +1,13 @@
-<!DOCTYPE HTML>
+<!DOCTYPE HTML
 <html lang="en">
     <head>
         <meta charset="utf-8">
         <title>get initial game state and store it.</title>
-        <script src="http://bitwise:8888/battle/static/dojo-release-1.7.0/dojo/dojo.js"
+        <script src="http://equanimity.dev:8888/battle/static/dojo-release-1.7.0/dojo/dojo.js"
                 data-dojo-config="isDebug: true,parseOnLoad: true">
         </script>
-        <script type="text/javascript" src="http://bitwise:8888/battle/static/documentcloud-underscore-8c34614/underscore.js">
+        <script type="text/javascript" 
+src="http://equanimity.dev:8888/battle/static/documentcloud-underscore-8c34614/underscore.js">
         </script>
         <script>
             
@@ -20,7 +21,7 @@
                 this.start_time = result.initial_state.start_time;
                 this.units = result.initial_state.units;
             };
-            var services = new dojox.rpc.Service("http://bitwise:8888/battle/static/battle.smd");
+            var services = new dojox.rpc.Service("http://equanimity.dev:8888/battle/static/battle.smd");
             var get_initial = services.initial_state()
             get_initial.then(function(result) {game = new gameState(result)})
             var process_action = services.process_action(['units.keys()[0]', 'move', '(2,2)'])
@@ -30,5 +31,8 @@
     </head>
     <body>
         <p>Love yourself first.</p>
+    	<div id="output">
+	    <ul id="my_units">
+	    </ul>
     </body>
 </html>

@@ -1,0 +1,23 @@
+from binary-tactics dir
+
+prepare zodb:
+$ mkdir ZODB
+$ runzeo -C zeo_server.conf
+
+create world inside zodb:
+$ ipython -i tests/create_db.py
+
+start auth_server:
+$ ipython equanimity/auth_server.py
+
+add users to ZODB:
+$ ipython tests/create_players.py
+
+grant the users Fields and prepare the battlequeue:
+$ ipython tests/setup_zeo_battle.py
+
+run the battle server:
+$ ipython equanimity/battle_server.py '(0, 0)'
+
+get the JS sources:
+$ sh web/get_js.sh

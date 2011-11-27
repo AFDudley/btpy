@@ -1,7 +1,7 @@
 {
     "SMDVersion": "2.0",
     "contentType": "application/json",
-    "target": "http://bitwise:8888/battle",
+    "target": "http://equanimity.dev:8888/battle",
     "envelope": "JSON-RPC-1.0",
     "services": {
         "initial_state": {
