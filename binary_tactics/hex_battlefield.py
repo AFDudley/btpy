@@ -78,6 +78,7 @@ class Battlefield(object):
         for part in part_locs:
             new_body[part] = Part(None, part_locs[part])
         return new_body
+
     def make_body(self, right, direction):
         """makes a nescient body facing direction from right loc"""
         rx, ry = right
@@ -450,6 +451,7 @@ class Battlefield(object):
         #use something like get_rotations to target 4 tiles at a time.
         #maybe it should magically hit 4 contigious tiles?
         pass
+
     def calc_damage(self, atkr, defdr):
         """Calcuate damage delt to defdr from atkr. Also calculates the damage of
         all units within a blast range. if weapon has a AOE list of
@@ -495,6 +497,7 @@ class Battlefield(object):
                 return dmg_lst
             else:
                 return None
+
     def apply_dmg(self, target, damage):
         """applies damage to target, called by attack() and
         apply_queued() returns damage applied"""

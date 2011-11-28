@@ -41,3 +41,8 @@ if __name__ == "__main__":
     
     #No auth battle:
     b = t.battle("initial_state", [], "" )
+    s = json.loads(b[1])['result']['initial_state']
+    dude = str(s['units'].keys()[0])
+    pos = s['init_locs'][dude]
+    pos = (pos[0], pos[1] + 1)
+    m = t.battle("process_action", [[dude, 'move', str(pos)]], "")

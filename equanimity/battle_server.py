@@ -45,7 +45,7 @@ class BattleHandler(BaseJSONHandler):
     
     @defer.inlineCallbacks
     def jsonrpc_get_state(self):
-        state = yield self.settings.game.state
+        state = yield self.settings.game.last_state()
         defer.returnValue(state)
     
     @defer.inlineCallbacks
@@ -62,12 +62,22 @@ class BattleHandler(BaseJSONHandler):
             #obviously this needs to be more robust.
             #so nasty.
             units = self.settings.game.units
-            action = Action(units[args[0]], args[1], eval(args[2]))
+            action = Action(units[int(args[0])], args[1], eval(args[2]))
             result = yield self.settings.game.process_action(action)
-            defer.returnValue(result)
+            #this should not be an actual file
+	    f = open("./web/last_state.json", 'w')
+	    f.write(str(self.settings.game.last_state()))
+	    f.close()
+	    defer.returnValue(result)
+
         except Exception , e:
+	    log.err("action: %s" % action)
             log.err("process_action failed: %r" % e)
             raise cyclone.web.HTTPError(500, "%r" % e.args[0])
+
+class LastStateHandler(cyclone.web.RequestHandler):
+    def get(self):
+        self.render("last_state.json")
 
 class Zeo(object):
     def __init__(self, addr=('localhost', 9100)):
@@ -106,17 +116,20 @@ def main():
     for s in btl.squads: #location wonkiness in hex_battlefield.
         for u in s:
             u.location = Loc(None, None)
-    for s in range(2):
-        for x in range(4):
+    for s in xrange(2):
+        l = len(btl.squads[s])
+        for x in xrange(l):
             btl.place_object(btl.squads[s][x], Loc(x, s))
     
     game.log['init_locs'] = game.log.init_locs()
     static_path = "./web"
     application = cyclone.web.Application([
                     (r"/", BattleHandler),
+                    (r"/last_state", LastStateHandler),
                     (r"/static/(.*)", cyclone.web.StaticFileHandler, {"path": static_path}),
                   ],
     zeo = zeo,
+    template_path = "./web",
     game = game,
     static_path = static_path,
     debug=True,

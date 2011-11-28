@@ -365,7 +365,7 @@ class Game(object):
         action['num']  = num = self.state['num']
         if action['type'] == 'pass':
             text = [["Action Passed."]]
-        elif action['type'] == 'move':
+        elif action['type'] == 'move': #TODO fix move in hex_battlefield.
             text = self.battlefield.move_scient(action['unit'].location,
                                               action['target'])
             if text:
@@ -394,10 +394,13 @@ class Game(object):
         self.log['applied'].append(Message(self.state['num'], self.map_result(text)))
         self.state.check(self)
     
-    def current_state(self):
+    def last_state(self):
         """Returns location and HP of all units. As well as proximity to winning conditions."""
-        pass
-        
+        try:
+            return self.log['states'][-1]
+        except:
+            return None
+
     def initial_state(self):
         """Returns stuff to create the client side of the game"""
         return Initial_state(self.log)
