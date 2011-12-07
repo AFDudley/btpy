@@ -3,36 +3,65 @@
     <head>
         <meta charset="utf-8">
         <title>get initial game state and store it.</title>
-        <script src="http://equanimity.dev:8888/battle/static/dojo-release-1.7.0/dojo/dojo.js"
-                data-dojo-config="isDebug: true,parseOnLoad: true">
-        </script>
-        <script type="text/javascript" 
-src="http://equanimity.dev:8888/battle/static/documentcloud-underscore-8c34614/underscore.js">
-        </script>
+        <script>var djConfig = { conflict:true }; // enables $</script>
+        <script src="http://ajax.googleapis.com/ajax/libs/dojo/1.6/dojo/dojo.xd.js"></script>
         <script>
-            
             dojo.require("dojox.rpc.Service");
             dojo.require("dojox.rpc.JsonRPC");
             dojo.require("dojo.store.Memory");
-            function gameState(result) {
-                this.grid = result.initial_state.grid.grid;
-                this.init_locs = result.initial_state.init_locs;
-                this.owners = result.initial_state.owners;
-                this.start_time = result.initial_state.start_time;
-                this.units = result.initial_state.units;
-            };
-            var services = new dojox.rpc.Service("http://equanimity.dev:8888/battle/static/battle.smd");
-            var get_initial = services.initial_state()
-            get_initial.then(function(result) {game = new gameState(result)})
-            var process_action = services.process_action(['units.keys()[0]', 'move', '(2,2)'])
-            console.log(process_action)
-            console.log(_)
+            dojo.ready(function(){
+                function gameState(result) {
+                    this.grid = result.initial_state.grid.grid;
+                    this.init_locs = result.initial_state.init_locs;
+                    this.owners = result.initial_state.owners;
+                    this.start_time = result.initial_state.start_time;
+                    this.units = result.initial_state.units;
+                };
+                getMyUnits = function() {
+                    var unit_nums = [];
+                    for (var value in game.owners) {
+                        if (game.owners[value] === username) {
+                            unit_nums.push(value);
+                        };
+                    };
+                    return unit_nums
+                };
+                getOtherUnits = function() {
+                    var unit_nums = [];
+                    for (var value in game.owners) {
+                        if (game.owners[value] !== username) {
+                            unit_nums.push(value);
+                        };
+                    };
+                    return unit_nums
+                };
+                services = new dojox.rpc.Service("http://equanimity.dev:8888/battle/static/battle.smd");
+                username = services.get_username();
+                username.then(function(result) {username = username.results[0] });
+                get_initial = services.initial_state();
+                get_initial.then(function(result) {
+                    game = new gameState(result);
+                    dude = Object.keys(game.units)[0];
+                    pos  = game.init_locs[dude];
+                    pos  = [pos[0], pos[1] + 1];
+                    process_action = services.process_action([dude, 'move', pos]);
+                });
+                myUnits = getMyUnits();
+                ul_units = dojo.byId("my_units");
+                for (var unit_num in myUnits) {
+                    var unit = game.units[myUnits[unit_num]];
+                    dojo.create("li", {innerHTML: unit.scient.name}, ul_units);  
+                };
+            });
         </script>
     </head>
     <body>
         <p>Love yourself first.</p>
-    	<div id="output">
-	    <ul id="my_units">
-	    </ul>
+        <div id="output">
+        <h4>My Units</h4>
+        <ul id="my_units">
+        </ul>
+        <ul id="their_units">
+        </ul>
     </body>
 </html>

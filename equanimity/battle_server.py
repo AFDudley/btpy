@@ -32,16 +32,17 @@ class BaseJSONHandler(cyclone.web.JsonrpcRequestHandler):
 class BattleHandler(BaseJSONHandler):
     @cyclone.web.authenticated
     @defer.inlineCallbacks
-    def jsonrpc_register(self):
-        """Takes a cookie and registers it in a battlefield."""
-        current_user = yield self.get_current_user()
-        defer.returnValue(current_user)
+    def jsonrpc_get_username(self):
+        """Takes a cookie and returns the username encoded within it."""
+        username = yield self.get_current_user().strip('"')
+        defer.returnValue(username)
     
     @defer.inlineCallbacks
     def jsonrpc_initial_state(self):
-        #hill larry ous
-        init_state = yield get_persisted(self.settings.game.initial_state())
-        defer.returnValue(init_state)
+        if self.settings.init_state == None:
+            self.settings.init_state = \
+            yield get_persisted(self.settings.game.initial_state())
+        defer.returnValue(self.settings.init_state)
     
     @defer.inlineCallbacks
     def jsonrpc_get_state(self):
@@ -53,31 +54,31 @@ class BattleHandler(BaseJSONHandler):
         log = yield self.settings.game.log
         defer.returnValue(str(log))
     
-    #@cyclone.web.authenticated
+    @cyclone.web.authenticated
     @defer.inlineCallbacks
     def jsonrpc_process_action(self, args):
         err = self.get_argument("e", None)
-        print self.get_current_user()
+        username = self.get_current_user().strip('"')
         try:
-            #obviously this needs to be more robust.
-            #so nasty.
             units = self.settings.game.units
-            action = Action(units[int(args[0])], args[1], eval(args[2]))
-            result = yield self.settings.game.process_action(action)
-            #this should not be an actual file
-	    f = open("./web/last_state.json", 'w')
-	    f.write(str(self.settings.game.last_state()))
-	    f.close()
-	    defer.returnValue(result)
-
+            unit_num = int(args[0])
+            unit_owner = self.settings.game.log.get_owner(unit_num).name
+            if username == unit_owner:
+                action = Action(units[unit_num], args[1], tuple(args[2]))
+                result = yield self.settings.game.process_action(action)
+                self.settings.last_state = self.settings.game.last_state()
+                defer.returnValue(result)
+            else:
+                raise Exception("user cannot command unit, try a different unit.")
+                
         except Exception , e:
-	    log.err("action: %s" % action)
             log.err("process_action failed: %r" % e)
             raise cyclone.web.HTTPError(500, "%r" % e.args[0])
 
 class LastStateHandler(cyclone.web.RequestHandler):
     def get(self):
-        self.render("last_state.json")
+        self.write(self.settings.last_state)
+        self.flush()
 
 class Zeo(object):
     def __init__(self, addr=('localhost', 9100)):
@@ -121,20 +122,22 @@ def main():
         for x in xrange(l):
             btl.place_object(btl.squads[s][x], Loc(x, s))
     
-    game.log['init_locs'] = game.log.init_locs()
-    static_path = "./web"
-    application = cyclone.web.Application([
+    game.log['init_locs']=game.log.init_locs()
+    static_path="./web"
+    application=cyclone.web.Application([
                     (r"/", BattleHandler),
-                    (r"/last_state", LastStateHandler),
+                    (r"/last_state.json", LastStateHandler),
                     (r"/static/(.*)", cyclone.web.StaticFileHandler, {"path": static_path}),
                   ],
-    zeo = zeo,
-    template_path = "./web",
-    game = game,
-    static_path = static_path,
+    zeo=zeo,
+    template_path="./web",
+    game=game,
+    static_path=static_path,
     debug=True,
     login_url="/auth/login",
-    cookie_secret="secret!!!!"
+    cookie_secret="secret!!!!",
+    last_state='{}',
+    init_state=None,
     )
     
     reactor.listenTCP(8890, application)

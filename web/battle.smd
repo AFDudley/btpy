@@ -4,6 +4,9 @@
     "target": "http://equanimity.dev:8888/battle",
     "envelope": "JSON-RPC-1.0",
     "services": {
+        "get_username": {
+            parameters: [],
+        },
         "initial_state": {
             parameters: [],
         },

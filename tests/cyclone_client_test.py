@@ -45,4 +45,4 @@ if __name__ == "__main__":
     dude = str(s['units'].keys()[0])
     pos = s['init_locs'][dude]
     pos = (pos[0], pos[1] + 1)
-    m = t.battle("process_action", [[dude, 'move', str(pos)]], "")
+    m = t.battle("process_action", [[dude, 'move', pos]], "")
