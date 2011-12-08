@@ -17,23 +17,19 @@
                     this.start_time = result.initial_state.start_time;
                     this.units = result.initial_state.units;
                 };
-                getMyUnits = function() {
-                    var unit_nums = [];
-                    for (var value in game.owners) {
-                        if (game.owners[value] === username) {
-                            unit_nums.push(value);
+                getUnits = function(whose) {
+                    return dojo.filter(
+                        Object.keys(game.owners),
+                        function(key) {
+                            if (whose == "mine"){return game.owners[key] == username}
+                            else {return game.owners[key] != username}
+                            });
                         };
-                    };
-                    return unit_nums
-                };
-                getOtherUnits = function() {
-                    var unit_nums = [];
-                    for (var value in game.owners) {
-                        if (game.owners[value] !== username) {
-                            unit_nums.push(value);
-                        };
-                    };
-                    return unit_nums
+                populateUl = function(units, ul) {
+                    dojo.map(units,
+                        function(unit_num){
+                            var unit = game.units[unit_num]
+                            dojo.create("li", {innerHTML: unit[Object.keys(unit)[0]].name}, dojo.byId(ul))})
                 };
                 services = new dojox.rpc.Service("http://equanimity.dev:8888/battle/static/battle.smd");
                 username = services.get_username();
@@ -44,24 +40,21 @@
                     dude = Object.keys(game.units)[0];
                     pos  = game.init_locs[dude];
                     pos  = [pos[0], pos[1] + 1];
-                    process_action = services.process_action([dude, 'move', pos]);
+                    //process_action = services.process_action([dude, 'move', pos]);
+                    dojo.create("p", {innerHTML: "Game started at: " + game.start_time}, dojo.byId("start_time"))
+                    populateUl(getUnits("mine"), "my_units");
+                    populateUl(getUnits("theirs"), "their_units")
                 });
-                myUnits = getMyUnits();
-                ul_units = dojo.byId("my_units");
-                for (var unit_num in myUnits) {
-                    var unit = game.units[myUnits[unit_num]];
-                    dojo.create("li", {innerHTML: unit.scient.name}, ul_units);  
-                };
             });
         </script>
     </head>
     <body>
-        <p>Love yourself first.</p>
-        <div id="output">
-        <h4>My Units</h4>
-        <ul id="my_units">
-        </ul>
-        <ul id="their_units">
-        </ul>
+        <div id="start_time"></div>
+        <div id="Units">
+            <h4>My Units</h4>
+            <ul id="my_units"></ul>
+            <h4>Their Units</h4>
+            <ul id="their_units"></ul>
+        </div>
     </body>
 </html>
