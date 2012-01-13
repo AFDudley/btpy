@@ -6,6 +6,7 @@
         <script>var djConfig = { conflict:true }; // enables $</script>
         <script src="http://ajax.googleapis.com/ajax/libs/dojo/1.6/dojo/dojo.xd.js"></script>
         <script>
+            dojo.require("dijit.Tooltip");
             dojo.require("dojox.rpc.Service");
             dojo.require("dojox.rpc.JsonRPC");
             dojo.require("dojo.store.Memory");
@@ -25,11 +26,16 @@
                             else {return game.owners[key] != username}
                             });
                         };
+                getStats = function() {this.innerHTML}
+                //getStats = function(unit_num) {alert(unit_num)}
                 populateUl = function(units, ul) {
                     dojo.map(units,
                         function(unit_num){
-                            var unit = game.units[unit_num]
-                            dojo.create("li", {innerHTML: unit[Object.keys(unit)[0]].name}, dojo.byId(ul))})
+                            var unit = game.units[unit_num];
+                            var element = dojo.create("li", {innerHTML: unit[Object.keys(unit)[0]].name}, dojo.byId(ul));
+                            //dojo.connect(element, 'onmouseover',  function(){alert(unit_num)})
+                            new dijit.Tooltip({connectId: element, label: unit_num});
+                            });
                 };
                 services = new dojox.rpc.Service("http://equanimity.dev:8888/battle/static/battle.smd");
                 username = services.get_username();
@@ -40,17 +46,20 @@
                     dude = Object.keys(game.units)[0];
                     pos  = game.init_locs[dude];
                     pos  = [pos[0], pos[1] + 1];
+                    myUnits = getUnits("mine")
+                    theirUnits = getUnits("theirs")
                     //process_action = services.process_action([dude, 'move', pos]);
-                    dojo.create("p", {innerHTML: "Game started at: " + game.start_time}, dojo.byId("start_time"))
-                    populateUl(getUnits("mine"), "my_units");
-                    populateUl(getUnits("theirs"), "their_units")
+                    dojo.create("p", {innerHTML: "Game started at: " + game.start_time},
+                        dojo.byId("start_time"))
+                    populateUl(myUnits, "my_units");
+                    populateUl(theirUnits, "their_units")
                 });
             });
         </script>
     </head>
     <body>
         <div id="start_time"></div>
-        <div id="Units">
+        <div id="Units" style="width:200px">
             <h4>My Units</h4>
             <ul id="my_units"></ul>
             <h4>Their Units</h4>

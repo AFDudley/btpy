@@ -39,6 +39,7 @@ class BattleHandler(BaseJSONHandler):
     
     @defer.inlineCallbacks
     def jsonrpc_initial_state(self):
+        #needs to filter 
         if self.settings.init_state == None:
             self.settings.init_state = \
             yield get_persisted(self.settings.game.initial_state())
@@ -104,6 +105,7 @@ class Zeo(object):
 def main():
     zeo    = Zeo()
     world  = zeo.root
+    #this copy is really important, copies the objects out of the zeo and into memory.
     f = copy.deepcopy(world['Fields'][str(sys.argv[1])])
     atkr_name, squad1 = f.battlequeue[0]
     squad2 = f.get_defenders()
