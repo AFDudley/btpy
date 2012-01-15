@@ -36,7 +36,9 @@ class Unit(Stone):
         self.patk = self.p + self.atk  + (2 * self.comp[F])
         self.matk = self.m + self.atk  + (2 * self.comp[I])
         self.mdef = self.m + self.defe + (2 * self.comp[W])
-        self.hp   = 4 * (self.pdef + self.mdef) + self.value()
+        #does this make sense? It was wrong for a long time.
+        self.hp   = 4 * ((self.pdef + self.mdef) + self.value())
+        
 class Scient(Unit):
     """A Scient (playable character) unit.
     

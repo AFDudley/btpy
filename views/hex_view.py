@@ -5,6 +5,8 @@
 #  Created by AFD on 1/12/10.
 #  Copyright (c) 2010 A. Frederick Dudley. All rights reserved.
 #
+import sys
+sys.path[0:0] = '../'
 from math import sin, cos, radians, ceil, floor
 import pygame
 from pygame.locals import * #need them all so the game doesn't crash when someone presses the wrong key :D
@@ -24,7 +26,9 @@ except ImportError, message:
     import views.pyconsole as pyconsole
 
 #Magic Sprinkles!!!
-if not __builtins__.__IPYTHON__:
+try:
+    __builtins__.__IPYTHON__
+except:
     from IPython.iplib import InteractiveShell
     __IPYTHON__ = InteractiveShell('fake')
 
@@ -846,7 +850,7 @@ class View:
             print i
             view.console.output(i)"""
         #slightly redundant to_english prints to console.
-        msg = view.game.log.to_english(self.current_action['num'] - 1, time=0)
+        msg = view.game.log.to_english(self.current_action['num'] - 1, time=False)
         view.console.output(msg)
         
     def transition(self, dest_state):

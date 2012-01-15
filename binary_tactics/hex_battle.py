@@ -120,7 +120,7 @@ class Log(dict):
         for unit in self['units'].keys():
             owners[unit] = self.get_owner(unit).name
         return owners
-    '''  
+    
     def to_english(self, number, time=True): #BROKEN!!!!!
         """returns a string of english containing an action and mission set from ply number."""
         #still missing DOT, AOE messages, game over messages, etc.
@@ -182,23 +182,25 @@ class Log(dict):
         s += "."
         if num % 4 == 0 and num != 0: #MODULO!!!!
             idx = num / 4
-            applied = self['applied'][idx]
-            if len(applied['result']) > 0: #was damage was applied.
-                if time:
-                    s += "\n  " + "At " + applied['when'] + ":"
-                for (unit, dmg) in applied['result']:
-                    s += "\n    "
-                    s += self.get_owner(int(unit)).name + "'s " + self['units'][int(unit)].name + " was "
-                    if type(dmg) == int:
-                        if dmg > 0:
-                            s += "damaged " + str(dmg) + " points "
+            try:
+                applied = self['applied'][idx]
+                if len(applied['result']) > 0: #was damage was applied.
+                    if time:
+                        s += "\n  " + "At " + applied['when'] + ":"
+                    for (unit, dmg) in applied['result']:
+                        s += "\n    "
+                        s += self.get_owner(int(unit)).name + "'s " + self['units'][int(unit)].name + " was "
+                        if type(dmg) == int:
+                            if dmg > 0:
+                                s += "damaged " + str(dmg) + " points "
+                            else:
+                                s += "healed " + str(abs(dmg)) + " points "
+                            s += "by the queue."
                         else:
-                            s += "healed " + str(abs(dmg)) + " points "
-                        s += "by the queue."
-                    else:
-                        s += "killed by damage from the queue."
+                            s += "killed by damage from the queue."
+            except: pass #???
         print s
-       '''
+        return s
 
 class State(dict):
     """A dictionary containing the current game state."""
