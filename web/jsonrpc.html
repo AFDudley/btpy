@@ -4,6 +4,8 @@
         <meta charset="utf-8">
         <title>get initial game state and store it.</title>
         <script>var djConfig = { conflict:true }; // enables $</script>
+        <script src="http://equanimity.dev:8888/battle/static/underscore/underscore.js"></script>
+        <script src="http://equanimity.dev:8888/battle/static/btjs/defs.js"></script>
         <script src="http://ajax.googleapis.com/ajax/libs/dojo/1.6/dojo/dojo.xd.js"></script>
         <script>
             dojo.require("dijit.Tooltip");
@@ -18,7 +20,7 @@
                     this.start_time = result.initial_state.start_time;
                     this.units = result.initial_state.units;
                 };
-                getUnits = function(whose) {
+                 getUnits = function(whose) {
                     return dojo.filter(
                         Object.keys(game.owners),
                         function(key) {
@@ -26,8 +28,15 @@
                             else {return game.owners[key] != username}
                             });
                         };
+                //mutates json tiles to actual js tiles.
+                mutateTiles = function(grid) {
+                  for (var i in _.range(grid.x)) {
+                      for (var j in _.range(grid.y)) {
+                        grid.tiles[i][j] =  new Tile(_.values(grid.tiles[i][j].tile['comp']), grid.tiles[i][j].tile.contents)
+                      };
+                  };
+                };
                 getStats = function() {this.innerHTML}
-                //getStats = function(unit_num) {alert(unit_num)}
                 populateUl = function(units, ul) {
                     dojo.map(units,
                         function(unit_num){
@@ -37,6 +46,8 @@
                             new dijit.Tooltip({connectId: element, label: unit_num});
                             });
                 };
+
+
                 services = new dojox.rpc.Service("http://equanimity.dev:8888/battle/static/battle.smd");
                 username = services.get_username();
                 username.then(function(result) {username = username.results[0] });
@@ -55,15 +66,20 @@
                     populateUl(theirUnits, "their_units")
                 });
             });
+            
         </script>
     </head>
     <body>
         <div id="start_time"></div>
-        <div id="Units" style="width:200px">
-            <h4>My Units</h4>
-            <ul id="my_units"></ul>
-            <h4>Their Units</h4>
-            <ul id="their_units"></ul>
+        <div id="Units" style="width:250px">
+            <div style="float:left">
+                <h4>My Units</h4>
+                <ul id="my_units" ></ul>
+            </div>
+            <div style="float:right">
+                <h4>Their Units</h4>
+                <ul id="their_units" ></ul>
+            </div>
         </div>
     </body>
 </html>

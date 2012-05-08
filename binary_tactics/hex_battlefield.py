@@ -78,7 +78,8 @@ class Battlefield(object):
         for part in part_locs:
             new_body[part] = Part(None, part_locs[part])
         return new_body
-
+        
+    
     def make_body(self, right, direction):
         """makes a nescient body facing direction from right loc"""
         rx, ry = right
@@ -108,9 +109,9 @@ class Battlefield(object):
             if not self.on_grid(body[part].location):
                 return False
             else: return True
-        
+    
     def can_move_nescient(self, body, nescient):
-        """checks if nescient can move to body."""       
+        """checks if nescient can move to body."""
         for part in body:
             xdestp, ydestp = body[part].location
             if self.grid[xdestp][ydestp].contents != None:
@@ -121,7 +122,7 @@ class Battlefield(object):
                 else: pass
             else: pass
         return True
-
+    
     def move_nescient(self, new_body, nescient):
         """places new_body on grid, place body in nescient."""
         new_body = new_body
@@ -140,7 +141,7 @@ class Battlefield(object):
         nescient.take_body(new_body)
         nescient.location = nescient.body['right'].location
         return True
-               
+    
     def place_nescient(self, nescient, dest):
         """place a nescient so that its right is at dest."""
         facing = nescient.facing
@@ -166,7 +167,7 @@ class Battlefield(object):
             if self.can_move_nescient(self.make_body(nbdr, direction), nescient):
                 drctns.append(direction) #might want to return body as well.
         return drctns
-        
+    
     def rotate(self, nescient, direction):
         """rotates Nescient so that head is facing direction"""
         nes = nescient
@@ -179,7 +180,7 @@ class Battlefield(object):
                 raise Exception("Move Failed.")
         else:
             raise Exception('nescient cannot rotate to that direction')
-            
+    
     def make_pattern(self, location, distance, pointing):
         """generates a pattern based on an origin, distance, and
         direction. Returns a set of coords"""
@@ -262,7 +263,7 @@ class Battlefield(object):
             pass
         else:
             raise TypeError("obj is not a game item.")
-            
+    
     def move_scient(self, src, dest):
         """move unit from src tile to dest tile"""
         if self.on_grid(src):
@@ -451,7 +452,7 @@ class Battlefield(object):
         #use something like get_rotations to target 4 tiles at a time.
         #maybe it should magically hit 4 contigious tiles?
         pass
-
+    
     def calc_damage(self, atkr, defdr):
         """Calcuate damage delt to defdr from atkr. Also calculates the damage of
         all units within a blast range. if weapon has a AOE list of
@@ -483,21 +484,21 @@ class Battlefield(object):
                                 dmg_lst.append((defdr, temp_dmg))
                     else:
                         pass # no damage was dealt, don't append anything.
-
+                
             elif weapon.type in self.ranged:
                 #this is a placeholder until calc_ranged is written.
                 dmg_lst.append((defdr, self.dmg(atkr, defdr) / 4))
             else: #attack is only hitting one unit.
                 dmg_lst.append((defdr, self.dmg(atkr, defdr)))
-
+            
             if weapon.type in self.DOT:
                 dmg_lst = [(t[0], t[1] / weapon.time) for t in dmg_lst]
-
+            
             if len(dmg_lst):
                 return dmg_lst
             else:
                 return None
-
+    
     def apply_dmg(self, target, damage):
         """applies damage to target, called by attack() and
         apply_queued() returns damage applied"""

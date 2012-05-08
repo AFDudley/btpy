@@ -112,7 +112,7 @@ class Log(dict):
                 if squad.name == target_squad:
                     owner = player
         return owner
-        
+    
     #LAZE BEAMS!!!!
     def get_owners(self):
         """mapping of unit number to player/owner."""
@@ -122,90 +122,10 @@ class Log(dict):
         return owners
     
     def to_english(self, number, time=True): #BROKEN!!!!!
-        """returns a string of english containing an action and mission set from ply number."""
-        #still missing DOT, AOE messages, game over messages, etc.
-        #oops, this needs to be done client side.
-        num = number
-        s = "Failed to parse."
-        try:
-            action  = self['actions'][num]
-            message = self['messages'][num]
-        except:
-            raise Exception("number out of range")
-        #really slow lookup but will work for any number of players or squads on field.
-        #fix is to store unit-player mapping in log.
-        for player in self['players']:
-            for squad in player.squads:
-                if squad == self['units'][int(action['unit'])].squad:
-                    actor = player
-        s = actor.name 
-        if action['type'] == 'move':
-            s += "'s " + self['units'][int(action['unit'])].name
-            s += " moved to " + str(action['target'])
-        elif action['type'] == 'attack':
-            if len(message['result']) > 1: #this catches both DOT and AOE :(
-                if message['result'][0][0] != message['result'][1][0]: #if it is an AOE attack?
-                    s += "'s " + self['units'][int(action['unit'])].name + ":"
-                    for result in message['result']:
-                        s += "\n"
-                        dmg = result[1]
-                        target_owner = self.get_owner(int(result[0]))
-                        whom = target_owner.name + "'s " + self['units'][int(result[0])].name
-                        if type(dmg) == int:
-                            if dmg > 0:
-                                s += " dealt " + str(dmg)
-                                s += " points of damage to " + whom 
-                            else:
-                                s += " healed " + whom
-                                s += " for " + str(abs(dmg)) + " points"
-                        elif type(dmg) == str:
-                            s += " killed " + whom
-                else: #it's a DOT attack.
-                    pass
-            else:
-                s += "'s " + self['units'][int(action['unit'])].name
-                dmg = message['result'][0][1]
-                target_owner = self.get_owner(int(message['result'][0][0]))
-                whom = target_owner.name + "'s " + self['units'][int(message['result'][0][0])].name
-                if type(dmg) == int:
-                    if dmg > 0:
-                        s += " dealt " + str(dmg)
-                        s += " points of damage to " + whom 
-                    else:
-                        s += " healed " + whom
-                        s += " for " + str(abs(dmg)) + " points"
-                elif type(dmg) == str:
-                    s += " killed " + whom
-        elif action['type'] == 'pass':
-            s += " passed"
-        if time: s += " at " + message['when'] #.isoformat(' ')
-        s += "."
-        if num % 4 == 0 and num != 0: #MODULO!!!!
-            idx = num / 4
-            try:
-                applied = self['applied'][idx]
-                if len(applied['result']) > 0: #was damage was applied.
-                    if time:
-                        s += "\n  " + "At " + applied['when'] + ":"
-                    for (unit, dmg) in applied['result']:
-                        s += "\n    "
-                        s += self.get_owner(int(unit)).name + "'s " + self['units'][int(unit)].name + " was "
-                        if type(dmg) == int:
-                            if dmg > 0:
-                                s += "damaged " + str(dmg) + " points "
-                            else:
-                                s += "healed " + str(abs(dmg)) + " points "
-                            s += "by the queue."
-                        else:
-                            s += "killed by damage from the queue."
-            except: pass #???
-        print s
-        return s
 
 class State(dict):
     """A dictionary containing the current game state."""
-    def __init__(self, num=1, pass_count=0, hp_count=0, old_squad2_hp=0,
-                 queued={}, locs={}, HPs={}, game_over=False):
+    def __init__(self, num=1, pass_count=0, hp_count=0, old_squad2_hp=0, queued={}, locs={}, HPs={}, game_over=False):
         dict.__init__(self, num=num, pass_count=pass_count,
                       hp_count=hp_count, old_squad2_hp=old_squad2_hp,
                       queued=queued, locs=locs, HPs=HPs, game_over=game_over)
@@ -261,6 +181,7 @@ class State(dict):
         
         self['num'] += 1
     
+
 class Game(object):
     """Almost-state-machine that maintains game state."""
     def __init__(self, grid=Grid(), player1=None, player2=None, battlefield=None):
@@ -313,7 +234,7 @@ class Game(object):
             if hp > 0:
                 HPs[self.map[unit]] = hp
         return HPs
-
+    
     def update_unit_info(self):
         """returns HPs, Locs."""
         HPs   = {}
@@ -325,9 +246,9 @@ class Game(object):
             if loc[0] >= 0:
                 locs[num] = loc
                 HPs[num] = unit.hp
-            
-        return HPs, locs
         
+        return HPs, locs
+    
     def map_queue(self):
         """apply unit mapping to units in queue."""
         old = self.battlefield.get_dmg_queue()
@@ -354,7 +275,7 @@ class Game(object):
         else:
             raise TypeError("Acting unit cannont be 'NoneType'")
         return new
-        
+    
     def last_message(self):
         text = self.log['messages'][-1]['result']
         if text != None:
@@ -402,7 +323,7 @@ class Game(object):
             return self.log['states'][-1]
         except:
             return None
-
+    
     def initial_state(self):
         """Returns stuff to create the client side of the game"""
         return Initial_state(self.log)
