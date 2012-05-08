@@ -121,8 +121,6 @@ class Log(dict):
             owners[unit] = self.get_owner(unit).name
         return owners
     
-    def to_english(self, number, time=True): #BROKEN!!!!!
-
 class State(dict):
     """A dictionary containing the current game state."""
     def __init__(self, num=1, pass_count=0, hp_count=0, old_squad2_hp=0, queued={}, locs={}, HPs={}, game_over=False):
