@@ -284,6 +284,8 @@ class Game(object):
     def process_action(self, action):
         action['when'] = now()
         action['num']  = num = self.state['num']
+        if action['type'] == 'timed_out':
+            text - [["failed to act."]]
         if action['type'] == 'pass':
             text = [["Action Passed."]]
         elif action['type'] == 'move': #TODO fix move in hex_battlefield.

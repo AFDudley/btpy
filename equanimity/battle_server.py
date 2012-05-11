@@ -76,6 +76,10 @@ class BattleHandler(BaseJSONHandler):
             log.err("process_action failed: %r" % e)
             raise cyclone.web.HTTPError(500, "%r" % e.args[0])
 
+class TurnCounter(object):
+    """When counter reaches zero, player auto-passes."""
+    pass
+    
 class LastStateHandler(cyclone.web.RequestHandler):
     def get(self):
         self.write(self.settings.last_state)

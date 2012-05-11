@@ -6,6 +6,11 @@ class Field(object):
         '''fiels should only be created at world creation time and should init
            with The World as the owner.'''
         self.owner = owner
+        """
+        ply_window: user definable time before a pass is automatically sent for a battle action.
+            range between 4 and 360 minutes, default is 4
+        """
+        self.ply_window = 4
         
     def set_owner(self, owner):
         self.owner = owner

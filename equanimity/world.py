@@ -27,7 +27,7 @@ class Stronghold(persistent.Persistent):
     
 
 class wField(persistent.Persistent):
-    def __init__(self, world_coord, owner):
+    def __init__(self, world_coord, owner, ply_window=4):
         self.world_coord = world_coord
         self.owner = owner
         self.grid = Grid()
@@ -37,6 +37,12 @@ class wField(persistent.Persistent):
         self.value       = None
         self.expected_yield = None
     
+        """
+        ply_window: user definable time before a pass is automatically sent for a battle action.
+            range between 4 and 360 minutes, default is 4
+        """
+        self.ply_window = ply_window
+        
     def get_defenders(self):
         """gets the defenders of a wField, returns a random squad from stronghold
            if no defenders set."""
