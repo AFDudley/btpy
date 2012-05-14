@@ -20,11 +20,11 @@ class Stronghold(persistent.Persistent):
         self.stones  = persistent.list.PersistentList()
         self.weapons = persistent.list.PersistentList()
         self.units   = persistent.list.PersistentList()
-        self.squads  = persistent.mapping.PersistentMapping() 
+        self.squads  = persistent.mapping.PersistentMapping()
         #needs a value limit based on the value of the grid that contains it.
         self.defenders = Squad(name='local defenders')
         self.defender_locs = persistent.list.PersistentList()
-    
+
 
 class wField(persistent.Persistent):
     def __init__(self, world_coord, owner, ply_window=4):
@@ -36,13 +36,13 @@ class wField(persistent.Persistent):
         self.producers   = None #stuctures, input stones, output composites.
         self.value       = None
         self.expected_yield = None
-    
+        
         """
         ply_window: user definable time before a pass is automatically sent for a battle action.
             range between 4 and 360 minutes, default is 4
         """
         self.ply_window = ply_window
-        
+    
     def get_defenders(self):
         """gets the defenders of a wField, returns a random squad from stronghold
            if no defenders set."""
@@ -66,8 +66,9 @@ class wPlayer(persistent.Persistent):
         self.treaties = None
 
 class World(object):
-    def __init__(self, storage_name=('localhost', 9100),x=8, y=8):
+    def __init__(self, storage_name=('localhost', 9100),x=8, y=8, resigntime=360):
         self.storage = ClientStorage.ClientStorage(storage_name)
+        self.resigntime = 360 #amount of time in minutes before attacker is forced to resign.
         self.db = DB(self.storage)
         self.connection = self.open_connection(self.db)
         self.root = self.get_root(self.connection)
@@ -96,7 +97,7 @@ class World(object):
         self.root['Players'][new_owner].wFields[str(wField_coords)].owner =\
         new_owner
         return transaction.commit()
-        
+    
     def populate_defenders(self, wField):
         """populates the stronghold defenders of a field with random scients.
         (should be nescients)"""
@@ -115,7 +116,7 @@ class World(object):
         wField.stronghold.squads[squad.name] = squad
         wField.stronghold._p_changed = 1
         return transaction.commit()
-        
+    
     def move_squad(self, src, squad_name, dest):
         """Moves a squad from a stronghold to a queue."""
         #src and dest are both wFields
@@ -127,15 +128,15 @@ class World(object):
             return transaction.commit()
         except:
             print "the move didn't work."
-        
+    
     def delete_player(self, player):
-    	"""removes a player from the database and returns their fields to
-	the world."""
-	for field in self.root['Players'][player].wFields.keys():
-	    self.award_field(player, field, 'World')
-	del self.root['Players'][player]
-	return transaction.commit()
-
+        """removes a player from the database and returns their fields to
+    the world."""
+    for field in self.root['Players'][player].wFields.keys():
+        self.award_field(player, field, 'World')
+    del self.root['Players'][player]
+    return transaction.commit()
+    
     def start_battle(self, field_loc):
         """Starts a battle on a wField. FOR TESTING"""
         pass

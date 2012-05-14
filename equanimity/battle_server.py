@@ -6,6 +6,7 @@ TODO:
     write frontend.
 '''
 import sys
+from datetime import datetime, timedelta
 import json
 import cyclone.web
 
@@ -75,16 +76,17 @@ class BattleHandler(BaseJSONHandler):
         except Exception , e:
             log.err("process_action failed: %r" % e)
             raise cyclone.web.HTTPError(500, "%r" % e.args[0])
-
-class TurnCounter(object):
-    """When counter reaches zero, player auto-passes."""
-    pass
     
 class LastStateHandler(cyclone.web.RequestHandler):
     def get(self):
         self.write(self.settings.last_state)
         self.flush()
 
+class TimeLeftHandler(cyclone.web.RequestHandler):
+    def get(self):
+        self.write(self.settings.ART - datetime.utcnow())
+        self.flush()
+        
 class Zeo(object):
     def __init__(self, addr=('localhost', 9100)):
         self.addr = addr
@@ -109,6 +111,7 @@ class Zeo(object):
 def main():
     zeo    = Zeo()
     world  = zeo.root
+    maxsecs = timedelta(0, world['resigntime'])
     #this copy is really important, copies the objects out of the zeo and into memory.
     f = copy.deepcopy(world['Fields'][str(sys.argv[1])])
     atkr_name, squad1 = f.battlequeue[0]
@@ -128,11 +131,14 @@ def main():
         for x in xrange(l):
             btl.place_object(btl.squads[s][x], Loc(x, s))
     
-    game.log['init_locs']=game.log.init_locs()
-    static_path="./web"
-    application=cyclone.web.Application([
+    game.log['init_locs'] = game.log.init_locs()
+    start_time  = datetime.strptime(game.log['start_time'], "%Y-%m-%d %H:%M:%S.%f")
+    ART = start_time + maxsecs
+    static_path = "./web"
+    application = cyclone.web.Application([
                     (r"/", BattleHandler),
                     (r"/last_state.json", LastStateHandler),
+                    (r"/time_left.json", TimeLeftHandler),
                     (r"/static/(.*)", cyclone.web.StaticFileHandler, {"path": static_path}),
                   ],
     zeo=zeo,
@@ -147,6 +153,8 @@ def main():
     )
     
     reactor.listenTCP(8890, application)
+    # is there a better way to do this?
+    #reactor.callLater(world['resigntime'], self.endgame())
     reactor.run()
 
 if __name__ == "__main__":
