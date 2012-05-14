@@ -1,6 +1,6 @@
 from stone import Stone
 class Field(object):
-    def __init__(self, grid, attack_queue=None, owner=None):
+    def __init__(self, grid, attack_queue=None, ply_window=4, owner=None):
         self.attack_queue = attack_queue
         self.grid = grid
         '''fiels should only be created at world creation time and should init
@@ -10,7 +10,7 @@ class Field(object):
         ply_window: user definable time before a pass is automatically sent for a battle action.
             range between 4 and 360 minutes, default is 4
         """
-        self.ply_window = 4
+        self.ply_window = ply_window
         
     def set_owner(self, owner):
         self.owner = owner

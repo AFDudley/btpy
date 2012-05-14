@@ -68,7 +68,7 @@ class wPlayer(persistent.Persistent):
 class World(object):
     def __init__(self, storage_name=('localhost', 9100),x=8, y=8, resigntime=360):
         self.storage = ClientStorage.ClientStorage(storage_name)
-        self.resigntime = 360 #amount of time in minutes before attacker is forced to resign.
+        self.resigntime = 21600 #amount of time in seconds before attacker is forced to resign.
         self.db = DB(self.storage)
         self.connection = self.open_connection(self.db)
         self.root = self.get_root(self.connection)
