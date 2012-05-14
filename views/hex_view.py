@@ -478,16 +478,16 @@ class BattlePane(Pane, Battlefield):
         self.defender.squads = [self.trans_squad(yaml_store.load('yaml/squad1.yaml'))]
         self.attacker.squads = [self.trans_squad(yaml_store.load('yaml/squad2.yaml'))]
         
-        self.defender = self.defender.squads[0]
-        self.attacker = self.attacker.squads[0]
+        self.defsquad = self.defender.squads[0]
+        self.atksquad = self.attacker.squads[0]
         
         self.defender.name = 'Defender'
-        self.defender.num  = '1'
+        self.defsquad.num  = '1'
         
         self.attacker.name = 'Attacker'
-        self.attacker.num  = '2'
+        self.atksquad.num  = '2'
                 
-        self.squads = (self.defender, self.attacker)
+        self.squads = (self.defsquad, self.atksquad)
         self.units = self.get_units()
         for u in self.units:
             u.draw_text()
@@ -862,7 +862,6 @@ class View:
 if __name__ == '__main__':
     print "Copyright (c) 2010 A. Frederick Dudley. All rights reserved. PLEASE DO NOT REDISTRIBUTE"
     pygame.init()
-    print "Player 1 is the attacker."
     FONT =  pygame.font.Font('views/DroidSansMono.ttf', 12)
     screen = pygame.display.set_mode([850, 600])
     
