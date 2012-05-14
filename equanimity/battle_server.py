@@ -11,7 +11,7 @@ import json
 import cyclone.web
 
 from twisted.python import log
-from twisted.internet import reactor, defer
+from twisted.internet import reactor, defer, task
 
 from equanimity.world import wPlayer
 from ZEO import ClientStorage
@@ -83,8 +83,13 @@ class LastStateHandler(cyclone.web.RequestHandler):
         self.flush()
 
 class TimeLeftHandler(cyclone.web.RequestHandler):
+    #DOS prevention needs to be added.
+    #should be optimized for accuracy. 
     def get(self):
-        self.write(self.settings.ART - datetime.utcnow())
+        art = self.settings.ART
+        now = datetime.utcnow()
+        timeleft = {'battle': str(art - now), 'ply': 'N/A'}
+        self.write(str(timeleft))
         self.flush()
         
 class Zeo(object):
@@ -111,16 +116,17 @@ class Zeo(object):
 def main():
     zeo    = Zeo()
     world  = zeo.root
+    #maxsecs = timedelta(0, 30) #for testing only 
     maxsecs = timedelta(0, world['resigntime'])
     #this copy is really important, copies the objects out of the zeo and into memory.
     f = copy.deepcopy(world['Fields'][str(sys.argv[1])])
-    atkr_name, squad1 = f.battlequeue[0]
-    squad2 = f.get_defenders()
+    atkr_name, atksquad = f.battlequeue[0]
+    defsquad = f.get_defenders()
     #TODO rewrite player and hex_battle
-    atkr = Player(atkr_name, [squad1])
-    dfndr = Player(f.owner, [squad2])
-    game = Game(player1=atkr, player2=dfndr,
-                battlefield=Battlefield(f.grid, squad1, squad2))
+    dfndr = Player(f.owner, [defsquad])
+    atkr = Player(atkr_name, [atksquad])
+    game = Game(defender=dfndr, attacker=atkr
+                battlefield=Battlefield(f.grid, defsquad, atksquad))
     btl = game.battlefield
     #obviously for testing only.
     for s in btl.squads: #location wonkiness in hex_battlefield.
@@ -133,7 +139,7 @@ def main():
     
     game.log['init_locs'] = game.log.init_locs()
     start_time  = datetime.strptime(game.log['start_time'], "%Y-%m-%d %H:%M:%S.%f")
-    ART = start_time + maxsecs
+    ART = start_time + maxsecs #attacker resign time
     static_path = "./web"
     application = cyclone.web.Application([
                     (r"/", BattleHandler),
@@ -144,6 +150,7 @@ def main():
     zeo=zeo,
     template_path="./web",
     game=game,
+    ART=ART,
     static_path=static_path,
     debug=True,
     login_url="/auth/login",
@@ -151,10 +158,21 @@ def main():
     last_state='{}',
     init_state=None,
     )
+    def forcedpass(player):
+        game.process_action(Action(None, 'timed_out', None))
+        
+    def endgame():
+        """ends the game"""
+        try:
+            game.winner = game.player2
+            game.end("Player1 failed to defeat Player2 in time.")
+        except:
+            #push log to transaction store.
+            reactor.stop()
     
     reactor.listenTCP(8890, application)
-    # is there a better way to do this?
-    #reactor.callLater(world['resigntime'], self.endgame())
+    # is there a better way to do this, this will always be late.
+    task.deferLater(reactor, maxsecs.seconds, endgame) 
     reactor.run()
 
 if __name__ == "__main__":

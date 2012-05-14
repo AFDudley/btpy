@@ -10,16 +10,16 @@ from grid import Grid
 from grid import Tile
 
 class Battlefield(object):
-    """contains grid, units and the logic for damage and movement."""
-    def __init__(self, grid=Grid(), squad1=None, squad2=None):
+    """contains grid, units and the logic for unit damage and movement."""
+    def __init__(self, grid=Grid(), defsquad=None, atksquad=None):
         #grid is a tuple of tuples containing tiles
         self.game_id = 0 #?
         self.grid = grid
         self.graveyard = []
-        self.squad1 = squad1
-        self.squad2 = squad2
+        self.defsquad = defsquad
+        self.atksquad = atksquad
         self.dmg_queue = {}
-        self.squads = (self.squad1, self.squad2)
+        self.squads = (self.defsquad, self.atksquad)
         self.units = self.get_units()
         self.direction = {0:'North', 1:'Northeast', 2:'Southeast', 3:'South', 4:'Southwest', 5:'Northwest'}
         self.ranged = ('Bow',   'Magma',     'Firestorm', 'Forestfire', 'Pyrocumulus')

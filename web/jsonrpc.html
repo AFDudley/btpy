@@ -54,13 +54,14 @@
                 get_initial = services.initial_state();
                 get_initial.then(function(result) {
                     game = new gameState(result);
-                    dude = Object.keys(game.units)[0];
-                    pos  = game.init_locs[dude];
-                    pos  = [pos[0], pos[1] + 1];
                     myUnits = getUnits("mine");
                     theirUnits = getUnits("theirs");
-		    /* services.process_action takes "pass", "action", "move"
-		    as types. Examples in tests/hex_battle_test2.py
+                    dude = myUnits[0];
+                    pos  = game.init_locs[dude];
+                    pos  = [pos[0], pos[1] + 1];
+
+            /* services.process_action takes "pass", "action", "move"
+            as types. Examples in tests/hex_battle_test2.py
                     process_action = services.process_action([dude, 'move', pos]); */
                     dojo.create("p", {innerHTML: "Game started at: " + game.start_time},
                         dojo.byId("start_time"));

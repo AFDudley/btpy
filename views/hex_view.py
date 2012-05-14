@@ -213,8 +213,8 @@ class TopPane(Pane):
         view.bottom.text = []
         
         if view.game.state['num'] == 1:
-            self.squad = view.battle.squad1
-            self.not_squad = view.battle.squad2
+            self.squad = view.battle.defsquad
+            self.not_squad = view.battle.atksquad
         elif view.game.state['num'] % 2 == 1:
             self.squad, self.not_squad = self.not_squad, self.squad
         
@@ -473,21 +473,21 @@ class BattlePane(Pane, Battlefield):
         
         self.grid = grid
         self.contentimgs = pygame.sprite.RenderUpdates()
-        self.player1 = battle.Player()
-        self.player2 = battle.Player()
-        self.player1.squads = [self.trans_squad(yaml_store.load('yaml/squad1.yaml'))]
-        self.player2.squads = [self.trans_squad(yaml_store.load('yaml/squad2.yaml'))]
+        self.defender = battle.Player()
+        self.attacker = battle.Player()
+        self.defender.squads = [self.trans_squad(yaml_store.load('yaml/squad1.yaml'))]
+        self.attacker.squads = [self.trans_squad(yaml_store.load('yaml/squad2.yaml'))]
         
-        self.squad1 = self.player1.squads[0]
-        self.squad2 = self.player2.squads[0]
+        self.defender = self.defender.squads[0]
+        self.attacker = self.attacker.squads[0]
         
-        self.squad1.name = 'p1'
-        self.squad1.num  = '1'
+        self.defender.name = 'Defender'
+        self.defender.num  = '1'
         
-        self.squad2.name = 'p2'
-        self.squad2.num  = '2'
+        self.attacker.name = 'Attacker'
+        self.attacker.num  = '2'
                 
-        self.squads = (self.squad1, self.squad2)
+        self.squads = (self.defender, self.attacker)
         self.units = self.get_units()
         for u in self.units:
             u.draw_text()
@@ -752,11 +752,11 @@ class View:
         self.middle = MiddlePane((LEFTINSET, (TOPINSET + PANE_HEIGHT + PANE_SPACING)))
         self.bottom = BottomPane((LEFTINSET, (TOPINSET + 2 *(PANE_HEIGHT + PANE_SPACING))))
         #the name battle is hardcoded into pyconsole.py
-        #self.player1 = battle.Player()
-        #self.player2 = battle.Player()
+        #self.defender = battle.Player()
+        #self.attacker = battle.Player()
         
         self.battle = BattlePane((242, TOPINSET + 1), self.grid, tilesize=51, tiles=(16,16))
-        self.game = battle.Game(self.grid, self.battle.player1, self.battle.player2,
+        self.game = battle.Game(self.grid, self.battle.defender, self.battle.attacker,
                                 self.battle)
         #console code
         self.console = pyconsole.Console(screen, (2,398,794,200))
@@ -849,9 +849,6 @@ class View:
         for i in text:
             print i
             view.console.output(i)"""
-        #slightly redundant to_english prints to console.
-        msg = view.game.log.to_english(self.current_action['num'] - 1, time=False)
-        view.console.output(msg)
         
     def transition(self, dest_state):
         """transitions from current_state to dest_state"""
@@ -872,8 +869,8 @@ if __name__ == '__main__':
     grid = BattlePane.Grid(tiles=(16,16), tilesize=35, hexparams=get_hex_params(35))
     view = View(screen, grid)
     view.state = view.get_key()
-    view.game.player1.name = "Attacker"
-    view.game.player2.name = "Defender"
+    view.game.defender.name = "Defender"
+    view.game.attacker.name = "Attacker"
     view.console.active = 0
     paneimgs = pygame.sprite.RenderUpdates()
     for pane in (view.top, view.middle, view.bottom, view.battle):

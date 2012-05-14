@@ -131,11 +131,11 @@ class World(object):
     
     def delete_player(self, player):
         """removes a player from the database and returns their fields to
-    the world."""
-    for field in self.root['Players'][player].wFields.keys():
-        self.award_field(player, field, 'World')
-    del self.root['Players'][player]
-    return transaction.commit()
+        the world."""
+        for field in self.root['Players'][player].wFields.keys():
+            self.award_field(player, field, 'World')
+        del self.root['Players'][player]
+        return transaction.commit()
     
     def start_battle(self, field_loc):
         """Starts a battle on a wField. FOR TESTING"""
