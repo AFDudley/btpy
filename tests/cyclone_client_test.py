@@ -3,7 +3,7 @@ import urllib
 import httplib2
 
 class test_client():
-    def __init__(self, addr='localhost:8888'):
+    def __init__(self, addr='166.84.136.68:8888'):
         self.addr = addr
         self.cookie = None
         self.http = httplib2.Http()

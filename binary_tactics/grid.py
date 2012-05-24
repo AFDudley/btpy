@@ -1,7 +1,15 @@
+from collections import namedtuple
 import random
 from math import ceil, sqrt
 
 from stone import Stone
+
+class Loc(namedtuple('Loc', 'x y')):
+    __slots__ = ()
+    def __repr__(self):
+        return '(%r, %r)' %self
+noloc = Loc(None, None)
+
 class Tile(Stone):
     """Tiles contain units or stones and are used to make battlefields."""
     def __init__(self, comp=Stone(), contents=None):

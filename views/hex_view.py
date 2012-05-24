@@ -26,11 +26,14 @@ except ImportError, message:
     import views.pyconsole as pyconsole
 
 #Magic Sprinkles!!!
+
+'''
 try:
     __builtins__.__IPYTHON__
 except:
     from IPython.iplib import InteractiveShell
     __IPYTHON__ = InteractiveShell('fake')
+'''
 
 black = [0, 0, 0]
 darkg = [50, 50, 50]

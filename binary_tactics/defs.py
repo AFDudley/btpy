@@ -8,5 +8,5 @@ class Loc(namedtuple('Loc', 'x y')):
     __slots__ = ()
     def __repr__(self):
         return '(%r, %r)' % self
-noloc = Loc(None,None)     
+noloc = Loc(None,None)
 

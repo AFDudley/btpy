@@ -24,7 +24,9 @@ def make_wFields(x, y):
     transaction.commit() #required for wf1
     
 def create_world(version=0.0, x=2, y=2):
+    #there should be a more elegant way of doing this.
     def do_it():
+        world['resigntime'] = 21600#amount of time in seconds before attacker is forced to resign.
         world['version'] = version
         world['x'] = x
         world['y'] = y

@@ -47,6 +47,19 @@ class Message(dict):
     def __dict__(self):
         return self
     
+class Change_list(dict): #belongs in different file
+    def __init__(self, event, kwargs):
+        dict.__init__(self, event, **kwargs)
+        
+    @property
+    def __dict__(self):
+        return self
+    
+class Battle_changes(Change_list):
+    def __init__(self, victors, prisoners, awards, event='battle'):
+        dict.__init__(self, event=event, victors=victors,
+                      prisoners=prisoners, awards=awards)
+
 class Initial_state(dict):
     """A hack for serialization."""
     def __init__(self, log):
@@ -68,10 +81,12 @@ class Initial_state(dict):
             
 class Log(dict):
     def __init__(self, players, units, grid):
-        """Records inital game state, timestamps log."""
+        """Records initial game state, timestamps log."""
         #dict.__init__(self, start_time=now(), players=players, grid=grid,
         #              end_time=None, winner=None, states=[], actions=[],
         #              messages=[], applied=[], condition=None)
+        self['event']      = 'battle'
+        self['change_list'] = None
         self['start_time'] = now()
         self['end_time']   = None
         self['players']    = players
@@ -85,7 +100,7 @@ class Log(dict):
         self['condition']  = None
         self['owners']     = None
         self['init_locs']  = None
-    
+        
     @property
     def __dict__(self):
         return self
@@ -135,7 +150,8 @@ class State(dict):
     def check(self, game):
         """checks for game ending conditions. (assumes two players)"""
         num = self['num']
-        if game.log['actions'][num - 1]['type'] == 'pass':
+        last_type = game.log['actions'][num - 1]['type'] 
+        if (last_type == 'pass') or (last_type == 'timed_out'):
             self['pass_count'] += 1
         else:
             self['pass_count'] = 0
@@ -168,14 +184,11 @@ class State(dict):
             game.end("Both sides passed")
         
         self['queued'] = game.map_queue()
-        #self['HPs']    = game.HPs()
-        #self['locs']   = game.map_locs()
         self['HPs'], self['locs'] = game.update_unit_info()
         
         game.log['states'].append(State(**self))
         
         #game is not over, state is stored, update state.
-        
         self['num'] += 1
     
 
@@ -199,9 +212,10 @@ class Game(object):
         self.map = self.unit_map() 
         self.winner = None
         self.units = self.map_unit()
-        self.log = Log(self.players, self.units, self.grid)
+        self.log = Log(self.players, self.units, self.battlefield.grid)
         self.log['owners'] = self.log.get_owners()
         self.state['old_defsquad_hp'] = self.battlefield.defsquad.hp()
+        self.whose_turn = self.defender
     
     def unit_map(self):
         """mapping of unit ids to objects, used for serialization."""
@@ -270,7 +284,8 @@ class Game(object):
         if new['unit'] != None:
             new['unit'] = id(new['unit'])
         else:
-            raise TypeError("Acting unit cannont be 'NoneType'")
+            new['unit'] = None
+            #raise TypeError("Acting unit cannont be 'NoneType'")
         return new
     
     def last_message(self):
@@ -284,8 +299,8 @@ class Game(object):
         action['when'] = now()
         action['num']  = num = self.state['num']
         if action['type'] == 'timed_out':
-            text - [["failed to act."]]
-        if action['type'] == 'pass':
+            text = [["failed to act."]]
+        elif action['type'] == 'pass':
             text = [["Action Passed."]]
         elif action['type'] == 'move': #TODO fix move in hex_battlefield.
             text = self.battlefield.move_scient(action['unit'].location,
@@ -296,16 +311,27 @@ class Game(object):
         elif action['type'] == 'attack':
             text = self.battlefield.attack(action['unit'], action['target'])
         else:
-            raise Exception("Action is of unkown type")
+            raise Exception("Action is of unknown type")
         
         self.log['actions'].append(self.map_action(action))
         self.log['messages'].append(Message(num, self.map_result(text)))
         
-        if num % 4 == 0:
+        if num % 4 == 0: #explain please.
             self.apply_queued()
         else:
             self.state.check(self)
-        return {'command': self.log['actions'][-1], 'response': self.log['messages'][-1]}
+        
+        #switches whose_turn.
+        if self.whose_turn == self.defender:
+            self.whose_turn = self.attacker
+        else:
+            self.whose_turn = self.defender
+        if num % 4 == 0:
+            return {'command': self.log['actions'][-1], 'response': self.log['messages'][-1],
+                    'applied': self.log['applied'][-1]}
+        else:
+            return {'command': self.log['actions'][-1], 'response': self.log['messages'][-1]}
+            
     
     def apply_queued(self):
         """queued damage is applied to units from this state"""
@@ -325,10 +351,23 @@ class Game(object):
         return Initial_state(self.log)
     
     def end(self, condition):
-        """game over state, handles log closing, updating player stats, TBD"""
+        """game over state, handles log closing, writes change list for world"""
+        log = self.log
         self.state['game_over'] = True
-        self.log['states'].append(self.state)
-        self.log.close(self.winner, condition)
-        print self.log['condition']
+        log['states'].append(self.state)
+        log.close(self.winner, condition)
+        #make change list
+        victors = []
+        prisoners = []
+
+        #split survivors into victors and prisoners
+        for unit in log['states'][-1]['HPs'].keys():
+            if log['winner'].name == log['owners'][unit]:
+                victors.append(unit)
+            else:
+                prisoners.append(unit)
+        #calculate awards
+        awards    = {} #should be a stone.
+        self.log['change_list'] = Battle_changes(victors, prisoners, awards)
         raise Exception("Game Over")
     

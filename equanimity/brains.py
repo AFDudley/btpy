@@ -1,5 +1,5 @@
 class brain():
-    #use pyneurgen
+    #use pyneurgen?
     def __init__(self):
         self.network = None
         self.fitness = None

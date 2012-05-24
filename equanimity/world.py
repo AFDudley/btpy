@@ -27,7 +27,7 @@ class Stronghold(persistent.Persistent):
 
 
 class wField(persistent.Persistent):
-    def __init__(self, world_coord, owner, ply_window=4):
+    def __init__(self, world_coord, owner, ply_time=240):
         self.world_coord = world_coord
         self.owner = owner
         self.grid = Grid()
@@ -39,9 +39,9 @@ class wField(persistent.Persistent):
         
         """
         ply_window: user definable time before a pass is automatically sent for a battle action.
-            range between 4 and 360 minutes, default is 4
+            range between 4 and 360 minutes, default is 4 (in seconds)
         """
-        self.ply_window = ply_window
+        self.ply_time = ply_time
     
     def get_defenders(self):
         """gets the defenders of a wField, returns a random squad from stronghold
@@ -66,9 +66,8 @@ class wPlayer(persistent.Persistent):
         self.treaties = None
 
 class World(object):
-    def __init__(self, storage_name=('localhost', 9100),x=8, y=8, resigntime=360):
+    def __init__(self, storage_name=('localhost', 9100)):
         self.storage = ClientStorage.ClientStorage(storage_name)
-        self.resigntime = 21600 #amount of time in seconds before attacker is forced to resign.
         self.db = DB(self.storage)
         self.connection = self.open_connection(self.db)
         self.root = self.get_root(self.connection)

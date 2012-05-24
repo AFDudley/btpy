@@ -1,7 +1,14 @@
 syntax: glob
+equanimity/run
+equanimity/done
+equanimity/supervise*
+._*
 *.pyc
 .DS_Store
 build/*
 ZODB/*
+web/error_log
+web/websocket*
 web/dojo*
-web/documentcloud-underscore*
+web/*underscore*
+

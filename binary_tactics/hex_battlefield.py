@@ -3,11 +3,10 @@ import random
 from math import ceil, sqrt
 
 from const import E, F, I, W
-from defs import Loc, noloc
+#from defs import Loc, noloc
 from stone import Stone
 from units import Scient, Nescient, Part
-from grid import Grid
-from grid import Tile
+from grid import Grid, Tile, Loc, noloc
 
 class Battlefield(object):
     """contains grid, units and the logic for unit damage and movement."""
