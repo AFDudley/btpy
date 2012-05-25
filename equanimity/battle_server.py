@@ -164,10 +164,9 @@ def main():
     defsquad = f.get_defenders()
     #TODO rewrite player and hex_battle
     dfndr = Player(f.owner, [defsquad])
-    atkr = Player(atkr_name, [atksquad])
-    game = Game(defender=dfndr, attacker=atkr,
-                battlefield=Battlefield(f.grid, defsquad, atksquad))
-    btl = game.battlefield
+    atkr  = Player(atkr_name, [atksquad])
+    game  = Game(grid=f.grid, defender=dfndr, attacker=atkr)
+    btl   = game.battlefield
     #obviously for testing only.
     for squad in btl.squads: #location wonkiness in hex_battlefield.
         for unit in squad:

@@ -194,19 +194,17 @@ class State(dict):
 
 class Game(object):
     """Almost-state-machine that maintains game state."""
-    def __init__(self, grid=Grid(), defender=None, attacker=None, battlefield=None):
+    def __init__(self, grid=Grid(), defender=None, attacker=None):
         self.grid = grid
         self.defender = defender
         self.attacker = attacker
-        self.battlefield = battlefield
         #player/battlefield logic for testing
         if self.defender == None:
             self.defender = Player('Defender', squads=[rand_squad()])
         if self.attacker == None:
             self.attacker = Player('Attacker', squads=[rand_squad()])
-        if self.battlefield == None:
-            self.battlefield = Battlefield(grid, self.defender.squads[0],
-                                           self.attacker.squads[0])
+        self.battlefield = Battlefield(grid, self.defender.squads[0],
+                                       self.attacker.squads[0])
         self.state = State()
         self.players = (self.defender, self.attacker)
         self.map = self.unit_map() 

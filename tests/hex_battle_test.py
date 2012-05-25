@@ -10,6 +10,7 @@ from binary_tactics.hex_battle import *
 from stores.yaml_store import *
 from binary_tactics.hex_battlefield import Battlefield
 from binary_tactics.player import Player
+from binary_tactics.grid import Loc
 
 def hp():
     for s in btl.squads:
@@ -21,14 +22,13 @@ def hp():
 p1   = Player(name='p1', squads=[load('yaml/ice_maxes.yaml')])
 p2   = Player(name='p2', squads=[load('yaml/fire_maxes.yaml')])
 
-game = Game(defender=p1, attacker=p2,
-            battlefield=Battlefield(defsquad=p1.squads[0], atksquad=p2.squads[0]),)
+game = Game(defender=p1, attacker=p2)
 
 btl = game.battlefield
 
 for s in range(2):
     for x in range(4):
-        btl.place_object(btl.squads[s][x], defs.Loc(x, s))
+        btl.place_object(btl.squads[s][x], Loc(x, s))
 
 game.log['init_locs'] = game.log.init_locs()
 

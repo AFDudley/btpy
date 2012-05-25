@@ -8,7 +8,7 @@ binary_tactics.stone.Stone = Stone #Monkey Patch
 from binary_tactics.hex_battle import Game
 from binary_tactics.hex_battlefield import Battlefield
 from binary_tactics.player import Player
-from binary_tactics.grid import Loc
+from binary_tactics.grid import Grid, Loc
 from stores.store import get_persisted
 from copy import deepcopy
 
@@ -25,8 +25,7 @@ atkr_name, squad1 = f.battlequeue[0]
 squad2 = f.get_defenders()
 atkr = Player(atkr_name, [squad1])
 dfndr = Player(f.owner, [squad2])
-game = Game(player1=atkr, player2=dfndr,
-            battlefield=Battlefield(f.grid, squad1, squad2))
+game = Game(grid=f.grid, defender=dfndr, attacker=atkr,)
 btl = game.battlefield
 
 for s in btl.squads: #location wonkiness in hex_battlefield.

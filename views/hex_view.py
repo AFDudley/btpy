@@ -738,7 +738,12 @@ class BattlePane(Pane, Battlefield):
                         self.image.blit(tile.image, tile.rect)
                     self[xpos][ypos] = tile
             self.image.set_colorkey(black)
-    
+
+class Game(battle.Game):
+    def __init__(self, grid, defender, attacker, battlefield):
+        battle.Game.__init__(self, grid, defender, attacker)
+        self.battlefield = battlefield
+        
 class View:
     def __init__(self, screen, grid):
         self.grid = grid
@@ -750,7 +755,7 @@ class View:
         #self.attacker = battle.Player()
         
         self.battle = BattlePane((242, TOPINSET + 1), self.grid, tilesize=51, tiles=(16,16))
-        self.game = battle.Game(self.grid, self.battle.defender, self.battle.attacker,
+        self.game = Game(self.grid, self.battle.defender, self.battle.attacker,
                                 self.battle)
         #console code
         self.console = pyconsole.Console(screen, (2,398,794,200))
