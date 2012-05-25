@@ -8,13 +8,13 @@
 """This code converts game objects to and from yaml streams"""
 import re
 import yaml
-import binary_tactics.defs as defs
+from binary_tactics.grid import Loc
 from stores.store import convert_dict
 
 def loc_representer(dumper, data):
     return dumper.represent_scalar(u'!loc', u'(%2s,%2s)' % data)
  
-yaml.add_representer(defs.Loc, loc_representer)
+yaml.add_representer(Loc, loc_representer)
 
 def loc_constructor(loader, node):
     value = loader.construct_scalar(node)
@@ -22,7 +22,7 @@ def loc_constructor(loader, node):
         x, y = map(int, value.strip('()').split(','))
     except ValueError: #This isn't so bad.
         x = y = None    
-    return defs.Loc(x,y)
+    return Loc(x,y)
 
 yaml.add_constructor(u'!loc', loc_constructor)    
 

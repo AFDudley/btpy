@@ -1,10 +1,10 @@
-"""Helpers for figuring out HTK averages, does not take into account healing,
+"""BROKEN! Helpers for figuring out HTK averages, does not take into account healing,
 """
 
-from defs import *
-from const import *
-from helpers import *
-    
+from binary_tactics.defs import *
+from binary_tactics.const import *
+from binary_tactics.helpers import *
+
 def pdmg_squad(unit, squad, debug=None):
     avg =[]
     if debug: print "Physical damage from:"; unit
@@ -114,9 +114,4 @@ def make_grand(squad, debug=None):
     for i in ELEMENTS:
         grand += avgs[i]['avg']
     return grand / len(squad)
-    
-    
-    
-    
-    
     

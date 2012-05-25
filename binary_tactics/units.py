@@ -1,6 +1,7 @@
 from UserList import UserList
 from stone import Stone
 from const import ELEMENTS, E, F, I, W, ORTH, OPP
+
 class Unit(Stone):
     def __init__(self, element, comp, name=None, location=None):
         if not element in ELEMENTS:

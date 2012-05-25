@@ -22,7 +22,7 @@ import transaction
 from binary_tactics.hex_battle import Game, Action
 from binary_tactics.hex_battlefield import Battlefield
 from binary_tactics.player import Player
-from binary_tactics.defs import Loc
+from binary_tactics.grid import Loc
 
 from stores.store import get_persisted
 import copy

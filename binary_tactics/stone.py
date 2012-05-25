@@ -20,7 +20,7 @@ class Stone(Mapping):
                         for element in range(4):
                             if type(comp[element]) == type(1):
                                 if 0 <= comp[element] < 256:
-                                    self.comp[ELEMENTS[element]] = comp[element]                        
+                                    self.comp[ELEMENTS[element]] = comp[element]
                                 else:
                                     raise AttributeError
                             else:

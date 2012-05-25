@@ -11,11 +11,10 @@ from math import sin, cos, radians, ceil, floor
 import pygame
 from pygame.locals import * #need them all so the game doesn't crash when someone presses the wrong key :D
 #from pygame.locals import K_ESCAPE, KEYDOWN, K_w, K_UP, K_DOWN, K_RETURN
-from binary_tactics.hex_battlefield import Tile, Grid, Battlefield
+from binary_tactics.hex_battlefield import Tile, Grid, Battlefield, Loc, noloc
 import binary_tactics.hex_battle as battle
 
 from binary_tactics.const import E,F,I,W, ELEMENTS, OPP, ORTH
-from binary_tactics.defs import Loc, noloc
 from binary_tactics.units import Scient, Nescient, Squad
 from binary_tactics.helpers import rand_comp, rand_element
 import stores.yaml_store as yaml_store
@@ -26,14 +25,6 @@ except ImportError, message:
     import views.pyconsole as pyconsole
 
 #Magic Sprinkles!!!
-
-'''
-try:
-    __builtins__.__IPYTHON__
-except:
-    from IPython.iplib import InteractiveShell
-    __IPYTHON__ = InteractiveShell('fake')
-'''
 
 black = [0, 0, 0]
 darkg = [50, 50, 50]
