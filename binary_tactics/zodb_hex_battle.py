@@ -1,9 +1,9 @@
 #
-#  battle.py
+#  zodb_hex_battle.py
 #  
 #
-#  Created by RiX on 3/21/10.
-#  Copyright (c) 2010 A. Frederick Dudley. All rights reserved.
+#  Created by RiX on 5/30/12.
+#  Copyright (c) 2012 A. Frederick Dudley. All rights reserved.
 #
 '''
 The $64 question is what holds state?
@@ -17,50 +17,54 @@ yet it assumes that there are two players... the problems with this code go on..
 '''
 from datetime import datetime
 from collections import namedtuple
-from binary_tactics.hex_battlefield import  Battlefield, Grid
+
+import transaction
+from persistent import Persistent
+from persistent.mapping import PersistentMapping
+from persistent.list import PersistentList
+
+from binary_tactics.hex_battlefield import Battlefield, Grid
 from binary_tactics.helpers import rand_squad
 from binary_tactics.units import Unit
 from binary_tactics.player import Player
 
-from stores.store import *
-import json
 
 def now():
     return str(datetime.utcnow())
 
-class Action(dict):
+class Action(PersistentMapping):
     #'when' needs more thought.
     #type needs to != 'pass'
     def __init__(self, unit=None, type='pass', target=None, when=None, num=None):
-        dict.__init__(self, unit=unit, type=type, target=target, num=num, 
+        PersistentMapping.__init__(self, unit=unit, type=type, target=target, num=num, 
                       when=now())
     
-    @property
+    '''@property
     def __dict__(self):
-        return self
+        return self'''
 
-class Message(dict):
+class Message(PersistentMapping):
     def __init__(self, num, result):
-        dict.__init__(self, num=num, result=result, when=now())
+        PersistentMapping.__init__(self, num=num, result=result, when=now())
     
-    @property
+    '''@property
     def __dict__(self):
-        return self
+        return self'''
     
-class Change_list(dict): #belongs in different file
+class Change_list(PersistentMapping): #belongs in different file
     def __init__(self, event, kwargs):
-        dict.__init__(self, event, **kwargs)
+        PersistentMapping.__init__(self, event, **kwargs)
         
-    @property
+    '''@property
     def __dict__(self):
-        return self
+        return self'''
     
 class Battle_changes(Change_list):
     def __init__(self, victors, prisoners, awards, event='battle'):
-        dict.__init__(self, event=event, victors=victors,
+        PersistentMapping.__init__(self, event=event, victors=victors,
                       prisoners=prisoners, awards=awards)
 
-class Initial_state(dict):
+class Initial_state(PersistentMapping):
     """A hack for serialization."""
     def __init__(self, log):
         #self.start_time = log['start_time']
@@ -68,36 +72,36 @@ class Initial_state(dict):
         #self.units      = log['units']
         #self.grid       = log['grid']
         #self['init_locs']  = log['init_locs']
-        dict.__init__(self, init_locs=log['init_locs'],
+        PersistentMapping.__init__(self, init_locs=log['init_locs'],
                             start_time=log['start_time'],
                             units=log['units'],
                             grid=log['grid'],
                             owners=log['owners'],)
         #self['owners'] = self.get_owners(log)
 
-    @property
+    '''@property
     def __dict__(self):
-        return self
+        return self'''
             
 class Log(dict):
     def __init__(self, players, units, grid):
         """Records initial game state, timestamps log."""
-        #dict.__init__(self, start_time=now(), players=players, grid=grid,
+        #dict.__init__(self, start_time=now(), players=players, grsid=grid,
         #              end_time=None, winner=None, states=[], actions=[],
         #              messages=[], applied=[], condition=None)
-        self['actions']    = []
-        self['applied']    = []
+        self['actions']    = PersistentList()
+        self['applied']    = PersistentList()
         self['condition']  = None
         self['change_list'] = None
         self['event']      = 'battle'
         self['end_time']   = None
         self['grid']       = grid
         self['init_locs']  = None
-        self['messages']   = [] 
+        self['messages']   = PersistentList() 
         self['owners']     = None
         self['players']    = players
         self['start_time'] = now()
-        self['states']     = [] #Hmm, Does this really need to be here.
+        self['states']     = PersistentList() #Hmm, Does this really need to be here.
         self['units']      = units
         self['winner']     = None
         self['world_coords'] = None #set by battle_server
@@ -108,7 +112,7 @@ class Log(dict):
     
     def init_locs(self):
         #calling this in init is most likely not going to work as intended.
-        locs = {}
+        locs = PersistentMapping()
         for u in self['units'].keys():
             locs.update({u: self['units'][u].location})
         return locs
@@ -132,21 +136,21 @@ class Log(dict):
     #LAZE BEAMS!!!!
     def get_owners(self):
         """mapping of unit number to player/owner."""
-        owners = {}
+        owners = PersistentMapping()
         for unit in self['units'].keys():
             owners[unit] = self.get_owner(unit).name
         return owners
     
-class State(dict):
+class State(PersistentMapping):
     """A dictionary containing the current game state."""
-    def __init__(self, num=1, pass_count=0, hp_count=0, old_defsquad_hp=0, queued={}, locs={}, HPs={}, game_over=False):
-        dict.__init__(self, num=num, pass_count=pass_count,
+    def __init__(self, num=1, pass_count=0, hp_count=0, old_defsquad_hp=0, queued=PersistentMapping(), locs=PersistentMapping(), HPs=PersistentMapping(), game_over=False):
+        PersistentMapping.__init__(self, num=num, pass_count=pass_count,
                       hp_count=hp_count, old_defsquad_hp=old_defsquad_hp,
                       queued=queued, locs=locs, HPs=HPs, game_over=game_over)
     
-    @property
+    '''@property
     def __dict__(self):
-        return self
+        return self'''
     
     def check(self, game):
         """checks for game ending conditions. (assumes two players)"""
@@ -219,18 +223,18 @@ class Game(object):
     
     def unit_map(self):
         """mapping of unit ids to objects, used for serialization."""
-        mapping = {}
+        mapping = PersistentMapping()
         for unit in self.battlefield.units: mapping[unit] = id(unit)
         return mapping
     
     def map_unit(self):
-        units = {}
+        units = PersistentMapping()
         for (k,v) in self.map.items(): units[v] = k
         return units
     
     def map_locs(self):
         """maps unit name unto locations, only returns live units"""
-        locs = {}
+        locs = PersistentMapping()
         for unit in self.map:
             loc = unit.location
             if loc[0] >= 0:
@@ -239,7 +243,7 @@ class Game(object):
     
     def HPs(self):
         """Hit points by unit."""
-        HPs ={}
+        HPs =PersistentMapping()
         for unit in self.map:
             hp = unit.hp
             if hp > 0:
@@ -248,8 +252,8 @@ class Game(object):
         
     def update_unit_info(self):
         """returns HPs, Locs."""
-        HPs   = {}
-        locs  = {}
+        HPs   = PersistentMapping()
+        locs  = PersistentMapping()
         
         for unit in self.map:
             num = self.map[unit]
@@ -264,7 +268,7 @@ class Game(object):
         """apply unit mapping to units in queue."""
         old = self.battlefield.get_dmg_queue()
         if isinstance(old, dict):
-            new = {}
+            new = PersistentMapping()
             for key in old.keys():
                 new[str(id(key))] = old[key]
             return new
@@ -357,8 +361,8 @@ class Game(object):
         log['states'].append(self.state)
         log.close(self.winner, condition)
         #make change list
-        victors = []
-        prisoners = []
+        victors = PersistentList()
+        prisoners = PersistentList()
 
         #split survivors into victors and prisoners
         for unit in log['states'][-1]['HPs'].keys():
@@ -367,7 +371,7 @@ class Game(object):
             else:
                 prisoners.append(unit)
         #calculate awards
-        awards    = {} #should be a stone.
+        awards    = PersistentMapping() #should be a stone.
         self.log['change_list'] = Battle_changes(victors, prisoners, awards)
         raise Exception("Game Over")
     

@@ -6,7 +6,7 @@
 #  Copyright (c) 2010 A. Frederick Dudley. All rights reserved.
 #
 
-from binary_tactics.hex_battle import Game, Action
+from binary_tactics.zodb_hex_battle import Game, Action
 from stores.yaml_store import load
 from binary_tactics.hex_battlefield import Battlefield
 from binary_tactics.player import Player

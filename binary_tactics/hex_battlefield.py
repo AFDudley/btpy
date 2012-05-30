@@ -1,6 +1,7 @@
 """contains battlefield objects"""
 import random
 from math import ceil, sqrt
+from datetime import datetime
 
 from const import E, F, I, W
 from stone import Stone
@@ -234,13 +235,16 @@ class Battlefield(object):
     
     def place_object(self, obj, dest):
         """places an object on a tile."""
-        if self.on_grid(dest):
-            xpos, ypos = dest
-        else:
-            raise Exception("Tile %s is off grid" %dest)
+        try:
+            if self.on_grid(dest):
+                xpos, ypos = dest
+            else:
+                raise Exception("Tile %s is off grid" %dest)
+        except TypeError:
+            pass
             
         if isinstance(obj, Scient):
-            if obj.location == noloc:
+            if (obj.location == noloc) or (obj.location == None):
                 if self.grid[xpos][ypos].contents == None:
                     self.grid[xpos][ypos].contents = obj
                     obj.location = Loc(xpos, ypos)
@@ -515,6 +519,7 @@ class Battlefield(object):
         """moves unit to graveyard"""
         x,y = unit.location
         unit.hp = 0
+        unit.DOD = datetime.utcnow()
         self.grid[x][y].contents = None
         unit.location = Loc(-1,-1)
         del self.dmg_queue[unit]

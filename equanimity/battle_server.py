@@ -19,12 +19,13 @@ from ZEO import ClientStorage
 from ZODB import DB
 import transaction
 
-from binary_tactics.hex_battle import Game, Action
+
+from binary_tactics.zodb_hex_battle import Game, Action
 from binary_tactics.hex_battlefield import Battlefield
 from binary_tactics.player import Player
 from binary_tactics.grid import Loc
 
-from stores.store import get_persisted
+from stores.zodb_store import get_persisted
 import copy
 
 #For testing
@@ -126,8 +127,13 @@ def main():
         logs = conn.root()
         
         '''logs should be indexed by a hash of starttime and
-           where the battle happened.'''
-        logs['logs'].append(game.log)
+           where the battle happened. ...or something
+        '''
+        game.log['world_coords'] = world_coords
+        out = get_persisted(game.log)
+        #print "out type %s" %type(out)
+        logs['battle'][game.log['end_time']] = out
+        #main.out = out
         transaction.commit()
         print game.log['change_list']
         
@@ -156,9 +162,10 @@ def main():
     world_zeo = World_zeo()
     world  = world_zeo.root
     maxsecs = timedelta(0, world['resigntime'])
+    world_coords = str(sys.argv[1])
     #this copy is really important, copies the objects out of the zeo and into memory.
-    f = copy.deepcopy(world['Fields'][str(sys.argv[1])])
-
+    f = copy.deepcopy(world['Fields'][world_coords])
+    #ply_time = 1
     ply_time = f.ply_timer
     atkr_name, atksquad = f.battlequeue[0]
     defsquad = f.get_defenders()
@@ -167,15 +174,14 @@ def main():
     atkr  = Player(atkr_name, [atksquad])
     game  = Game(grid=f.grid, defender=dfndr, attacker=atkr)
     btl   = game.battlefield
-    #obviously for testing only.
-    for squad in btl.squads: #location wonkiness in hex_battlefield.
-        for unit in squad:
-            unit.location = Loc(None, None)
+
+    #!!!obviously for testing only.
+    #The locations should be pushed to world before battle is started.
     for s in xrange(2):
         l = len(btl.squads[s])
         for x in xrange(l):
             btl.place_object(btl.squads[s][x], Loc(x, s))
-
+        
     game.log['init_locs'] = game.log.init_locs()
     start_time  = datetime.strptime(game.log['start_time'], "%Y-%m-%d %H:%M:%S.%f")
     ART = start_time + maxsecs #attacker resign time
@@ -209,6 +215,6 @@ def main():
     reactor.run()
 
 if __name__ == "__main__":
-    log.startLogging(sys.stdout)
-    #log.startLogging(open('/home/rix/logs/battle_log.log', 'a'))
+    #log.startLogging(sys.stdout)
+    log.startLogging(open('/home/rix/logs/battle_log.log', 'a'))
     main()

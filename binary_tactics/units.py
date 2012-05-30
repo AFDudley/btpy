@@ -1,7 +1,7 @@
 from UserList import UserList
 from stone import Stone
 from const import ELEMENTS, E, F, I, W, ORTH, OPP
-
+from datetime import datetime
 class Unit(Stone):
     def __init__(self, element, comp, name=None, location=None):
         if not element in ELEMENTS:
@@ -19,6 +19,8 @@ class Unit(Stone):
             self.name = self.__hash__()
         self.name = name
         self.location = location
+        self.DOB = datetime.utcnow()
+        self.DOD = None
         self.val = self.value()
         def __repr__(self):
             return self.name
