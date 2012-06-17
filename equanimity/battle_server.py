@@ -20,12 +20,14 @@ from ZODB import DB
 import transaction
 
 
-from binary_tactics.zodb_hex_battle import Game, Action
+#from binary_tactics.zodb_hex_battle import Game, Action
+from binary_tactics.hex_battle import Game, Action
 from binary_tactics.hex_battlefield import Battlefield
 from binary_tactics.player import Player
 from binary_tactics.grid import Loc
 
-from stores.zodb_store import get_persisted
+#from stores.zodb_store import get_persisted
+from stores.store import get_persisted
 import copy
 
 #For testing
@@ -120,11 +122,11 @@ def main():
     def write_battlelog():
         """writes the battle log to persistent storage."""
         print "writing battle log here."
-        addr = 'localhost', 9101
+        """addr = 'localhost', 9101
         storage = ClientStorage.ClientStorage(addr)
         db = DB(storage)
         conn = db.open()
-        logs = conn.root()
+        logs = conn.root()"""
         
         '''logs should be indexed by a hash of starttime and
            where the battle happened. ...or something
@@ -132,9 +134,9 @@ def main():
         game.log['world_coords'] = world_coords
         out = get_persisted(game.log)
         #print "out type %s" %type(out)
-        logs['battle'][game.log['end_time']] = out
+        ##logs['battle'][game.log['end_time']] = out
         #main.out = out
-        transaction.commit()
+        ##transaction.commit()
         print game.log['change_list']
         
 
@@ -166,7 +168,7 @@ def main():
     #this copy is really important, copies the objects out of the zeo and into memory.
     f = copy.deepcopy(world['Fields'][world_coords])
     #ply_time = 1
-    ply_time = f.ply_timer
+    ply_time = f.ply_time
     atkr_name, atksquad = f.battlequeue[0]
     defsquad = f.get_defenders()
     #TODO rewrite player and hex_battle

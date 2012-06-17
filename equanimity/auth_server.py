@@ -70,11 +70,14 @@ class LoginHandler(BaseHandler):
                 
         except Exception, e:
             log.err("Login Failed: %r" % e)
+            self.write('{login: "failed"}')
+            self.flush()
             raise cyclone.web.HTTPError(503)
         
         if u:
             self.set_secure_cookie("user", cyclone.escape.json_encode(u))
-            #self.redirect("/")
+            self.write('{login: "successful"}')
+            self.flush()
         else:
             self.redirect("/auth/login?e=invalid")
         
