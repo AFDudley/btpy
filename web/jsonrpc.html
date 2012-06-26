@@ -61,8 +61,8 @@
                     pos  = [pos[0], pos[1] + 1];
 
             /* services.process_action takes "pass", "action", "move"
-            as types. Examples in tests/hex_battle_test2.py
-                    process_action = services.process_action([dude, 'move', pos]); */
+            as types. Examples in tests/hex_battle_test2.py */
+                    process_action = services.process_action([dude, 'move', pos]);
                     dojo.create("p", {innerHTML: "Game started at: " + game.start_time},
                         dojo.byId("start_time"));
                     populateUl(myUnits, "my_units");

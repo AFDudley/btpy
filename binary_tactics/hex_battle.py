@@ -139,17 +139,17 @@ class Log(dict):
     
 class State(dict):
     """A dictionary containing the current game state."""
-    def __init__(self, num=1, pass_count=0, hp_count=0, old_defsquad_hp=0, queued={}, locs={}, HPs={}, game_over=False):
+    def __init__(self, num=1, pass_count=0, hp_count=0, old_defsquad_hp=0, queued={}, locs={}, HPs={}, game_over=False, whose_turn=None):
         dict.__init__(self, num=num, pass_count=pass_count,
                       hp_count=hp_count, old_defsquad_hp=old_defsquad_hp,
-                      queued=queued, locs=locs, HPs=HPs, game_over=game_over)
+                      queued=queued, locs=locs, HPs=HPs, game_over=game_over, whose_turn=whose_turn)
     
     @property
     def __dict__(self):
         return self
     
     def check(self, game):
-        """checks for game ending conditions. (assumes two players)"""
+        """Checks for game ending conditions. (Assumes two players and no action cue.)"""
         num = self['num']
         last_type = game.log['actions'][num - 1]['type'] 
         if (last_type == 'pass') or (last_type == 'timed_out'):
@@ -157,7 +157,7 @@ class State(dict):
         else:
             self['pass_count'] = 0
         
-        if num % 4 == 0:
+        if num % 4 == 0: #This calcuates hp_count
             defsquad_hp = game.battlefield.defsquad.hp()
             if self['old_defsquad_hp']  <= defsquad_hp:
                 self['hp_count'] += 1
@@ -208,6 +208,7 @@ class Game(object):
                                        self.attacker.squads[0])
         
         self.state = State()
+        self.state['whose_turn'] = self.defender.name
         self.players = (self.defender, self.attacker)
         self.map = self.unit_map() 
         self.winner = None
@@ -215,7 +216,7 @@ class Game(object):
         self.log = Log(self.players, self.units, self.battlefield.grid)
         self.log['owners'] = self.log.get_owners()
         self.state['old_defsquad_hp'] = self.battlefield.defsquad.hp()
-        self.whose_turn = self.defender
+        #self.whose_turn = self.defender
     
     def unit_map(self):
         """mapping of unit ids to objects, used for serialization."""
@@ -322,10 +323,11 @@ class Game(object):
             self.state.check(self)
         
         #switches whose_turn.
-        if self.whose_turn == self.defender:
-            self.whose_turn = self.attacker
+        if self.state['whose_turn'] == self.defender.name:
+            self.state['whose_turn'] = self.attacker.name
         else:
-            self.whose_turn = self.defender
+            self.state['whose_turn'] = self.defender.name
+            
         if num % 4 == 0:
             return {'command': self.log['actions'][-1], 'response': self.log['messages'][-1],
                     'applied': self.log['applied'][-1]}

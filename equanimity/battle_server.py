@@ -45,6 +45,7 @@ class BattleHandler(BaseJSONHandler):
         username = yield self.get_current_user().strip('"')
         defer.returnValue(username)
     
+    @cyclone.web.authenticated
     @defer.inlineCallbacks
     def jsonrpc_initial_state(self):
         #needs to filter 
@@ -53,13 +54,23 @@ class BattleHandler(BaseJSONHandler):
             yield get_persisted(self.settings.game.initial_state())
         defer.returnValue(self.settings.init_state)
     
+    @cyclone.web.authenticated
     @defer.inlineCallbacks
     def jsonrpc_get_state(self):
-        state = yield self.settings.game.last_state()
+        state = yield self.settings.last_state
+        if state == None:
+            state = yield self.settings.init_state
         defer.returnValue(state)
-    
+        
+    @cyclone.web.authenticated
     @defer.inlineCallbacks
-    def jsonrpc_game_log(self):
+    def jsonrpc_last_result(self):
+        result = yield self.settings.last_result
+        defer.returnValue(result)
+
+        
+    @defer.inlineCallbacks
+    def jsonrpc_game_log(self): #FOR TESTING
         log = yield self.settings.game.log
         defer.returnValue(str(log))
     
@@ -69,9 +80,9 @@ class BattleHandler(BaseJSONHandler):
         err = self.get_argument("e", None)
         username = self.get_current_user().strip('"')
         print "username: %s" %username
-        print "whose_turn: %s " %self.settings.game.whose_turn.name
+        print "whose_turn: %s " %self.settings.game.state['whose_turn']
         try:
-            if username != self.settings.game.whose_turn.name:
+            if username != self.settings.game.state['whose_turn']:
                 raise Exception("It is not your turn.")
             units = self.settings.game.units
             unit_num = int(args[0])
@@ -87,17 +98,7 @@ class BattleHandler(BaseJSONHandler):
         except Exception , e:
             log.err("process_action failed: %r" % e)
             raise cyclone.web.HTTPError(500, "%r" % e.args[0])
-    
-class LastStateHandler(cyclone.web.RequestHandler):
-    def get(self):
-        self.write(self.settings.last_state)
-        self.flush()
-        
-class LastResultHandler(cyclone.web.RequestHandler):
-    def get(self):
-        self.write(self.settings.last_result)
-        self.flush()
-        
+            
 class TimeLeftHandler(cyclone.web.RequestHandler):
     #DOS prevention needs to be added.
     #should be optimized for accuracy. 
@@ -191,8 +192,6 @@ def main():
     
     app = cyclone.web.Application([
                     (r"/", BattleHandler),
-                    (r"/last_state.json", LastStateHandler),
-                    (r"/last_result.json", LastResultHandler),
                     (r"/time_left.json", TimeLeftHandler),
                     (r"/static/(.*)", cyclone.web.StaticFileHandler, {"path": static_path}),
                   ],
@@ -203,7 +202,7 @@ def main():
     debug=True,
     login_url="/auth/login",
     cookie_secret="secret!!!!",
-    last_state='{}',
+    last_state=None,
     last_result='{}',
     init_state=None,
     ply_time=ply_time,

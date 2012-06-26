@@ -10,6 +10,9 @@
         "initial_state": {
             parameters: [],
         },
+        "last_result": {
+            parameters: [],
+        },
         "get_state": {
             parameter: [],
         },
