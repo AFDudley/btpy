@@ -68,11 +68,15 @@ class Initial_state(dict):
         #self.units      = log['units']
         #self.grid       = log['grid']
         #self['init_locs']  = log['init_locs']
+        names = []
+        for player in log['players']:
+            names.append(player.name)
         dict.__init__(self, init_locs=log['init_locs'],
                             start_time=log['start_time'],
                             units=log['units'],
                             grid=log['grid'],
-                            owners=log['owners'],)
+                            owners=log['owners'],
+                            player_names=names,)
         #self['owners'] = self.get_owners(log)
 
     @property
@@ -191,6 +195,13 @@ class State(dict):
         
         #game is not over, state is stored, update state.
         self['num'] += 1
+        
+        #switches whose_turn.
+        #which player acted in this ply?
+        if self['whose_turn'] == game.defender.name:
+            self['whose_turn'] = game.attacker.name
+        else:
+            self['whose_turn'] = game.defender.name
     
 
 class Game(object):
@@ -322,11 +333,7 @@ class Game(object):
         else:
             self.state.check(self)
         
-        #switches whose_turn.
-        if self.state['whose_turn'] == self.defender.name:
-            self.state['whose_turn'] = self.attacker.name
-        else:
-            self.state['whose_turn'] = self.defender.name
+
             
         if num % 4 == 0:
             return {'command': self.log['actions'][-1], 'response': self.log['messages'][-1],
@@ -341,10 +348,10 @@ class Game(object):
         self.log['applied'].append(Message(self.state['num'], self.map_result(text)))
         self.state.check(self)
     
-    def last_state(self):
+    def get_state(self):
         """Returns location and HP of all units. As well as proximity to winning conditions."""
         try:
-            return self.log['states'][-1]
+            return self.log['states']
         except:
             return None
     

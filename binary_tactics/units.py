@@ -2,6 +2,8 @@ from UserList import UserList
 from stone import Stone
 from const import ELEMENTS, E, F, I, W, ORTH, OPP
 from datetime import datetime
+from weapons import Sword, Bow, Wand, Glove
+
 class Unit(Stone):
     def __init__(self, element, comp, name=None, location=None):
         if not element in ELEMENTS:
@@ -95,7 +97,7 @@ class Scient(Unit):
         self.calcstats()
         
         #equiping weapons should be done someplace else.
-        #self.equip(self.weapon)
+        self.equip(self.weapon)
 
 class Part(object):
     '''

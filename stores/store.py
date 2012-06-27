@@ -22,7 +22,7 @@ persisted = {'stone': c, 'sword': ec, 'bow': ec, 'wand': ec, 'glove': ec,
              'tile': c + ('contents',),
              'grid': c + ('tiles','x','y'),
              'player': ('name', 'squads'),
-             'initial_state': ('start_time', 'init_locs', 'units', 'grid', 'owners')
+             'initial_state': ('start_time', 'init_locs', 'units', 'grid', 'owners', 'player_names',)
              }
              
 persisted.update({'log': ('actions', 'applied', 'change_list', 'condition',

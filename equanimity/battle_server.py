@@ -57,9 +57,7 @@ class BattleHandler(BaseJSONHandler):
     @cyclone.web.authenticated
     @defer.inlineCallbacks
     def jsonrpc_get_state(self):
-        state = yield self.settings.last_state
-        if state == None:
-            state = yield self.settings.init_state
+        state = yield self.settings.get_state
         defer.returnValue(state)
         
     @cyclone.web.authenticated
@@ -81,20 +79,22 @@ class BattleHandler(BaseJSONHandler):
         username = self.get_current_user().strip('"')
         print "username: %s" %username
         print "whose_turn: %s " %self.settings.game.state['whose_turn']
+        print args
         try:
             if username != self.settings.game.state['whose_turn']:
                 raise Exception("It is not your turn.")
-            units = self.settings.game.units
-            unit_num = int(args[0])
-            unit_owner = self.settings.game.log.get_owner(unit_num).name
-            if username == unit_owner:
-                action = Action(units[unit_num], args[1], tuple(args[2]))
-                self.settings.last_result = result = yield self.settings.game.process_action(action)
-                self.settings.ply_timer.call.reset(self.settings.ply_time)
-                self.settings.last_state  = self.settings.game.last_state()
-                defer.returnValue(result)
             else:
-                raise Exception("user cannot command unit, try a different unit.")
+                units = self.settings.game.units
+                unit_num = int(args[0])
+                unit_owner = self.settings.game.log.get_owner(unit_num).name
+                if username == unit_owner:
+                    action = Action(units[unit_num], args[1], tuple(args[2]))
+                    self.settings.last_result = result = yield self.settings.game.process_action(action)
+                    self.settings.ply_timer.call.reset(self.settings.ply_time)
+                    self.settings.get_state  = self.settings.game.get_state()
+                    defer.returnValue(result)
+                else:
+                    raise Exception("user cannot command unit, try a different unit.")
         except Exception , e:
             log.err("process_action failed: %r" % e)
             raise cyclone.web.HTTPError(500, "%r" % e.args[0])
@@ -156,7 +156,7 @@ def main():
             print "Forced pass."
             action = Action(None, 'timed_out', None)
             app.settings.last_result = result = yield app.settings.game.process_action(action)
-            app.settings.last_state  = app.settings.game.last_state()
+            app.settings.get_state  = app.settings.game.get_state()
         except Exception , e:
             if e.args[0] == 'Game Over':
                 write_battlelog()
@@ -202,7 +202,7 @@ def main():
     debug=True,
     login_url="/auth/login",
     cookie_secret="secret!!!!",
-    last_state=None,
+    get_state='{}',
     last_result='{}',
     init_state=None,
     ply_time=ply_time,
