@@ -14,8 +14,8 @@ from binary_tactics.weapons import *
 c  = ('comp',)
 ec = c + ('element',)
 persisted = {'stone': c, 'sword': ec, 'bow': ec, 'wand': ec, 'glove': ec,
-             'scient': ec + ('name','weapon','weapon_bonus','location'),
-             'nescient': ec + ('name', 'location', 'body', 'facing'),
+             'scient': ec + ('name','weapon','weapon_bonus','location', 'sex'),
+             'nescient': ec + ('name', 'location', 'sex', 'body', 'facing'),
              'body': ('head', 'left', 'right', 'tail'),
              'part': ('location',),
              'squad': ('data', 'name', 'value', 'free_spaces'),

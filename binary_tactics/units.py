@@ -5,7 +5,7 @@ from datetime import datetime
 from weapons import Sword, Bow, Wand, Glove
 
 class Unit(Stone):
-    def __init__(self, element, comp, name=None, location=None):
+    def __init__(self, element, comp, name=None, location=None, sex='female'):
         if not element in ELEMENTS:
             raise Exception("Invalid element: %s, valid elements are %s" \
             % (element, ELEMENTS))
@@ -21,6 +21,7 @@ class Unit(Stone):
             self.name = self.__hash__()
         self.name = name
         self.location = location
+        self.sex = sex
         self.DOB = datetime.utcnow()
         self.DOD = None
         self.val = self.value()
@@ -78,12 +79,12 @@ class Scient(Unit):
             self.weapon = weapon
     
     def __init__(self, element, comp, name=None, weapon=None,
-                 weapon_bonus=None, location=None):
+                 weapon_bonus=None, location=None, sex='female'):
         for orth in ORTH[element]:
             if comp[orth] > comp[element] / 2:
                 raise ValueError("Scients' orthogonal elements cannot be \
                                   more than half the primary element's value.")
-        Unit.__init__(self, element, comp, name, location)
+        Unit.__init__(self, element, comp, name, location, sex)
         self.move = 4
         self.weapon = weapon
         if weapon_bonus == None:
@@ -133,7 +134,7 @@ class Nescient(Unit):
         self.hp = self.hp * 4 #This is an open question.
     
     def __init__(self, element, comp, name=None, weapon=None,
-                 location=None, facing=None, 
+                 location=None, sex='female', facing=None, 
                  body={'head': None, 'left':None, 'right':None, 'tail':None}):
         comp = Stone(comp)
         for orth in ORTH[element]:
@@ -145,7 +146,7 @@ class Nescient(Unit):
                 raise ValueError("Nescients' orthogonal value cannot exceed \
                                   the primary element value.")
             
-        Unit.__init__(self, element, comp, name, location)
+        Unit.__init__(self, element, comp, name, location, sex)
         self.move = 4
         #Set nescient type.
         if self.element == 'Earth':

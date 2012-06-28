@@ -79,7 +79,6 @@ class BattleHandler(BaseJSONHandler):
         username = self.get_current_user().strip('"')
         print "username: %s" %username
         print "whose_turn: %s " %self.settings.game.state['whose_turn']
-        print args
         try:
             if username != self.settings.game.state['whose_turn']:
                 raise Exception("It is not your turn.")
@@ -92,6 +91,7 @@ class BattleHandler(BaseJSONHandler):
                     self.settings.last_result = result = yield self.settings.game.process_action(action)
                     self.settings.ply_timer.call.reset(self.settings.ply_time)
                     self.settings.get_state  = self.settings.game.get_state()
+                    print result
                     defer.returnValue(result)
                 else:
                     raise Exception("user cannot command unit, try a different unit.")

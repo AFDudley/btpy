@@ -38,7 +38,7 @@ class wField(persistent.Persistent):
         self.expected_yield = None
         
         """
-        ply_window: user definable time before a pass is automatically sent for a battle action.
+        ply_time: user definable time before a pass is automatically sent for a battle action.
             range between 4 and 360 minutes, default is 4 (in seconds)
         """
         self.ply_time = ply_time

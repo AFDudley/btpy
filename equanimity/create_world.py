@@ -4,6 +4,7 @@ from ZODB import DB
 import transaction
 import persistent.mapping
 from equanimity.world import wField, wPlayer, World
+from datetime import datetime
 
 addr = 'localhost', 9100
 storage = ClientStorage.ClientStorage(addr)
@@ -30,6 +31,7 @@ def create_world(version=0.0, x=2, y=2):
         world['version'] = version
         world['x'] = x
         world['y'] = y
+	world['DOB'] = datetime.utcnow()
         #Fields should be a frozendict
         #http://stackoverflow.com/questions/2703599/what-would-be-a-frozen-dict
         world['Fields']  = {}
