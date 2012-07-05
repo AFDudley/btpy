@@ -31,6 +31,8 @@ def now():
 class Action(dict):
     #'when' needs more thought.
     #type needs to != 'pass'
+    """In a two player game, two actions from a single player make a ply and 
+       a ply from each player makes a turn. """
     def __init__(self, unit=None, type='pass', target=None, when=None, num=None):
         dict.__init__(self, unit=unit, type=type, target=target, num=num, 
                       when=now())
@@ -143,10 +145,10 @@ class Log(dict):
     
 class State(dict):
     """A dictionary containing the current game state."""
-    def __init__(self, num=1, pass_count=0, hp_count=0, old_defsquad_hp=0, queued={}, locs={}, HPs={}, game_over=False, whose_turn=None):
+    def __init__(self, num=1, pass_count=0, hp_count=0, old_defsquad_hp=0, queued={}, locs={}, HPs={}, game_over=False, whose_action=None):
         dict.__init__(self, num=num, pass_count=pass_count,
                       hp_count=hp_count, old_defsquad_hp=old_defsquad_hp,
-                      queued=queued, locs=locs, HPs=HPs, game_over=game_over, whose_turn=whose_turn)
+                      queued=queued, locs=locs, HPs=HPs, game_over=game_over, whose_action=whose_action)
     
     @property
     def __dict__(self):
@@ -154,13 +156,16 @@ class State(dict):
     
     def check(self, game):
         """Checks for game ending conditions. (Assumes two players and no action cue.)"""
+        
+        
         num = self['num']
         last_type = game.log['actions'][num - 1]['type'] 
         if (last_type == 'pass') or (last_type == 'timed_out'):
             self['pass_count'] += 1
         else:
             self['pass_count'] = 0
-        
+            
+        #There are 4 ply in a turn. 
         if num % 4 == 0: #This calcuates hp_count
             defsquad_hp = game.battlefield.defsquad.hp()
             if self['old_defsquad_hp']  <= defsquad_hp:
@@ -196,12 +201,12 @@ class State(dict):
         #game is not over, state is stored, update state.
         self['num'] += 1
         
-        #switches whose_turn.
-        #which player acted in this ply?
-        if self['whose_turn'] == game.defender.name:
-            self['whose_turn'] = game.attacker.name
+        #switches whose_action.
+        #TODO fix this.
+        if self['whose_action'] == game.defender.name:
+            self['whose_action'] = game.attacker.name
         else:
-            self['whose_turn'] = game.defender.name
+            self['whose_action'] = game.defender.name
     
 
 class Game(object):
@@ -219,7 +224,7 @@ class Game(object):
                                        self.attacker.squads[0])
         
         self.state = State()
-        self.state['whose_turn'] = self.defender.name
+        self.state['whose_action'] = self.defender.name
         self.players = (self.defender, self.attacker)
         self.map = self.unit_map() 
         self.winner = None
@@ -227,7 +232,6 @@ class Game(object):
         self.log = Log(self.players, self.units, self.battlefield.grid)
         self.log['owners'] = self.log.get_owners()
         self.state['old_defsquad_hp'] = self.battlefield.defsquad.hp()
-        #self.whose_turn = self.defender
     
     def unit_map(self):
         """mapping of unit ids to objects, used for serialization."""
@@ -308,12 +312,17 @@ class Game(object):
             return ["There was no message."]
     
     def process_action(self, action):
+        """Processes actions sent from game clients."""
+        # Needs more logic for handling turns/plies.
         action['when'] = now()
         action['num']  = num = self.state['num']
         if action['type'] == 'timed_out':
             text = [["failed to act."]]
+            
         elif action['type'] == 'pass':
             text = [["Action Passed."]]
+            #If this is the first ply, set the second ply to pass as well.
+            
         elif action['type'] == 'move': #TODO fix move in hex_battlefield.
             text = self.battlefield.move_scient(action['unit'].location,
                                               action['target'])

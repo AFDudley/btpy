@@ -65,22 +65,21 @@ class BattleHandler(BaseJSONHandler):
     def jsonrpc_last_result(self):
         result = yield self.settings.last_result
         defer.returnValue(result)
-
         
     @defer.inlineCallbacks
     def jsonrpc_game_log(self): #FOR TESTING
         log = yield self.settings.game.log
         defer.returnValue(str(log))
-    
+        
     @cyclone.web.authenticated
     @defer.inlineCallbacks
     def jsonrpc_process_action(self, args):
         err = self.get_argument("e", None)
         username = self.get_current_user().strip('"')
         print "username: %s" %username
-        print "whose_turn: %s " %self.settings.game.state['whose_turn']
+        print "whose_action: %s " %self.settings.game.state['whose_action']
         try:
-            if username != self.settings.game.state['whose_turn']:
+            if username != self.settings.game.state['whose_action']:
                 raise Exception("It is not your turn.")
             else:
                 units = self.settings.game.units
@@ -89,6 +88,7 @@ class BattleHandler(BaseJSONHandler):
                 if username == unit_owner:
                     action = Action(units[unit_num], args[1], tuple(args[2]))
                     self.settings.last_result = result = yield self.settings.game.process_action(action)
+                    #ply_timer needs to change when the ply changes.
                     self.settings.ply_timer.call.reset(self.settings.ply_time)
                     self.settings.get_state  = self.settings.game.get_state()
                     print result
@@ -108,8 +108,6 @@ class TimeLeftHandler(cyclone.web.RequestHandler):
         timeleft = {'battle': str(self.settings.ART - now), 'ply': str(ply - now)}
         self.write(str(timeleft))
         self.flush()
-
-       
         
 class World_zeo(object):
     def __init__(self, addr=('localhost', 9100)):
@@ -140,7 +138,6 @@ def main():
         ##transaction.commit()
         print game.log['change_list']
         
-
     def ARTendgame():
         """ends the game"""
         try:
@@ -195,6 +192,7 @@ def main():
                     (r"/time_left.json", TimeLeftHandler),
                     (r"/static/(.*)", cyclone.web.StaticFileHandler, {"path": static_path}),
                   ],
+    gzip=True,
     template_path="./web",
     game=game,
     ART=ART,
