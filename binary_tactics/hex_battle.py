@@ -27,7 +27,7 @@ import json
 
 def now():
     return str(datetime.utcnow())
-
+    
 class Action(dict):
     #'when' needs more thought.
     #type needs to != 'pass'
@@ -156,8 +156,6 @@ class State(dict):
     
     def check(self, game):
         """Checks for game ending conditions. (Assumes two players and no action cue.)"""
-        
-        
         num = self['num']
         last_type = game.log['actions'][num - 1]['type'] 
         if (last_type == 'pass') or (last_type == 'timed_out'):
@@ -165,8 +163,8 @@ class State(dict):
         else:
             self['pass_count'] = 0
             
-        #There are 4 ply in a turn. 
-        if num % 4 == 0: #This calcuates hp_count
+        if num % 4 == 0: #There are 4 actions in a turn.
+            #This calcuates hp_count
             defsquad_hp = game.battlefield.defsquad.hp()
             if self['old_defsquad_hp']  <= defsquad_hp:
                 self['hp_count'] += 1
@@ -202,11 +200,11 @@ class State(dict):
         self['num'] += 1
         
         #switches whose_action.
-        #TODO fix this.
-        if self['whose_action'] == game.defender.name:
-            self['whose_action'] = game.attacker.name
-        else:
-            self['whose_action'] = game.defender.name
+        if self['num'] % 2 == 1: #each player gets two actions per ply.
+            if self['whose_action'] == game.defender.name:
+                self['whose_action'] = game.attacker.name
+            else:
+                self['whose_action'] = game.defender.name
     
 
 class Game(object):
@@ -316,23 +314,66 @@ class Game(object):
         # Needs more logic for handling turns/plies.
         action['when'] = now()
         action['num']  = num = self.state['num']
+        curr_unit = id(action['unit'])
+        try:
+            prev_unit = self.log['actions'][-1]['unit']
+        except:
+            prev_unit = None
+        try:
+            prev_act = self.log['actions'][-1]['type']
+        except:
+            prev_act = None
+            
         if action['type'] == 'timed_out':
             text = [["failed to act."]]
+            """
+            #If this is the first ply, set the second ply to pass as well.
+            if action['num'] % 2 == 1:
+                self.process_action(action) 
+            """
             
         elif action['type'] == 'pass':
             text = [["Action Passed."]]
+            """
             #If this is the first ply, set the second ply to pass as well.
-            
+            if action['num'] % 2 == 1:
+                self.process_action(action) 
+            """
+
+        elif (num % 2 == 0) and (None != prev_unit) and (prev_unit != curr_unit):
+            raise Exception("hex_battle: Unit from the previous action must be used this action.")
+             
         elif action['type'] == 'move': #TODO fix move in hex_battlefield.
-            text = self.battlefield.move_scient(action['unit'].location,
-                                              action['target'])
-            if text:
-                text = [[id(action['unit']), action['target']]]
+            # If it's the second action in the ply and
+            # it's different from this one.
+            if num % 2 == 0: #if it's the second action in the ply.
+                
+                if prev_act != 'move':
+                    text = self.battlefield.move_scient(action['unit'].location,
+                                                        action['target'])
+                    if text:
+                        text = [[id(action['unit']), action['target']]]
+                else:
+                    raise Exception("hex_battle: Second action in ply must be different from first.")
+            else:
+                text = self.battlefield.move_scient(action['unit'].location,
+                                                    action['target'])
+                if text:
+                    text = [[id(action['unit']), action['target']]]
         
         elif action['type'] == 'attack':
-            text = self.battlefield.attack(action['unit'], action['target'])
+            # If it's the second action in the ply and
+            # it's different from this one.
+            if num % 2 == 0: #if it's the second action in the ply.
+                if prev_act != 'attack':
+                    text = self.battlefield.attack(action['unit'], action['target'])
+                else:
+                    raise Exception("hex_battle: Second action in ply must be different from first.")
+            
+            else:
+                text = self.battlefield.attack(action['unit'], action['target'])
         else:
-            raise Exception("Action is of unknown type")
+            raise Exception("hex_battle: Action is of unknown type")
         
         self.log['actions'].append(self.map_action(action))
         self.log['messages'].append(Message(num, self.map_result(text)))
@@ -341,8 +382,6 @@ class Game(object):
             self.apply_queued()
         else:
             self.state.check(self)
-        
-
             
         if num % 4 == 0:
             return {'command': self.log['actions'][-1], 'response': self.log['messages'][-1],
@@ -387,5 +426,5 @@ class Game(object):
         #calculate awards
         awards    = {} #should be a stone.
         self.log['change_list'] = Battle_changes(victors, prisoners, awards)
-        raise Exception("Game Over")
+        raise Exception("hex_battle: Game Over")
     

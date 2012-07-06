@@ -67,6 +67,13 @@ class BattleHandler(BaseJSONHandler):
         defer.returnValue(result)
         
     @defer.inlineCallbacks
+    def jsonrpc_time_left(self):
+        now = datetime.utcnow()
+        ply = datetime.utcfromtimestamp(self.settings.ply_timer.call.getTime())
+        timeleft = yield {'battle': str(self.settings.ART - now), 'ply': str(ply - now)}
+        defer.returnValue(timeleft)
+        
+    @defer.inlineCallbacks
     def jsonrpc_game_log(self): #FOR TESTING
         log = yield self.settings.game.log
         defer.returnValue(str(log))
