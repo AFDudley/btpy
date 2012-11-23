@@ -24,7 +24,7 @@ class SignupHandler(BaseHandler):
     def get(self):
         err = self.get_argument("e", None)
         self.finish("""
-            <html><body><form action="/signup" method="post">
+            <html><body><form action="/auth/signup" method="post">
             Desired username: <input type="text" name="u"></br>
             password: <input type="password" name="p"></br>
             <input type="submit" value="Signup"></br>

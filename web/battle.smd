@@ -1,7 +1,7 @@
 {
     "SMDVersion": "2.0",
     "contentType": "application/json",
-    "target": "http://166.84.136.68:8888/battle",
+    "target": "http://166.84.136.68:8888/battle/",
     "envelope": "JSON-RPC-1.0",
     "services": {
     	"time_left": {

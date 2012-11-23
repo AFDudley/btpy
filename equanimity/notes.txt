@@ -24,7 +24,8 @@ $ ipython equanimity/battle_server.py '(0, 0)'
 7. get the JS sources:
 $ sh web/get_js.sh
 
-8. <wavy_hands>configure and start reverse proxy server</wavy_hands>
+8. run reverse proxy server
+$ ipython equanimity/rproxy_server.py
 
 9. http://<host>:8888/auth/login
 u: atkr, p: atkr or u: defndr, p: defndr
