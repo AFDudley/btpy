@@ -4,9 +4,9 @@
     "target": "http://166.84.136.68:8888/battle/",
     "envelope": "JSON-RPC-1.0",
     "services": {
-    	"time_left": {
-	    parameters: [],
-	},
+        "time_left": {
+            parameters: [],
+        },
         "get_username": {
             parameters: [],
         },
@@ -22,7 +22,7 @@
         "process_action": {
             parameters: [],
             returns: {"type": "string"}
-            },
+        },
     },
    "transport": "POST"
 }
