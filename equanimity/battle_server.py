@@ -222,5 +222,5 @@ def main():
 
 if __name__ == "__main__":
     #log.startLogging(sys.stdout)
-    log.startLogging(open('/home/rix/logs/battle_log.log', 'a'))
+    log.startLogging(open('logs/battle_log.log', 'a'))
     main()
