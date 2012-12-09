@@ -426,5 +426,5 @@ class Game(object):
         #calculate awards
         awards    = {} #should be a stone.
         self.log['change_list'] = Battle_changes(victors, prisoners, awards)
-        raise Exception("hex_battle: Game Over")
+        raise Exception("Game Over")
     
