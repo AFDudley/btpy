@@ -21,5 +21,6 @@ def main():
     reactor.run()
 
 if __name__ == "__main__":
-    log.startLogging(sys.stdout)
+    #log.startLogging(sys.stdout)
+    log.startLogging(open('logs/rproxy.log', 'a'))
     main()

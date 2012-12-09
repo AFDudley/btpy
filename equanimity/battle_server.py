@@ -19,14 +19,16 @@ from ZEO import ClientStorage
 from ZODB import DB
 import transaction
 
-
+#One day logs of battles will need to go into a database
+#DO NOT UNCOMMENT.
 #from binary_tactics.zodb_hex_battle import Game, Action
+#from stores.zodb_store import get_persisted
+
 from binary_tactics.hex_battle import Game, Action
 from binary_tactics.hex_battlefield import Battlefield
 from binary_tactics.player import Player
 from binary_tactics.grid import Loc
 
-#from stores.zodb_store import get_persisted
 from stores.store import get_persisted
 import copy
 
@@ -158,6 +160,7 @@ def main():
     def forcedpass():
         try:
             print "Forced pass."
+            #print "Pass Count: %s" %(app.settings.game.state["pass_count"])
             action = Action(None, 'timed_out', None)
             app.settings.last_result = result = yield app.settings.game.process_action(action)
             app.settings.get_state  = app.settings.game.get_state()
@@ -172,7 +175,7 @@ def main():
     world_coords = str(sys.argv[1])
     #this copy is really important, copies the objects out of the zeo and into memory.
     f = copy.deepcopy(world['Fields'][world_coords])
-    #ply_time = 1
+    #ply_time = 1 #for testing ending conditions
     ply_time = f.ply_time
     atkr_name, atksquad = f.battlequeue[0]
     defsquad = f.get_defenders()
@@ -221,6 +224,6 @@ def main():
     reactor.run()
 
 if __name__ == "__main__":
-    #log.startLogging(sys.stdout)
-    log.startLogging(open('logs/battle_log.log', 'a'))
+    log.startLogging(open('logs/battle.log', 'a'))
     main()
+    

@@ -2,9 +2,9 @@ import json
 import urllib
 import httplib2
 
-class test_client(): #this addr is a problem.
-    def __init__(self, addr='localhost:8888'):
-        self.addr = addr
+class test_client(): 
+    def __init__(self, ip='127.0.0.1'):
+        self.addr = ip + ':8888' #ports will be handled later.
         self.cookie = None
         self.http = httplib2.Http()
         
@@ -21,7 +21,7 @@ class test_client(): #this addr is a problem.
         return self.http.request(url, 'POST', headers=headers, body=body)
     
     def battle(self, method, params, cookie):
-        url = 'http://' + self.addr + '/battle'
+        url = 'http://' + self.addr + '/battle/'
         body = json.dumps({"method": method, "params":params, "id":1})
         headers = {'Cookie': cookie}
         return self.http.request(url, 'POST', headers=headers, body=body)
@@ -35,11 +35,15 @@ class test_client(): #this addr is a problem.
         return self.battle("register", params, cookie)
         
 if __name__ == "__main__":
-    t = test_client()
+    import sys
+    if sys.argv[1]:
+        t = test_client(sys.argv[1])
+    else:
+        t = test_client()
+    
     cookie = t.login('atkr', 'atkr')[0]['set-cookie']
     foo = t.register(cookie)[1]
     
-    #No auth battle:
     b = t.battle("initial_state", [], "" )
     s = json.loads(b[1])['result']['initial_state']
     dude = str(s['units'].keys()[0])

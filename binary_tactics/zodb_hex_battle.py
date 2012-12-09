@@ -1,3 +1,4 @@
+#DO NOT USE!!!!
 #
 #  zodb_hex_battle.py
 #  
@@ -160,6 +161,7 @@ class State(PersistentMapping):
             self['pass_count'] += 1
         else:
             self['pass_count'] = 0
+            print "zodb_hex_battle pass count: %s" %(self["pass_count"])
         
         if num % 4 == 0:
             defsquad_hp = game.battlefield.defsquad.hp()

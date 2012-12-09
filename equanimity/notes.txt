@@ -1,3 +1,4 @@
+THESE ARE NOTES NOT PERFECT INSTRUCTIONS, USE BRAIN ACCORDINGLY. 
 from binary-tactics dir
 NOTE: 1, 2, 4, 5, 7 only need to be run once.
 
@@ -12,11 +13,11 @@ $ mkdir -p DBs/World
 $ runzeo -C zeoEvents.conf &
 $ runzeo -C zeoWorld.conf &
 
-2. set ip in rproxy_server.
-(IP setting needs to be more intelligently.)
+2. set IP env var.
+$ IP='127.0.0.1'
 
 3. start rproxy_server:
-$ ipython equanimity/rproxy_server.py
+$ ipython equanimity/rproxy_server.py IP 
 
 4. create world inside zodb:
 $ ipython equanimity/create_world.py
@@ -25,14 +26,18 @@ $ ipython equanimity/create_world.py
 $ ipython equanimity/auth_server.py
 
 6. add users to ZODB:
-(verify that equanimity/equanimity_client.py is pointing to the correct addr/IP)
-$ ipython equanimity/create_players.py
+$ ipython equanimity/create_players.py IP
 
 7. grant the users Fields and prepare the battlequeue:
 $ ipython equanimity/setup_zeo_battle.py
 
 8. run the battle server:
 $ ipython equanimity/battle_server.py '(0, 0)'
+
+OR
+
+8. run the battle server with auto-retart:
+$ ipython equanimity/keep_alive.py 
 
 9. get the JS sources:
 $ cd web; sh get_js.sh
