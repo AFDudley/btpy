@@ -16,7 +16,10 @@
         "last_result": {
             parameters: [],
         },
-        "get_state": {
+        "get_states": {
+            parameter: [],
+        },
+        "get_last_state": {
             parameter: [],
         },
         "process_action": {

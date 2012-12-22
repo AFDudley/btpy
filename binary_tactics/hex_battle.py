@@ -396,8 +396,16 @@ class Game(object):
         self.log['applied'].append(Message(self.state['num'], self.map_result(text)))
         self.state.check(self)
     
-    def get_state(self):
-        """Returns location and HP of all units. As well as proximity to winning conditions."""
+    def get_last_state(self):
+        """Returns the last state in the log."""
+        #Figure out if this is actually the *current* state or not, oops.
+        try:
+            return self.log['states'][-1]
+        except:
+            return None
+    
+    def get_states(self):
+        """Returns a list of all previous states."""
         try:
             return self.log['states']
         except:

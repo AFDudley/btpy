@@ -58,10 +58,16 @@ class BattleHandler(BaseJSONHandler):
     
     @cyclone.web.authenticated
     @defer.inlineCallbacks
-    def jsonrpc_get_state(self):
-        state = yield self.settings.get_state
+    def jsonrpc_get_states(self):
+        state = yield self.settings.get_states
         defer.returnValue(state)
-        
+    
+    @cyclone.web.authenticated
+    @defer.inlineCallbacks
+    def jsonrpc_get_last_state(self):
+        state = yield self.settings.get_last_state
+        defer.returnValue(state)
+    
     @cyclone.web.authenticated
     @defer.inlineCallbacks
     def jsonrpc_last_result(self):
@@ -99,7 +105,8 @@ class BattleHandler(BaseJSONHandler):
                     self.settings.last_result = result = yield self.settings.game.process_action(action)
                     #ply_timer needs to change when the ply changes.
                     self.settings.ply_timer.call.reset(self.settings.ply_time)
-                    self.settings.get_state  = self.settings.game.get_state()
+                    self.settings.get_states  = self.settings.game.get_states()
+                    self.settings.get_last_state = self.settings.game.get_last_state()
                     print result
                     defer.returnValue(result)
                 else:
@@ -163,7 +170,8 @@ def main():
             #print "Pass Count: %s" %(app.settings.game.state["pass_count"])
             action = Action(None, 'timed_out', None)
             app.settings.last_result = result = yield app.settings.game.process_action(action)
-            app.settings.get_state  = app.settings.game.get_state()
+            app.settings.get_states  = app.settings.game.get_states()
+            app.settings.get_last_state = app.settings.game.get_last_state()
         except Exception , e:
             if e.args[0] == 'Game Over':
                 write_battlelog()
@@ -210,7 +218,8 @@ def main():
     debug=True,
     login_url="/auth/login",
     cookie_secret="secret!!!!",
-    get_state='{}',
+    last_state='{}',
+    get_states='{}', #WRONG.
     last_result='{}',
     init_state=None,
     ply_time=ply_time,
@@ -226,4 +235,3 @@ def main():
 if __name__ == "__main__":
     log.startLogging(open('logs/battle.log', 'a'))
     main()
-    
