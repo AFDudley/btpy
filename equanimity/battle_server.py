@@ -112,8 +112,14 @@ class BattleHandler(BaseJSONHandler):
                 else:
                     raise Exception("user cannot command unit, try a different unit.")
         except Exception , e:
-            log.err("process_action failed: %r" % e)
-            raise cyclone.web.HTTPError(500, "%r" % e.args[0])
+            #This code is buggy. must be fixed asap.
+            if e.args[0] == 'Game Over':
+                #write_battlelog()
+                reactor.stop()
+                
+            else:
+                log.err("process_action failed: %r" % e)
+                raise cyclone.web.HTTPError(500, "%r" % e.args[0])
             
 class TimeLeftHandler(cyclone.web.RequestHandler):
     #DOS prevention needs to be added.
@@ -183,8 +189,8 @@ def main():
     world_coords = str(sys.argv[1])
     #this copy is really important, copies the objects out of the zeo and into memory.
     f = copy.deepcopy(world['Fields'][world_coords])
-    #ply_time = 1 #for testing ending conditions
-    ply_time = f.ply_time
+    ply_time = 60 #for testing ending conditions
+    #ply_time = f.ply_time
     atkr_name, atksquad = f.battlequeue[0]
     defsquad = f.get_defenders()
     #TODO rewrite player and hex_battle
@@ -223,11 +229,13 @@ def main():
     last_result='{}',
     init_state=None,
     ply_time=ply_time,
-    ply_timer=task.LoopingCall(forcedpass)
+    ply_timer=task.LoopingCall(forcedpass),
+    reactor=None,
     )
     
     reactor.listenTCP(8890, app)
     # is there a better way to do this, this will always be late.
+    app.reactor = reactor
     task.deferLater(reactor, maxsecs.seconds, ARTendgame) 
     app.settings.ply_timer.start(ply_time, now=False)
     reactor.run()
