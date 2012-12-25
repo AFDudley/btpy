@@ -96,21 +96,25 @@ class BattleHandler(BaseJSONHandler):
         try:
             if username != self.settings.game.state['whose_action']:
                 raise Exception("It is not your turn.")
-            else:
-                units = self.settings.game.units
-                unit_num = int(args[0])
-                unit_owner = self.settings.game.log.get_owner(unit_num).name
-                if username == unit_owner:
-                    action = Action(units[unit_num], args[1], tuple(args[2]))
-                    self.settings.last_result = result = yield self.settings.game.process_action(action)
-                    #ply_timer needs to change when the ply changes.
-                    self.settings.ply_timer.call.reset(self.settings.ply_time)
-                    self.settings.get_states  = self.settings.game.get_states()
-                    self.settings.get_last_state = self.settings.game.get_last_state()
-                    print result
-                    defer.returnValue(result)
+            else: #WIP.
+                if args[1] == 'pass':
+                    action = Action(None, 'pass', None)
                 else:
-                    raise Exception("user cannot command unit, try a different unit.")
+                    unit_num = int(args[0])
+                    unit_owner = self.settings.game.log.get_owner(unit_num).name
+                    if username == unit_owner:
+                        units = self.settings.game.units
+                        action = Action(units[unit_num], args[1], tuple(args[2]))
+                    else:
+                        raise Exception("user cannot command unit, try a different unit.")
+                self.settings.last_result = result = yield self.settings.game.process_action(action)
+                #ply_timer needs to change when the ply changes.
+                self.settings.ply_timer.call.reset(self.settings.ply_time)
+                self.settings.get_states  = self.settings.game.get_states()
+                self.settings.get_last_state = self.settings.game.get_last_state()
+                print result
+                defer.returnValue(result)
+                    
         except Exception , e:
             #This code is buggy. must be fixed asap.
             if e.args[0] == 'Game Over':
