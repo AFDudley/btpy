@@ -36,17 +36,17 @@ class test_client():
         
 if __name__ == "__main__":
     import sys
-    if sys.argv[1]:
+    try: 
         t = test_client(sys.argv[1])
-    else:
+    except:
         t = test_client()
-    
     cookie = t.login('atkr', 'atkr')[0]['set-cookie']
-    foo = t.register(cookie)[1]
     
-    b = t.battle("initial_state", [], "" )
+    b = t.battle("initial_state", [], cookie)
+    print b
     s = json.loads(b[1])['result']['initial_state']
     dude = str(s['units'].keys()[0])
     pos = s['init_locs'][dude]
     pos = (pos[0], pos[1] + 1)
-    m = t.battle("process_action", [[dude, 'move', pos]], "")
+    m = t.battle("process_action", [[dude, 'move', pos]], cookie)
+    print m

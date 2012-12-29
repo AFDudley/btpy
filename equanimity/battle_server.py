@@ -193,7 +193,7 @@ def main():
     world_coords = str(sys.argv[1])
     #this copy is really important, copies the objects out of the zeo and into memory.
     f = copy.deepcopy(world['Fields'][world_coords])
-    ply_time = 60 #for testing ending conditions
+    ply_time = 600 #for testing ending conditions
     #ply_time = f.ply_time
     atkr_name, atksquad = f.battlequeue[0]
     defsquad = f.get_defenders()
