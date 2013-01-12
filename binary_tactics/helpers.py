@@ -1,14 +1,14 @@
 """Helper functions"""
 import random
 import string
-#import const   
+#import const
 from const import ELEMENTS, E, F, W, I, ORTH, KINDS, OPP, COMP
 from stone import Stone
 from units import Scient, Nescient, Squad
 
 def rand_string(len=8):
     return ''.join(random.choice(string.letters) for i in xrange(len))
-    
+
 def t2c(tup):
     """Converts a tuple to a comp"""
     if len(tup) != 4: raise Exception("Incorrect number of values in tuple")
@@ -16,11 +16,11 @@ def t2c(tup):
     for i in range(4):
         comp[ELEMENTS[i]] = tup[i]
     return comp
-    
+
 def rand_element():
     """Reuturns a random element"""
     return random.choice(ELEMENTS)
-    
+
 def max_comp(suit, kind='Scient'):
     """Returns the maximum composition of 'kind' of element 'suit'"""
     comp = Stone()
@@ -42,12 +42,12 @@ def max_comp(suit, kind='Scient'):
         comp2[OPP[suit]]     = comp[OPP[suit]] = 0
         comp2[ORTH[suit][0]] = comp[ORTH[suit][1]] = 0
         comp2[ORTH[suit][1]] = comp[ORTH[suit][0]] = 254
-        return (comp, comp2)    
+        return (comp, comp2)
     if kind == 'Stone':
         for i in comp: comp[i] = 255
         return comp
-        
-    
+
+
 def rand_comp(suit=None, kind=None, max_v=255):
     """Returns a random comp in 'suit' for use instaniating 'kind'
        If 'suit' is not valid, random element used.
@@ -77,13 +77,13 @@ def rand_comp(suit=None, kind=None, max_v=255):
             comp[random.choice(ORTH[suit])] = \
                 random.randint(1, comp[suit])
             return comp
-            
+
 def rand_unit(suit=None, kind='Scient'):
     """Returns a random Scient of suit. Random suit used if none given."""
     kinds = ('Scient', 'Nescient')
     if not kind in kinds:
         kind = random.choice(kinds)
-        
+    
     if not suit in ELEMENTS:
         suit = rand_element()
         comp = rand_comp(suit, kind)
@@ -94,10 +94,7 @@ def rand_unit(suit=None, kind='Scient'):
         return Scient(suit, comp, rand_string())
     else:
         return Nescient(suit, rand_comp(suit,'Nescient'), rand_string())
-        
 
-    
-    
 def rand_squad(suit=None, kind='Scient'):
     """Returns a Squad of five random Scients of suit. Random suit used
        if none given."""
@@ -108,12 +105,9 @@ def rand_squad(suit=None, kind='Scient'):
         if not suit in ELEMENTS:
             for _ in range(size):
                 squad.append(rand_unit(rand_element(), kind))
-
-        
         else:
             for _ in range(size):
                 squad.append(rand_unit(suit, kind))
-
     else:
         if not suit in ELEMENTS:
             while squad.free_spaces >=2:
@@ -127,7 +121,7 @@ def rand_squad(suit=None, kind='Scient'):
                 squad.append(rand_unit(suit, kind='Scient'))
     squad.name = rand_string()
     return squad
-        
+
 def print_rand_squad(suit=None):
     squad = rand_squad(suit)
     for unit in squad:
@@ -145,9 +139,9 @@ def max_squad_by_value(value):
     value = value/2 #more logical, really.
     half = value/2
     for i in ELEMENTS:
-        s = Stone() 
-        s[i] = value 
-        s[OPP[i]] = 0 
+        s = Stone()
+        s[i] = value
+        s[OPP[i]] = 0
         for o in ORTH[i]:
             s[o] = half
         squad.append(Scient(i, s))

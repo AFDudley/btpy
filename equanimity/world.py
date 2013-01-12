@@ -16,22 +16,52 @@ from binary_tactics.hex_battle import Game
 from binary_tactics.helpers import *
 
 class Stronghold(persistent.Persistent):
-    def __init__(self): #placeholder containers, need something smarter.
+    def __init__(self, defenders): #placeholder containers, need something smarter.
         self.stones  = persistent.list.PersistentList()
         self.weapons = persistent.list.PersistentList()
         self.units   = persistent.list.PersistentList()
-        self.squads  = persistent.mapping.PersistentMapping()
+        self.squads  = persistent.list.PersistentList()
         #needs a value limit based on the value of the grid that contains it.
-        self.defenders = Squad(name='local defenders')
+        self.defenders = defenders
         self.defender_locs = persistent.list.PersistentList()
-
+    
+    def _set_defenders(self, squad_num):
+        """If defenders is empty set squad as defenders."""
+        # I don't remember how transactions work so I broke this function in
+        # two, which might actually make it worse...
+        
+        # TODO: there should be a check to make sure the squad is not
+        # stronger than the grid.
+        # (Which is why self.defenders != self.squad[0])
+        
+        self.defenders = self.squad[squad_num]
+        del self.squad[squad_num]
+        self._p_changed = 1
+        return transaction.commit()
+    
+    def _unset_defenders(self):
+        """Moves old defenders into stronghold"""
+        #use wisely.
+        self.squads.append(self.defenders)
+        self.defenders = None;
+        self._p_changed = 1
+        return transaction.commit()
+    
+    def move_squad_to_defenders(self, squad_num):
+        """Moves a squad from self.squads to self.defenders"""
+        try:
+            self._unset_defenders()
+            self._set_defenders(squad_num)
+            return
+        except:
+            raise("There was an error moving squad to defenders.")
 
 class wField(persistent.Persistent):
     def __init__(self, world_coord, owner, ply_time=240):
         self.world_coord = world_coord
         self.owner = owner
         self.grid = Grid()
-        self.stronghold  = Stronghold()
+        self.stronghold  = Stronghold(self.create_defenders())
         self.battlequeue = persistent.list.PersistentList()
         self.producers   = None #stuctures, input stones, output composites.
         self.value       = None
@@ -43,16 +73,19 @@ class wField(persistent.Persistent):
         """
         self.ply_time = ply_time
     
+    def create_defenders(self):
+        """creates the stronghold defenders of a field with random scients.
+        (should be nescients)"""
+        #this function should calcuate the composition of the units based on the
+        #composition of the grid, that will be handled in due time.
+        return Squad(kind='mins', element=rand_element())
+    
     def get_defenders(self):
-        """gets the defenders of a wField, returns a random squad from stronghold
-           if no defenders set."""
-        if self.stronghold.defenders.value > 0:
+        """gets the defenders of a wField."""
+        try:
             return self.stronghold.defenders
-        else: #not really random.
-            try:
-                return self.stronghold.squads.values()[0]
-            except:
-                raise Exception("no squads available to defend Field.")
+        except:
+            raise Exception("Stronghold has no defenders.")
 
 class wPlayer(persistent.Persistent):
     """Object that contains player infomration."""
@@ -65,7 +98,7 @@ class wPlayer(persistent.Persistent):
         self.roads    = None
         self.treaties = None
 
-class World(object):
+class World(object): #this object needs to be refactored.
     def __init__(self, storage_name=('localhost', 9100)):
         self.storage = ClientStorage.ClientStorage(storage_name)
         self.db = DB(self.storage)
@@ -96,34 +129,18 @@ class World(object):
         self.root['Players'][new_owner].wFields[str(wField_coords)].owner =\
         new_owner
         return transaction.commit()
+
     
-    def populate_defenders(self, wField):
-        """populates the stronghold defenders of a field with random scients.
-        (should be nescients)"""
-        #this function should calcuate the composition of the units based on the
-        #composition of the field, that will be handled in due time.
-        #should verify that defenders is empty.
-        squad = wField.stronghold.defenders
-        while squad.free_spaces > 4:
-            squad.append(rand_unit())
-        wField.stronghold._p_changed = 1 #overloading squad fixes this.
-        return transaction.commit()
     
-    def populate_squads(self, wField, squad=None):
-        """puts a squad into a stronghold. FOR TESTING"""
-        if squad==None: squad = rand_squad()
-        wField.stronghold.squads[squad.name] = squad
-        wField.stronghold._p_changed = 1
-        return transaction.commit()
     
-    def move_squad(self, src, squad_name, dest):
+    def move_squad(self, src, squad_num, dest):
         """Moves a squad from a stronghold to a queue."""
         #src and dest are both wFields
         #TODO: check for adjacency.
-        squad = src.stronghold.squads[squad_name]
+        squad = src.stronghold.squads[squad_num]
         try:
             dest.battlequeue.append((src.owner, squad))
-            del src.stronghold.squads[squad_name]
+            del src.stronghold.squads[squad_num]
             return transaction.commit()
         except:
             print "the move didn't work."
