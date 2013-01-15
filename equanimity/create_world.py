@@ -1,5 +1,5 @@
 """creates the World object and populates it with fields. VERY DESTRUCTIVE."""
-from equanimity.world import wPlayer, World
+from equanimity.world import wPlayer, World, Stone
 #from stores.yaml_store import load
 from binary_tactics.const import *
 
