@@ -59,24 +59,34 @@ class Scient(Unit):
         A function that automagically equips items based on element.
         should be moved someplace else.
         """
-        if weapon == None:
-            if self.element == 'Earth':
-                self.weapon = Sword(self.element, Stone())
-            elif self.element == 'Fire':
-                self.weapon = Bow(self.element, Stone())
-            elif self.element == 'Ice':
-                self.weapon = Wand(self.element, Stone())
-            else:
-                self.weapon = Glove(self.element, Stone())
+        if self.weapon == None:
+            if weapon == None:
+                if self.element == 'Earth':
+                    self.weapon = Sword(self.element, Stone())
+                elif self.element == 'Fire':
+                    self.weapon = Bow(self.element, Stone())
+                elif self.element == 'Ice':
+                    self.weapon = Wand(self.element, Stone())
+                else:
+                    self.weapon = Glove(self.element, Stone())
             
-        else:
-            '''
-            if weapon.value() > self.equip_limit[weapon.type]:
-                raise Exception("This unit cannot equip this weapon")
             else:
+                '''
+                if weapon.value() > self.equip_limit[weapon.type]:
+                    raise Exception("This unit cannot equip this weapon")
+                else:
+                    self.weapon = weapon
+                '''
                 self.weapon = weapon
-            '''
-            self.weapon = weapon
+        else:
+            raise AttributeError("Unequip current weapon before equipping new "
+                                 "one.")
+    
+    def unequip(self):
+        """removes weapon from scient, returns weapon."""
+        weapon = self.weapon
+        self.weapon = None
+        return weapon
     
     def __init__(self, element, comp, name=None, weapon=None,
                  weapon_bonus=None, location=None, sex='female'):

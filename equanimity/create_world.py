@@ -1,52 +1,45 @@
 """creates the World object and populates it with fields. VERY DESTRUCTIVE."""
-from ZEO import ClientStorage
-from ZODB import DB
-import transaction
-import persistent.mapping
-from equanimity.world import wField, wPlayer, World
-from datetime import datetime
+from equanimity.world import wPlayer, World
+#from stores.yaml_store import load
+from binary_tactics.const import *
 
-addr = 'localhost', 9100
-storage = ClientStorage.ClientStorage(addr)
-db = DB(storage)
-conn = db.open()
-world = conn.root()
+w = World()
+wr = w.root
+w.open_connection()
+w.create()
 
-def make_wFields(x, y):
-    """creates all wFields used in a game."""
-    #right now the World and the wFields are square, they should both be hexagons.
-    wf0 = world['Players']['World'].wFields
-    wf1 = world['Fields']
-    for coord_x in xrange(x):
-        for coord_y in xrange(y):
-            world_coord = (coord_x, coord_y)
-            wf1[str(world_coord)] = wf0[str(world_coord)] =\
-            wField(world_coord, 'World')
-    transaction.commit() #required for wf1
-    
-def create_world(version=0.0, x=2, y=2):
-    #there should be a more elegant way of doing this.
-    def do_it():
-        world['resigntime'] = 21600#amount of time in seconds before attacker is forced to resign.
-        world['version'] = version
-        world['x'] = x
-        world['y'] = y
-	world['DOB'] = datetime.utcnow()
-        #Fields should be a frozendict
-        #http://stackoverflow.com/questions/2703599/what-would-be-a-frozen-dict
-        world['Fields']  = {}
-        world['Players'] = persistent.mapping.PersistentMapping()
-        player = wPlayer('World', None)
-        world['Players']['World'] = player
-        make_wFields(world['x'], world['y'])
-        transaction.commit()
-    try: #If the world version is the same, do nothing.
-       if world['version'] == version:
-           print "The ZODB already contains a world of that version."
-       else: do_it()
-    except: do_it()
-    return world
+#player stuff
+w.add_player(wPlayer('dfndr', 'dfndr'))
+w.add_player(wPlayer('atkr', 'atkr'))
 
-if __name__ == '__main__':
-    print create_world(0.0, 2,2)
-    
+w.award_field('World', '(0, 0)', 'dfndr')
+w.award_field('World', '(0, 1)', 'atkr')
+
+#Fields are automatically populated with Ice mins.
+#below we create attacking Fire mins.
+#get fields
+af = wr['Players']['atkr'].wFields['(0, 1)']
+df = wr['Players']['dfndr'].wFields['(0, 0)']
+#get stronghold.
+afs = af.stronghold
+
+#put Fire min stones into stronghold.
+afs._add_stones([Stone((2,4,0,2)) for n in xrange(4)])
+
+#create scients.
+for n in xrange(4): afs._form_scient('Fire', -1)
+
+#put empty stones into stronhold.
+afs._add_stones([Stone() for n in xrange(4)])
+
+#create weapons.
+for n in WEP_LIST: afs._form_weapon('Fire', -1, n)
+
+#equip scients.
+for n in xrange(4): afs.equip_scient(-1, -1)
+
+#form squad
+afs.form_squad([-1,-1,-1,-1], 'Fire Attackers')
+
+#move squad to battlequeue
+w.move_squad(af, -1, df)
