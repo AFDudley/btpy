@@ -3,7 +3,7 @@ from binary-tactics dir
 NOTE: 1, 2, 4, 6, 7, 9 only need to be run once.
 
 0. install dependencies
-pip install ipython cyclone==0.7 zeo httplib2
+pip install ipython cyclone==0.7 zeo httplib2 twisted
 (link to cyclone: https://github.com/fiorix/cyclone/commit/4a508168540946389ac021600ecb9d5254fe2adb)
 
 1. prepare zodb:
@@ -25,24 +25,20 @@ $ ipython equanimity/create_world.py
 5. start auth_server:
 $ ipython equanimity/auth_server.py
 
-6. add users to ZODB:
-$ ipython equanimity/create_players.py IP
-
-7. grant the users Fields and prepare the battlequeue:
-$ ipython equanimity/setup_zeo_battle.py
-
-8. run the battle server:
+6. run the battle server:
 $ ipython equanimity/battle_server.py '(0, 0)'
 
 OR
 
-8. run the battle server with auto-retart:
+6. run the battle server with auto-retart:
 $ ipython equanimity/keep_alive.py 
 
-9. get the JS sources:
+7. get the JS sources:
 $ cd web; sh get_js.sh
 
-10. http://<host>:8888/auth/login
+8. set res/js/host.js to the correct IP
+
+9. http://<host>:8888/auth/login
 u: atkr, p: atkr or u: defndr, p: defndr
 
-11. http://<host>:8888/battle/static/jsonrpc.html
+10. http://<host>:8888/battle/static/jsonrpc.html
