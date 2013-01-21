@@ -1,6 +1,5 @@
 THESE ARE NOTES NOT PERFECT INSTRUCTIONS, USE BRAIN ACCORDINGLY. 
 from binary-tactics dir
-NOTE: 1, 2, 4, 6, 7, 8 only need to be run once.
 
 0. install dependencies
 pip install ipython cyclone==0.7 zeo httplib2 twisted
