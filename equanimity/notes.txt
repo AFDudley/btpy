@@ -1,6 +1,6 @@
 THESE ARE NOTES NOT PERFECT INSTRUCTIONS, USE BRAIN ACCORDINGLY. 
 from binary-tactics dir
-NOTE: 1, 2, 4, 6, 7, 9 only need to be run once.
+NOTE: 1, 2, 4, 6, 7, 8 only need to be run once.
 
 0. install dependencies
 pip install ipython cyclone==0.7 zeo httplib2 twisted
@@ -8,37 +8,28 @@ pip install ipython cyclone==0.7 zeo httplib2 twisted
 
 1. prepare zodb:
 $ mkdir logs
-$ mkdir -p DBs/Events
 $ mkdir -p DBs/World
-$ runzeo -C zeoEvents.conf &
 $ runzeo -C zeoWorld.conf &
 
-2. set IP env var.
-$ IP='127.0.0.1'
-
-3. start rproxy_server:
-$ ipython equanimity/rproxy_server.py IP 
-
-4. create world inside zodb:
+2. create world inside zodb:
 $ ipython equanimity/create_world.py
 
-5. start auth_server:
-$ ipython equanimity/auth_server.py
-
-6. run the battle server:
-$ ipython equanimity/battle_server.py '(0, 0)'
-
-OR
-
-6. run the battle server with auto-retart:
-$ ipython equanimity/keep_alive.py 
-
-7. get the JS sources:
+3. get the JS sources:
 $ cd web; sh get_js.sh
 
-8. set res/js/host.js to the correct IP
+4. set res/js/host.js to the correct IP
 
-9. http://<host>:8888/auth/login
+5. stop runzeo:
+$ pkill -f runzeo
+
+6. start all the services at once:
+$ ipython equanimity/start.py 
+
+(pkill -f python to stop all services... if you stop one it will auto
+restart.)
+
+7. http://<host>:8888/auth/login
 u: atkr, p: atkr or u: defndr, p: defndr
 
-10. http://<host>:8888/battle/static/jsonrpc.html
+8. http://<host>:8888/battle/static/jsonrpc.html
+
