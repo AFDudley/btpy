@@ -469,8 +469,8 @@ class BattlePane(Pane, Battlefield):
         self.contentimgs = pygame.sprite.RenderUpdates()
         self.defender = battle.Player()
         self.attacker = battle.Player()
-        self.defender.squads = [self.trans_squad(yaml_store.load('yaml/squad1.yaml'))]
-        self.attacker.squads = [self.trans_squad(yaml_store.load('yaml/squad2.yaml'))]
+        self.defender.squads = [self.trans_squad(yaml_store.load('yaml/ice_mins.yaml'))]
+        self.attacker.squads = [self.trans_squad(yaml_store.load('yaml/fire_mins.yaml'))]
         
         self.defsquad = self.defender.squads[0]
         self.atksquad = self.attacker.squads[0]
@@ -593,7 +593,7 @@ class BattlePane(Pane, Battlefield):
                     print "%s: %s" %(k, v)
             
             if dude.location == noloc:
-                self.rand_place_object(dude)
+                self.rand_place_scient(dude)
             else:
                 loc = dude.location
                 dude.location = noloc
