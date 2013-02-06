@@ -1,12 +1,12 @@
 {
     "SMDVersion": "2.0",
     "contentType": "application/json",
-    "target": "http://166.84.136.68:8888/battle/",
+    "target": "/battle/",
     "envelope": "JSON-RPC-1.0",
     "services": {
-    	"time_left": {
-	    parameters: [],
-	},
+        "time_left": {
+            parameters: [],
+        },
         "get_username": {
             parameters: [],
         },
@@ -16,13 +16,16 @@
         "last_result": {
             parameters: [],
         },
-        "get_state": {
+        "get_states": {
+            parameter: [],
+        },
+        "get_last_state": {
             parameter: [],
         },
         "process_action": {
             parameters: [],
             returns: {"type": "string"}
-            },
+        },
     },
    "transport": "POST"
 }

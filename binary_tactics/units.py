@@ -1,6 +1,6 @@
 from UserList import UserList
 from stone import Stone
-from const import ELEMENTS, E, F, I, W, ORTH, OPP
+from const import ELEMENTS, E, F, I, W, ORTH, OPP, WEP_LIST
 from datetime import datetime
 from weapons import Sword, Bow, Wand, Glove
 
@@ -68,7 +68,7 @@ class Scient(Unit):
                 self.weapon = Wand(self.element, Stone())
             else:
                 self.weapon = Glove(self.element, Stone())
-            
+        
         else:
             '''
             if weapon.value() > self.equip_limit[weapon.type]:
@@ -77,6 +77,12 @@ class Scient(Unit):
                 self.weapon = weapon
             '''
             self.weapon = weapon
+    
+    def unequip(self):
+        """removes weapon from scient, returns weapon."""
+        weapon = self.weapon
+        self.weapon = None
+        return weapon
     
     def __init__(self, element, comp, name=None, weapon=None,
                  weapon_bonus=None, location=None, sex='female'):
@@ -204,21 +210,37 @@ class Squad(UserList):
         """Returns the total HP of the Squad."""
         return sum([unit.hp for unit in self])
 
-    def __init__(self, data=None, name=None):
+    def __init__(self, data=None, name=None, kind=None, element=None):
         self.value = 0
         self.free_spaces = 8
         self.name = name
         UserList.__init__(self)
         if data == None:
+            # The code below creates 4 units of element with a comp
+            # of (4,2,2,0). Each unit is equiped with a unique weapon.
+            if kind == 'mins':
+                if element != None:
+                    s = Stone()
+                    s[element] = 4
+                    s[OPP[element]] = 0
+                    for o in ORTH[element]:
+                        s[o] = 2
+                    for wep in WEP_LIST:
+                        scient = Scient(element, s)
+                        scient.equip(eval(wep)(element, Stone()))
+                        scient.name = "Ms. " + wep
+                        self.append(scient)
+                else:
+                    raise("Kind requires element from %s." %ELEMENTS)
+                if self.name == None:
+                    self.name = element + " " + 'mins'
             return
-            
+
         if isinstance(data, list):
             for x in data: 
                 self.append(x)
         else:
             self.append(data)
-        self.data = self.datadata
-        del self.data
             
     def __setitem__(self, key, val):
         #need to change how value of a squad is calculated.

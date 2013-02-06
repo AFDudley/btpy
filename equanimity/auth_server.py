@@ -130,5 +130,5 @@ def main():
     reactor.run()
 
 if __name__ == "__main__":    
-    log.startLogging(sys.stdout)
+    log.startLogging(open('logs/auth.log', 'a'))
     main()

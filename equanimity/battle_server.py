@@ -19,14 +19,16 @@ from ZEO import ClientStorage
 from ZODB import DB
 import transaction
 
-
+#One day logs of battles will need to go into a database
+#DO NOT UNCOMMENT.
 #from binary_tactics.zodb_hex_battle import Game, Action
+#from stores.zodb_store import get_persisted
+
 from binary_tactics.hex_battle import Game, Action
 from binary_tactics.hex_battlefield import Battlefield
 from binary_tactics.player import Player
 from binary_tactics.grid import Loc
 
-#from stores.zodb_store import get_persisted
 from stores.store import get_persisted
 import copy
 
@@ -56,10 +58,16 @@ class BattleHandler(BaseJSONHandler):
     
     @cyclone.web.authenticated
     @defer.inlineCallbacks
-    def jsonrpc_get_state(self):
-        state = yield self.settings.get_state
+    def jsonrpc_get_states(self):
+        state = yield self.settings.get_states
         defer.returnValue(state)
-        
+    
+    @cyclone.web.authenticated
+    @defer.inlineCallbacks
+    def jsonrpc_get_last_state(self):
+        state = yield self.settings.get_last_state
+        defer.returnValue(state)
+    
     @cyclone.web.authenticated
     @defer.inlineCallbacks
     def jsonrpc_last_result(self):
@@ -88,23 +96,34 @@ class BattleHandler(BaseJSONHandler):
         try:
             if username != self.settings.game.state['whose_action']:
                 raise Exception("It is not your turn.")
-            else:
-                units = self.settings.game.units
-                unit_num = int(args[0])
-                unit_owner = self.settings.game.log.get_owner(unit_num).name
-                if username == unit_owner:
-                    action = Action(units[unit_num], args[1], tuple(args[2]))
-                    self.settings.last_result = result = yield self.settings.game.process_action(action)
-                    #ply_timer needs to change when the ply changes.
-                    self.settings.ply_timer.call.reset(self.settings.ply_time)
-                    self.settings.get_state  = self.settings.game.get_state()
-                    print result
-                    defer.returnValue(result)
+            else: #WIP.
+                if args[1] == 'pass':
+                    action = Action(None, 'pass', None)
                 else:
-                    raise Exception("user cannot command unit, try a different unit.")
+                    unit_num = int(args[0])
+                    unit_owner = self.settings.game.log.get_owner(unit_num).name
+                    if username == unit_owner:
+                        units = self.settings.game.units
+                        action = Action(units[unit_num], args[1], tuple(args[2]))
+                    else:
+                        raise Exception("user cannot command unit, try a different unit.")
+                self.settings.last_result = result = yield self.settings.game.process_action(action)
+                #ply_timer needs to change when the ply changes.
+                self.settings.ply_timer.call.reset(self.settings.ply_time)
+                self.settings.get_states  = self.settings.game.get_states()
+                self.settings.get_last_state = self.settings.game.get_last_state()
+                print result
+                defer.returnValue(result)
+                    
         except Exception , e:
-            log.err("process_action failed: %r" % e)
-            raise cyclone.web.HTTPError(500, "%r" % e.args[0])
+            #This code is buggy. must be fixed asap.
+            if e.args[0] == 'Game Over':
+                #write_battlelog()
+                reactor.stop()
+                
+            else:
+                log.err("process_action failed: %r" % e)
+                raise cyclone.web.HTTPError(500, "%r" % e.args[0])
             
 class TimeLeftHandler(cyclone.web.RequestHandler):
     #DOS prevention needs to be added.
@@ -158,9 +177,11 @@ def main():
     def forcedpass():
         try:
             print "Forced pass."
+            #print "Pass Count: %s" %(app.settings.game.state["pass_count"])
             action = Action(None, 'timed_out', None)
             app.settings.last_result = result = yield app.settings.game.process_action(action)
-            app.settings.get_state  = app.settings.game.get_state()
+            app.settings.get_states  = app.settings.game.get_states()
+            app.settings.get_last_state = app.settings.game.get_last_state()
         except Exception , e:
             if e.args[0] == 'Game Over':
                 write_battlelog()
@@ -172,8 +193,8 @@ def main():
     world_coords = str(sys.argv[1])
     #this copy is really important, copies the objects out of the zeo and into memory.
     f = copy.deepcopy(world['Fields'][world_coords])
-    #ply_time = 1
-    ply_time = f.ply_time
+    ply_time = 600 #for testing ending conditions
+    #ply_time = f.ply_time
     atkr_name, atksquad = f.battlequeue[0]
     defsquad = f.get_defenders()
     #TODO rewrite player and hex_battle
@@ -207,20 +228,22 @@ def main():
     debug=True,
     login_url="/auth/login",
     cookie_secret="secret!!!!",
-    get_state='{}',
+    last_state='{}',
+    get_states='{}', #WRONG.
     last_result='{}',
     init_state=None,
     ply_time=ply_time,
-    ply_timer=task.LoopingCall(forcedpass)
+    ply_timer=task.LoopingCall(forcedpass),
+    reactor=None,
     )
     
     reactor.listenTCP(8890, app)
     # is there a better way to do this, this will always be late.
+    app.reactor = reactor
     task.deferLater(reactor, maxsecs.seconds, ARTendgame) 
     app.settings.ply_timer.start(ply_time, now=False)
     reactor.run()
 
 if __name__ == "__main__":
-    #log.startLogging(sys.stdout)
-    log.startLogging(open('logs/battle_log.log', 'a'))
+    log.startLogging(open('logs/battle.log', 'a'))
     main()
