@@ -160,3 +160,14 @@ def one_three_zeros(value):
         s[i] = value
         squad.append(Scient(i, s))
     return squad
+
+def stats(unit):
+    print unit.name + ": " + str(unit.comp)
+    print "Physical: " + str(unit.p)
+    print "Magical: " + str(unit.m)
+    print "Attack: " + str(unit.atk)
+    print "Defense: " + str(unit.defe)
+    print "P ATK: " + str(unit.patk)
+    print "P DEF: " + str(unit.pdef)
+    print "M ATK: " + str(unit.matk)
+    print "M DEF: " + str(unit.mdef)
