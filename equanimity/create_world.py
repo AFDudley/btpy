@@ -36,7 +36,7 @@ afs._add_stones([Stone() for n in xrange(4)])
 for n in WEP_LIST: afs._form_weapon('Fire', -1, n)
 
 #equip scients.
-for n in xrange(4): afs.equip_scient(-1, -1)
+for n in xrange(4): afs.equip_scient(n, -1)
 
 #form squad
 afs.form_squad([-1,-1,-1,-1], 'Fire Attackers')
