@@ -14,7 +14,7 @@ parser.add_argument('-H', '--host', default='127.0.0.1', help="ip of server")
 parser.add_argument('-p', '--player', choices=['dfndr', 'atkr'],
                     default='dfndr', help="Which player is sending the command? \
                     'dfndr' or 'atkr'.")
-parser.add_argument('-a', '--action', choices=['pass','move','atack'], default='pass',
+parser.add_argument('-a', '--action', choices=['pass','move','attack'], default='pass',
                     help="Action to be taken, 'pass', 'move' or 'attack'.")
 parser.add_argument('-u', '--uid', type=int, default=None,
                     help="unitID of actor.")
