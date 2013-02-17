@@ -1,20 +1,44 @@
-from stone import Stone
-class Field(object):
-    def __init__(self, grid, attack_queue=None, ply_window=4, owner=None):
-        self.attack_queue = attack_queue
-        self.grid = grid
-        '''fiels should only be created at world creation time and should init
-           with The World as the owner.'''
-        self.owner = owner
+import binary_tactics.stone
+from equanimity.wstone import Stone
+binary_tactics.stone.Stone = Stone #Monkey Patch
+from binary_tactics.units import Squad
+from binary_tactics.grid import Grid
+from equanimity.stronghold import Stronghold
+
+class wField(persistent.Persistent):
+    def __init__(self, world_coord, ply_time=240):
+        self.world_coord = world_coord
+        self.owner = 'World'
+        self.grid = Grid()
+        self.stronghold  = Stronghold(self.create_defenders())
+        self.battlequeue = persistent.list.PersistentList()
+        self.producers   = None #stuctures, input stones, output composites.
+        self.value       = None
+        self.expected_yield = None
+
         """
-        ply_window: user definable time before a pass is automatically sent for a battle action.
-            range between 4 and 360 minutes, default is 4
+        ply_time: user definable time before a pass is automatically sent for a battle action.
+            range between 4 and 360 minutes, default is 4 (in seconds)
         """
-        self.ply_window = ply_window
-        
+        self.ply_time = ply_time
+
+    def create_defenders(self):
+        """creates the stronghold defenders of a field with random scients.
+        (should be nescients)"""
+        #this function should calcuate the composition of the units based on the
+        #composition of the grid, that will be handled in due time.
+        return Squad(kind='mins', element=rand_element())
+
+    def get_defenders(self):
+        """gets the defenders of a wField."""
+        try:
+            return self.stronghold.defenders
+        except:
+            raise Exception("Stronghold has no defenders.")
+            
     def set_owner(self, owner):
         self.owner = owner
-        
+
     def harvest_stones(self):
         """returns set of stones generated at harvest"""
         stones = Stone()

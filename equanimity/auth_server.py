@@ -6,9 +6,7 @@ import cyclone.web
 from twisted.python import log
 from twisted.internet import reactor, defer
 
-from equanimity.world import wPlayer
-from ZEO import ClientStorage
-from ZODB import DB
+from equanimity.world_zeo import World_zeo
 import transaction
 
 class BaseHandler(cyclone.web.RequestHandler):
@@ -38,12 +36,12 @@ class SignupHandler(BaseHandler):
         p = self.get_argument("p")
         password = hashlib.md5(p).hexdigest() #NOT SECURE!!!
         try:
-            assert self.settings.zeo.get(u)
+            assert self.settings.zeo.get_username(u)
             log.err("User already exists")
             raise cyclone.web.HTTPError(400, "User already Exists")
         
         except Exception, e:
-            self.settings.zeo.set(u, password.encode("utf-8"))
+            self.settings.zeo.set_username(u, password.encode("utf-8"))
             self.set_secure_cookie("user", cyclone.escape.json_encode(u))
             #self.redirect("/")
                 
@@ -65,7 +63,7 @@ class LoginHandler(BaseHandler):
         p = self.get_argument("p")
         password = hashlib.md5(p).hexdigest()
         try:
-            stored_pw = yield self.settings.zeo.get(u)
+            stored_pw = yield self.settings.zeo.get_username(u)
             assert password == stored_pw
                 
         except Exception, e:
@@ -86,31 +84,9 @@ class LogoutHandler(BaseHandler):
     def get(self):
         self.clear_cookie("user")
         #self.redirect("/")
-
-            
-class Zeo(object):
-    def __init__(self, addr=('localhost', 9100)):
-        self.addr = addr
-        self.storage = ClientStorage.ClientStorage(self.addr)
-        self.db = DB(self.storage)
-        self.conn = self.db.open()
-        self.root = self.conn.root()
-        
-    def get(self, username): #FIX
-        self.conn.sync()
-        return self.root['Players'][username].password
-        
-    def set(self, username, password): #FIX
-        try:
-            self.conn.sync()
-            assert not self.root['Players'][username].password
-        except Exception: #this exception looks dangerous
-            self.root['Players'][username] = wPlayer(username, password)
-            self.root._p_changed = 1
-            return transaction.commit()
     
 def main():
-    zeo = Zeo()
+    zeo = World_zeo()
     static_path = "./web"
     application = cyclone.web.Application([
         (r"/static/(.*)", cyclone.web.StaticFileHandler, {"path": static_path}),

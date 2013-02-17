@@ -10,14 +10,12 @@ import sys
 from datetime import datetime, timedelta
 import json
 import cyclone.web
+from cyclone import jsonrpc
 
 from twisted.python import log
 from twisted.internet import reactor, defer, task
 
-from equanimity.world import wPlayer
-from ZEO import ClientStorage
-from ZODB import DB
-import transaction
+from equanimity.world_zeo import World_zeo
 
 #One day logs of battles will need to go into a database
 #DO NOT UNCOMMENT.
@@ -32,10 +30,7 @@ from binary_tactics.grid import Loc
 from stores.store import get_persisted
 import copy
 
-#For testing
-from os import fork
-
-class BaseJSONHandler(cyclone.web.JsonrpcRequestHandler):
+class BaseJSONHandler(jsonrpc.JsonrpcRequestHandler):
     def get_current_user(self):
         return self.get_secure_cookie("user")
         
@@ -118,6 +113,7 @@ class BattleHandler(BaseJSONHandler):
         except Exception , e:
             #This code is buggy. must be fixed asap.
             if e.args[0] == 'Game Over':
+                #change to correct state. (Harvest or Produce)
                 #write_battlelog()
                 reactor.stop()
                 
@@ -134,14 +130,6 @@ class TimeLeftHandler(cyclone.web.RequestHandler):
         timeleft = {'battle': str(self.settings.ART - now), 'ply': str(ply - now)}
         self.write(str(timeleft))
         self.flush()
-        
-class World_zeo(object):
-    def __init__(self, addr=('localhost', 9100)):
-        self.addr = addr
-        self.storage = ClientStorage.ClientStorage(self.addr)
-        self.db = DB(self.storage)
-        self.conn = self.db.open()
-        self.root = self.conn.root()
         
 def main():
     def write_battlelog():
