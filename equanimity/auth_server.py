@@ -1,18 +1,14 @@
 import sys
 import hashlib
-
 import cyclone.web
-
 from twisted.python import log
 from twisted.internet import reactor, defer
-
 from equanimity.world_zeo import World_zeo
-import transaction
 
 class BaseHandler(cyclone.web.RequestHandler):
     def get_current_user(self):
         return self.get_secure_cookie("user")
-        
+
 class MainHandler(BaseHandler):
     @cyclone.web.authenticated
     def get(self):
@@ -29,7 +25,7 @@ class SignupHandler(BaseHandler):
             %s
             </body></html>
             """ % (err == "invalid" and "invalid username or password" or ""))
-        
+    
     @defer.inlineCallbacks
     def post(self):
         u = self.get_argument("u")
@@ -44,7 +40,7 @@ class SignupHandler(BaseHandler):
             self.settings.zeo.set_username(u, password.encode("utf-8"))
             self.set_secure_cookie("user", cyclone.escape.json_encode(u))
             #self.redirect("/")
-                
+    
 class LoginHandler(BaseHandler):
     def get(self):
         err = self.get_argument("e", None)
@@ -56,7 +52,7 @@ class LoginHandler(BaseHandler):
             %s
             </body></html>
         """ % (err == "invalid" and "invalid username or password" or ""))
-        
+    
     @defer.inlineCallbacks
     def post(self):
         u = self.get_argument("u")

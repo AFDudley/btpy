@@ -22,6 +22,10 @@ from equanimity.world_zeo import World_zeo
 #from binary_tactics.zodb_hex_battle import Game, Action
 #from stores.zodb_store import get_persisted
 
+import binary_tactics.stone
+from equanimity.wstone import Stone
+binary_tactics.stone.Stone = Stone #Monkey Patch
+
 from binary_tactics.hex_battle import Game, Action
 from binary_tactics.hex_battlefield import Battlefield
 from binary_tactics.player import Player
@@ -131,7 +135,8 @@ class TimeLeftHandler(cyclone.web.RequestHandler):
         self.write(str(timeleft))
         self.flush()
         
-def main():
+def main(args):
+    coords, lport = args
     def write_battlelog():
         """writes the battle log to persistent storage."""
         print "writing battle log here."
@@ -178,9 +183,10 @@ def main():
     world_zeo = World_zeo()
     world  = world_zeo.root
     maxsecs = timedelta(0, world['resigntime'])
-    world_coords = str(sys.argv[1])
+    world_coords = coords
     #this copy is really important, copies the objects out of the zeo and into memory.
-    f = copy.deepcopy(world['Fields'][world_coords])
+    f = copy.deepcopy(world['Fields']['(0, 0)'])
+    #f = copy.deepcopy(world['Fields'][world_coords])
     ply_time = 600 #for testing ending conditions
     #ply_time = f.ply_time
     atkr_name, atksquad = f.battlequeue[0]
@@ -225,7 +231,7 @@ def main():
     reactor=None,
     )
     
-    reactor.listenTCP(8890, app)
+    reactor.listenTCP(lport, app)
     # is there a better way to do this, this will always be late.
     app.reactor = reactor
     task.deferLater(reactor, maxsecs.seconds, ARTendgame) 
@@ -234,4 +240,7 @@ def main():
 
 if __name__ == "__main__":
     log.startLogging(open('logs/battle.log', 'a'))
-    main()
+    lport = 8890
+    coords = str(sys.argv[1])
+    args =(coords, lport)
+    main(args)

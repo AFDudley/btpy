@@ -12,9 +12,6 @@ import binary_tactics.stone
 from equanimity.wstone import Stone
 binary_tactics.stone.Stone = Stone #Monkey Patch
 from equanimity.field import Field
-from binary_tactics.weapons import Sword, Bow, Wand, Glove
-from binary_tactics.hex_battle import Game
-from binary_tactics.helpers import *
 from stronghold import Stronghold
 
 
@@ -67,6 +64,7 @@ class World(object): #this object needs to be refactored.
                 pass
         except: 
             pass
+        self.root['dayLength'] = 240 #length of game day in seconds.
         self.root['resigntime'] = 21600#amount of time in seconds before attacker is forced to resign.
         self.root['version'] = version
         self.root['x'] = x

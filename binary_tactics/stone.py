@@ -39,7 +39,10 @@ class Stone(Mapping):
     def __getitem__(self,key):
         return self.comp[key]
     def __setitem__(self,key,value):
-        self.comp[key] = value
+        if value <= self.limit[key]:
+            self.comp[key] = value
+        else:
+            raise AttributeError("Tried setting %s beyond its limit of %s"  %(key, str(self.limit[key])))
     def __len__(self):
          return len(self.comp)
 

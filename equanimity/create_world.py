@@ -1,7 +1,10 @@
 """creates the World object and populates it with fields. VERY DESTRUCTIVE."""
-from equanimity.world import wPlayer, World, Stone
 #from stores.yaml_store import load
 from binary_tactics.const import *
+import binary_tactics.stone
+from equanimity.wstone import Stone
+binary_tactics.stone.Stone = Stone #Monkey Patch
+from equanimity.world import wPlayer, World
 
 w = World()
 wr = w.root
@@ -18,8 +21,8 @@ w.award_field('World', '(0, 1)', 'atkr')
 #Fields are automatically populated with Ice mins.
 #below we create attacking Fire mins.
 #get fields
-af = wr['Players']['atkr'].wFields['(0, 1)']
-df = wr['Players']['dfndr'].wFields['(0, 0)']
+af = wr['Players']['atkr'].Fields['(0, 1)']
+df = wr['Players']['dfndr'].Fields['(0, 0)']
 #get stronghold.
 afs = af.stronghold
 
