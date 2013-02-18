@@ -20,6 +20,18 @@ def t2c(tup):
 def rand_element():
     """Reuturns a random element"""
     return random.choice(ELEMENTS)
+    
+def get_element(comp):
+    """Gets the primary element from a comp, or choses at random from equals."""
+    sort = sorted(comp.iteritems(), key=itemgetter(1), reverse=True)
+    if sort[0][1] == sort[3][1]: #they are all equal
+        return random.choice(sort)[0]
+    elif sort[0][1] == sort[2][1]:
+        return random.choice(sort[:3])[0]
+    elif sort[0][1] == sort[1][1]:
+        return random.choice(sort[:2])[0]
+    else:
+        return sort[0][0]
 
 def max_comp(suit, kind='Scient'):
     """Returns the maximum composition of 'kind' of element 'suit'"""

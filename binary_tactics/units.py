@@ -16,14 +16,16 @@ class Unit(Stone):
             raise ValueError("Units' opposite element must equal 0.")
 
         Stone.__init__(self, comp)
+        now = datetime.utcnow()
         self.element = element
         if name == None:
             self.name = self.__hash__()
         self.name = name
         self.location = location
         self.sex = sex
-        self.DOB = datetime.utcnow()
+        self.DOB = now
         self.DOD = None
+        self.last_fed = now
         self.val = self.value()
         def __repr__(self):
             return self.name
@@ -211,7 +213,7 @@ class Squad(UserList):
         return sum([unit.hp for unit in self])
 
     def __init__(self, data=None, name=None, kind=None, element=None):
-        self.value = 0
+        self.val = 0
         self.free_spaces = 8
         self.name = name
         UserList.__init__(self)
@@ -251,7 +253,7 @@ class Squad(UserList):
             raise Exception( \
             "There is not enough space in the squad for this unit")
         list.__setitem__(self, key, val)
-        self.value += val.value()
+        self.val += val.value()
         self.free_spaces -= size
         key.squad = self
         
@@ -260,7 +262,7 @@ class Squad(UserList):
         temp = self[key].value()
         self.free_spaces += self.unit_size(self[key])
         self.data.__delitem__(key)
-        self.value -= temp
+        self.val -= temp
         
     def append(self, item):
         size = self.unit_size(item)
@@ -268,22 +270,25 @@ class Squad(UserList):
             raise Exception( \
             "There is not enough space in the squad for this unit")
         self.data.append(item)
-        self.value += item.value()
+        self.val += item.value()
         self.free_spaces -= size
         item.squad = self
-            
+
+    def value(self):
+        return self.val
+        
     def __repr__(self, more=None):
         """This could be done better..."""
         if more != None:
-            if self.value > 0:
+            if self.val > 0:
                 s = ''
                 for i in range(len(self)):
                     s += str(i) + ': ' + str(self[i].name) + '\n'
                 return "Name: %s, Value: %s, Free spaces: %s \n%s" \
-                %(self.name, self.value, self.free_spaces, s)
+                %(self.name, self.val, self.free_spaces, s)
         else:
             return "Name: %s, Value: %s, Free spaces: %s \n" %(self.name, \
-            self.value, self.free_spaces)
+            self.val, self.free_spaces)
     
     def __call__(self, more=None):
         return self.__repr__(more)

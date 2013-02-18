@@ -35,8 +35,6 @@ class Grid(Stone):
     
     def __init__(self, comp=Stone(), x=16, y=16, tiles=None):
         Stone.__init__(self, comp)
-        def imbue(self):
-            raise Exception("Cannot imbue Grid, use imbue_tile instead.")
         self.x, self.y = self.size = (x, y)
         if self.value() == 0:
             if tiles == None:
@@ -75,7 +73,7 @@ class Grid(Stone):
                         skew  = 2*random.randint((basis/4),(basis*4))
                         pull  = random.randint(0, min(self.limit[suit], basis+skew))
                         nv = max(basis/2, min(pull, self.limit[suit]))
-                        print "first nv: %s, pull: %s" % (nv, pull)
+                        #print "first nv: %s, pull: %s" % (nv, pull)
                         pool[suit] -= nv
                         new_tile[suit] = nv
                     row_l.append(new_tile)
@@ -92,7 +90,7 @@ class Grid(Stone):
                     else:
                         fract = 0
                     nv = max(basis/2, min(fract, self.limit[suit]))
-                    print "second nv: %s, fract: %s" % (nv, fract)
+                    #print "second nv: %s, fract: %s" % (nv, fract)
                     pool[suit] -= nv
                     new_tile[suit] = nv
                 row_e.append(new_tile)
@@ -119,6 +117,9 @@ class Grid(Stone):
             del tiles_l
             #Determine the actual comp NEEDS REAL SOLUTION TODO
             self.calc_comp()
+
+    def imbue(self, stone):
+        raise Exception("Cannot imbue Grid, use imbue_tile instead.")
     
     def imbue_tile(self, tileLoc, stone):
         """Imbues tile with stone, updates grid.comp."""

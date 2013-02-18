@@ -28,4 +28,5 @@ class World_zeo(object):
             return transaction.commit()
     
 if __name__ == '__main__':
+    from equanimity.world import *
     world = World_zeo().root

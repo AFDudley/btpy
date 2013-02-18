@@ -8,34 +8,22 @@ from binary_tactics.units import Squad
 from binary_tactics.grid import Grid
 from equanimity.stronghold import Stronghold
 from equanimity.clock import Clock
-from operator import itemgetter
-from random import choice
-
+from math import ceil
 
 class Field(persistent.Persistent):
-    def set_element(self):
-        """Sets the element of the field based on grid.comp and magic."""
-        sort = sorted(self.grid.comp.iteritems(), key=itemgetter(1), reverse=True)
-        if sort[0][1] == sort[3][1]: #they are all equal
-            self.element = choice(sort)[0]
-        elif sort[0][1] == sort[2][1]:
-            self.element = choice(sort[:3])[0]
-        elif sort[0][1] == sort[1][1]:
-            self.element = choice(sort[:2])[0]
-        else:
-            self.element = sort[0][0]
+    """Player owned field logic."""
+
         return transaction.commit()
             
     def __init__(self, world_coord, ply_time=240):
         self.world_coord = world_coord
         self.owner = 'World'
         self.grid = Grid()
-        self.element = self.set_element()
-        self.stronghold  = Stronghold(self.create_defenders())
+        self.element = 'Ice' #For testing
+        #self.element = get_element(self.grid.comp)
+        self.stronghold  = Stronghold(self.element)
         self.battlequeue = persistent.list.PersistentList()
         self.producers   = None #stuctures, input stones, output composites.
-        self.value       = None
-        self.expected_yield = None
         self.state = 'produce' #Default state
     
         """
@@ -56,13 +44,6 @@ class Field(persistent.Persistent):
         else:
             self.state = 'produce'
         return transaction.commit()
-        
-    def create_defenders(self):
-        """creates the stronghold defenders of a field with random scients.
-        (should be nescients)"""
-        #this function should calcuate the composition of the units based on the
-        #composition of the grid, that will be handled in due time.
-        return Squad(kind='mins', element=self.element)
 
     def get_defenders(self):
         """gets the defenders of a Field."""
@@ -70,13 +51,25 @@ class Field(persistent.Persistent):
             return self.stronghold.defenders
         except:
             raise Exception("Stronghold has no defenders.")
-    
+            
+    def set_stronghold_capacity(self):
+        """Uses grid.value to determine stronghold capacity."""
+        #squad points. scient = 1 nescient = 2
+        #capacity increases at:
+        # [61, 125, 189, 253, 317, 381, 445, 509, 573, 637, 701, 765, 829,
+        #  893, 957,]
+        self.stronghold.capacity = int(ceil((self.grid.value() + 4) / 64.0)) * 8
+        self.stronghold._p_changed = 1
+        return transaction.commit()
+        
     def plant(self, tileLoc, stone):
         """Plants a stone on a tile."""
         self.grid.imbue_tile(tileLoc, stone)
         self.grid[tileLoc[0]][tileLoc[1]]._p_changed = 1
         self.grid._p_changed = 1
-        self.set_element()
+        self.element = get_element(self.grid.comp)
+        self._p_changed = 1
+        self.set_stronghold_capacity()
         return transaction.commit()
         
     def harvest(self):

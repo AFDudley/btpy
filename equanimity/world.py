@@ -12,8 +12,6 @@ import binary_tactics.stone
 from equanimity.wstone import Stone
 binary_tactics.stone.Stone = Stone #Monkey Patch
 from equanimity.field import Field
-from stronghold import Stronghold
-
 
 class wPlayer(persistent.Persistent):
     """Object that contains player infomration."""
@@ -72,13 +70,12 @@ class World(object): #this object needs to be refactored.
         self.root['DOB'] = datetime.utcnow()
         #Fields should be a frozendict
         #http://stackoverflow.com/questions/2703599/what-would-be-a-frozen-dict
-        self.root['Fields']  = {}
+        self.root['Fields']  = persistent.mapping.PersistentMapping()
         self.root['Players'] = persistent.mapping.PersistentMapping()
         self.player = wPlayer('World', None)
         self.root['Players']['World'] = self.player
         self.make_Fields(self.root['x'], self.root['y'])
         transaction.commit()
-
         return self.root
     
     def make_Fields(self, range_x, range_y):
@@ -89,9 +86,10 @@ class World(object): #this object needs to be refactored.
         for coord_x in xrange(range_x):
             for coord_y in xrange(range_y):
                 world_coord = (coord_x, coord_y)
-                wf1[str(world_coord)] = wf0[str(world_coord)] =\
-                Field(world_coord)
-        transaction.commit() #required for wf1
+                f = Field(world_coord)
+                wf0[str(world_coord)] = f
+                wf1[str(world_coord)] = f
+                transaction.commit() #required for wf1
     
     def award_field(self, old_owner, Field_coords, new_owner):
         """Transfers a field from one owner to another."""

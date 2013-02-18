@@ -44,5 +44,9 @@ for n in xrange(4): afs.equip_scient(n, -1)
 #form squad
 afs.form_squad([-1,-1,-1,-1], 'Fire Attackers')
 
+#set squad locations
+df.stronghold.set_defender_locs([(6,4), (7,4), (8,4,), (9,4)])
+afs.set_squad_locs(0, [(6,10), (7,10), (8,10), (9,10)])
+
 #move squad to battlequeue
 w.move_squad(af, -1, df)

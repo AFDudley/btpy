@@ -199,11 +199,20 @@ def main(args):
 
     #!!!obviously for testing only.
     #The locations should be pushed to world before battle is started.
+    """
     for s in xrange(2):
         l = len(btl.squads[s])
         for x in xrange(l):
             btl.place_object(btl.squads[s][x], Loc(x, s))
-        
+    """
+    #TODO CLEANUP
+    for s in xrange(2):
+        l = len(btl.squads[s])
+        for x in xrange(l):
+            loc = btl.squads[s][x].location
+            btl.squads[s][x].location = None
+            btl.place_object(btl.squads[s][x], loc)
+            
     game.log['init_locs'] = game.log.init_locs()
     start_time  = datetime.strptime(game.log['start_time'], "%Y-%m-%d %H:%M:%S.%f")
     ART = start_time + maxsecs #attacker resign time
