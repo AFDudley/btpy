@@ -1,10 +1,10 @@
 """Helper functions"""
 import random
 import string
-#import const
 from const import ELEMENTS, E, F, W, I, ORTH, KINDS, OPP, COMP
 from stone import Stone
 from units import Scient, Nescient, Squad
+from operator import itemgetter
 
 def rand_string(len=8):
     return ''.join(random.choice(string.letters) for i in xrange(len))

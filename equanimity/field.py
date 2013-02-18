@@ -12,9 +12,6 @@ from math import ceil
 
 class Field(persistent.Persistent):
     """Player owned field logic."""
-
-        return transaction.commit()
-            
     def __init__(self, world_coord, ply_time=240):
         self.world_coord = world_coord
         self.owner = 'World'
