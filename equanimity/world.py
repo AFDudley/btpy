@@ -57,7 +57,7 @@ class World(object): #this object needs to be refactored.
         #there should be a more elegant way of doing this.
         try: #If the world version is the same, do nothing.
             if self.root['version'] == version:
-                print "The ZODB already contains a world of that version."
+                return Exception("The ZODB already contains a world of that version.")
             else:
                 pass
         except: 
@@ -106,12 +106,9 @@ class World(object): #this object needs to be refactored.
         #src and dest are both Fields
         #TODO: check for adjacency.
         squad = src.stronghold.squads[squad_num]
-        try:
-            dest.battlequeue.append((src.owner, squad))
-            del src.stronghold.squads[squad_num]
-            return transaction.commit()
-        except:
-            print "the move didn't work."
+        dest.battlequeue.append((src.owner, squad))
+        src.stronghold.remove_squad(squad_num)
+        return transaction.commit()
     
     def delete_player(self, player):
         """removes a player from the database and returns their fields to
@@ -124,11 +121,3 @@ class World(object): #this object needs to be refactored.
     def start_battle(self, field_loc):
         """Starts a battle on a Field. FOR TESTING"""
         pass
-        
-"""This doesn't work because of pickle's scope requirements.
-if __name__ == '__main__':
-    world = World()
-    wr = world.root
-    world.open_connection()
-"""
-

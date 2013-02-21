@@ -8,18 +8,27 @@ from binary_tactics.units import Squad, Scient
 from binary_tactics.weapons import Sword, Bow, Wand, Glove
 
 from binary_tactics.helpers import *
+from equanimity.factory import Factory
 
 class Stronghold(persistent.Persistent):
+    def create_factory(self, kind):
+        self.factories.append(Factory(kind))
+        return transaction.commit()
+        
     def __init__(self, field_element): #placeholder containers, need something smarter.
         self.stones = persistent.list.PersistentList()
         self.weapons = persistent.list.PersistentList()
-        self.units = persistent.list.PersistentList()
+        self.units = persistent.mapping.PersistentMapping()
         self.squads = persistent.list.PersistentList()
+        self.factories = persistent.list.PersistentList()
         self.capacity = 8 #squad points. scient == 1, nescient == 2
         #needs a value limit based on the value of the grid that contains it.
         self.defenders = Squad(kind='mins', element=field_element) #kind should be nescients.
         self.defender_locs = persistent.list.PersistentList()
-    
+        self.factories = persistent.list.PersistentList()
+        self.create_factory(field_element)
+        return transaction.commit()
+        
     def _add_stones(self, stones):
         """Extends self.stones with list of stones FOR TESTING."""
         #this should only be done by the harvest process.
@@ -48,34 +57,49 @@ class Stronghold(persistent.Persistent):
         """Takes a stone from stronghold and turns it into a Scient."""
         #this should only be done by the production process.
         if name == None: name = rand_string()
-        self.units.append(Scient(element, self.stones.pop(stone_num), name))
+        scient = Scient(element, self.stones.pop(stone_num), name)
+        self.units[scient.id] = scient
         self._p_changed = 1
         return transaction.commit()
         
-    def equip_scient(self, unit_num, weapon_num):
+    def equip_scient(self, unit_id, weapon_num):
         """Moves a weapon from the weapon list to a scient."""
-        scient = self.units[unit_num]
+        scient = self.units[unit_id]
         #WARNING! This is destructive.
         scient.equip(self.weapons.pop(weapon_num))
         scient._p_changed = 1
         self._p_changed = 1
         return transaction.commit()
     
-    def unequip_scient(self, unit_num):
+    def unequip_scient(self, unit_id):
         """Moves a weapon from a scient to the stronghold."""
-        scient = self.units[unit_num]
+        scient = self.units[unit_id]
         self.weapons.append(scient.unequip())
         scient._p_changed = 1
         self._p_changed = 1
         return transaction.commit()
     
-    def form_squad(self, unit_num_list=None, name=None):
+    def form_squad(self, unit_id_list=None, name=None):
         """Forms a squad and places it in the stronghold."""
         sq = Squad(name=name)
-        for n in unit_num_list:
-            sq.append(self.units.pop(n))
-        self.squads.append(sq)
-        self._p_changed = 1
+        try: 
+            for unit_id in unit_id_list:
+                unit = self.units[unit_id]
+                if not unit.container:
+                    sq.append(unit) #DOES NOT REMOVE UNIT FROM LIST.
+                else:
+                    raise Exception("%s is already in a container." %unit)
+            self.squads.append(sq)
+            self._p_changed = 1
+            return transaction.commit()
+        except:
+            return transaction.abort()
+            
+    def remove_squad(self, squad_num):
+        """Removes units from from self.units, effectively moving the squad out of the stronghold."""
+        squad = self.squads[squad_num]
+        for unit in squad:
+            del self.units[unit.id]
         return transaction.commit()
     
     def apply_locs_to_squad(self, squad, list_of_locs):
@@ -126,17 +150,51 @@ class Stronghold(persistent.Persistent):
         except:
             raise("There was an error moving squad to defenders.")
     
+    def add_unit_to(self, container, unit_id):
+        """Add unit to container."""
+        #wrapper to keep containers private.
+        self.container.append(self.units[unit_id])
+        self.container._p_changed = 1
+        return transaction.commit()
+        
+    def add_unit_to_defenders(self, unit_id):
+        return self.add_unit_to(self.defenders, unit_id)
+    
+    def add_unit_to_factory(self, factory_num, unit_id):
+        return self.add_unit_to(self.factories[factory_num], unit_id)
+        
+    def add_unit_to_squad(self, squad_num, unit_id):
+        return self.add_unit_to(self, self.squads[squad_num], unit_id)
+
+    def remove_unit_from(self, container, unit_id):
+        """remove unit from container."""
+        for n in xrange(len(container)):
+            if container[n].id == unit_id:
+                container[n].container = None
+                container.pop(n)
+        self.container._p_changed = 1
+        return transaction.commit()
+    
+    def remove_unit_from_defenders(self, unit_id):
+        return self.remove_unit_from(self.defenders, unit_id)
+        
+    def remove_unit_from_factory(self, factory_num, unit_id):
+        return self.remove_unit_from(self.factories[factory_num], unit_id)
+        
+    def remove_unit_from_squad(self, squad_num, unit_id):
+        return self.remove_unit_from(self.squads[squad_num], unit_id)
+        
     def transmute(self, target_stone):
         """"Converts stones from one type to another."""
         #2 to 1 for orth elements
         #4 to 1 for opp elements (which is the same as doing orth twice :)
         
-    def feed_units(self):
-        """attempts to feed units. sets Happens daily."""
-        #A scient eats their composition's worth of stones in 2 months.
-        #every two months from when the unit was born discount the inventory the unit's value.
-        #Two weeks without food a unit dies.
-        #1. feed scients first.
-        #2. feed nescients.
+    def feed_units(self, now):
+        """Attempts to feed units. Happens daily."""
+        # A scient eats their composition's worth of stones in 2 months.
+        # every two months from when the unit was born, discount the inventory the unit's value.
+        # Two weeks without food a unit dies.
+        # 1. feed scients first.
+        # 2. feed nescients.
         
         

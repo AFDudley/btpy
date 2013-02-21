@@ -61,6 +61,10 @@ class Clock():
         else:
             self.update()
             return self.uot_num[uot]
+
+    def get_delta(self, timedelta, uot):
+        """takes a timedelta and returns delta in game UoT."""
+        return timedelta.total_seconds() / self.duration[uot]
         
     def get_time(self, uot=None):
         self.update()

@@ -128,7 +128,7 @@ class Log(dict):
     def get_owner(self, unit_num):
         """takes unit number returns player/owner."""
         #slow lookup
-        target_squad = self['units'][unit_num].squad.name
+        target_squad = self['units'][unit_num].container.name
         for player in self['players']:
             for squad in player.squads:
                 if squad.name == target_squad:
@@ -234,7 +234,7 @@ class Game(object):
     def unit_map(self):
         """mapping of unit ids to objects, used for serialization."""
         mapping = {}
-        for unit in self.battlefield.units: mapping[unit] = id(unit)
+        for unit in self.battlefield.units: mapping[unit] = unit.id
         return mapping
     
     def map_unit(self):
@@ -280,7 +280,7 @@ class Game(object):
         if isinstance(old, dict):
             new = {}
             for key in old.keys():
-                new[str(id(key))] = old[key]
+                new[str(key.id)] = old[key]
             return new
         else:
             return None
@@ -289,14 +289,14 @@ class Game(object):
         if result != None:
             for t in result:
                 if isinstance(t[0], Unit):
-                    t[0] = id(t[0])
+                    t[0] = t[0].id
             return result
     
     def map_action(self, action):
         """replaces unit refrences to referencing their hash."""
         new = Action(**action)
         if new['unit'] != None:
-            new['unit'] = id(new['unit'])
+            new['unit'] = new['unit'].id
         else:
             new['unit'] = None
             #raise TypeError("Acting unit cannont be 'NoneType'")
@@ -314,7 +314,7 @@ class Game(object):
         # Needs more logic for handling turns/plies.
         action['when'] = now()
         action['num']  = num = self.state['num']
-        curr_unit = id(action['unit'])
+        curr_unit = action['unit'].id
         try:
             prev_unit = self.log['actions'][-1]['unit']
         except:
@@ -352,14 +352,14 @@ class Game(object):
                     text = self.battlefield.move_scient(action['unit'].location,
                                                         action['target'])
                     if text:
-                        text = [[id(action['unit']), action['target']]]
+                        text = [[action['unit'].id, action['target']]]
                 else:
                     raise Exception("hex_battle: Second action in ply must be different from first.")
             else:
                 text = self.battlefield.move_scient(action['unit'].location,
                                                     action['target'])
                 if text:
-                    text = [[id(action['unit']), action['target']]]
+                    text = [[action['unit'].id, action['target']]]
         
         elif action['type'] == 'attack':
             # If it's the second action in the ply and

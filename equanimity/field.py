@@ -20,7 +20,7 @@ class Field(persistent.Persistent):
         #self.element = get_element(self.grid.comp)
         self.stronghold  = Stronghold(self.element)
         self.battlequeue = persistent.list.PersistentList()
-        self.producers   = None #stuctures, input stones, output composites.
+        self.factories   = None #stuctures, input stones, output composites.
         self.state = 'produce' #Default state
     
         """

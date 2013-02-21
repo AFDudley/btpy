@@ -22,11 +22,13 @@ class Unit(Stone):
             self.name = self.__hash__()
         self.name = name
         self.location = location
+        self.container = None
         self.sex = sex
         self.DOB = now
         self.DOD = None
         self.last_fed = now
         self.val = self.value()
+        self.id = id(self)
         def __repr__(self):
             return self.name
 
@@ -100,6 +102,8 @@ class Scient(Unit):
         else:
             self.weapon_bonus = weapon_bonus
         self.equip_limit = Stone({E:1, F:1 ,I:1 ,W:1})
+        for element in ELEMENTS:
+            self.equip_limit.limit[element] = 256
         for i in self.equip_limit:
             self.equip_limit[i] = self.equip_limit[i] + self.comp[i] \
             + self.weapon_bonus[i]
@@ -255,10 +259,10 @@ class Squad(UserList):
         list.__setitem__(self, key, val)
         self.val += val.value()
         self.free_spaces -= size
-        key.squad = self
+        key.container = self
         
     def __delitem__(self, key):
-        del self.data[key].squad
+        self.data[key].container = None
         temp = self[key].value()
         self.free_spaces += self.unit_size(self[key])
         self.data.__delitem__(key)
@@ -272,7 +276,7 @@ class Squad(UserList):
         self.data.append(item)
         self.val += item.value()
         self.free_spaces -= size
-        item.squad = self
+        item.container = self
 
     def value(self):
         return self.val
