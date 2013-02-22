@@ -1,22 +1,109 @@
 import persistent
 import transaction
 
+
 import binary_tactics.stone
 from equanimity.wstone import Stone
 binary_tactics.stone.Stone = Stone #Monkey Patch
 from binary_tactics.units import Squad, Scient
 from binary_tactics.weapons import Sword, Bow, Wand, Glove
+from binary_tactics.const import ELEMENTS, E, F, I, W, ORTH, OPP
 
 from binary_tactics.helpers import *
 from equanimity.factory import Factory
+from equanimity.clock import Clock, now
 
+class Silo(Stone):
+    """A silo is a really big stone that returns stones when requested."""
+    def set_limit(self, limit):
+        self.limit.update(limit)
+        self._p_changed = 1
+        transaction.commit()
+    
+    def __init__(self, limit=None):
+        Stone.__init__(self)
+        #the limit will be set to 1.5 times a years harvest.
+        if limit != None:
+            self.set_limit(self, limit)
+    
+    def transmute(self, comp):
+        """attempts to transmute existing points into Stone of equested comp."""
+        #whoops this is an actual math problem.
+        #2 to 1 for orth elements
+        #4 to 1 for opp elements (which is the same as doing orth twice :)
+        negcomp = {"Earth": 0, "Fire":0, "Ice": 0, "Wind": 0}
+        for element in ELEMENTS:
+            neg = self.comp[element] - comp[element]
+            if neg < 0:
+                negcomp[element] += neg
+            else:
+                del negcomp[element]
+        
+        for element in sorted(negcomp.keys()):
+            cost = 2 * abs(negcomp[element]) #the abs is for clarity.
+            orthsum = sum([self.comp[x] for x in ORTH[element]])
+            remainder = orthsum - cost
+            if remainder < 0:
+                new_cost = 2 * abs(remainder)
+                if new_cost > self.comp[OPP[element]]:
+                    raise Exception("There are not enough points to complete the transmutation.")
+                else:
+                    self.comp[ORTH[element][0]] = 0
+                    self.comp[ORTH[element][1]] = 0
+                    self.comp[OPP[element]] -= new_cost
+
+            else:
+                new_remainder = self.comp[ORTH[element][0]] - cost
+                if new_remainder > 0:
+                    self.comp[ORTH[element][0]] -= cost
+                else:
+                    self.comp[ORTH[element][0]] = 0
+                    self.comp[ORTH[element][1]] -= new_remainder
+        #s = Stone()
+        #s.limit.update(comp)
+        #s.comp = comp #nasty hack for "Big" stones.
+        return Stone(comp)
+        
+    def get(self, comp):
+        """Attempts to split the requsted stone, attempts transmuation if split fails."""
+        if sum(comp.values()) > self.value():
+            raise ValueError("There are not enough points in the silo to create a stone of %s" %comp)
+        else:
+            #these will fail if comp > limit
+            try:
+                s = self.split(comp)
+                self._p_changed = 1
+                transaction.commit()
+                return s
+            except:
+                s = self.transmute(comp)
+                self._p_changed = 1
+                transaction.commit()
+                return s
+                
+    def imbue_list(self, loS):
+        """surplus is destroyed."""
+        for stone in loS:
+            self.imbue(stone)
+            
 class Stronghold(persistent.Persistent):
     def create_factory(self, kind):
-        self.factories.append(Factory(kind))
+        f = Factory(kind)
+        #could eval this...
+        if f.kind =='Stable':
+            self.stable = f
+        elif f.kind == 'Armory':
+            self.armory = f
+        elif f.kind == 'Home':
+            self.home = f
+        elif f.kind == 'Farm':
+            self.farm = f
+        self._p_changed = 1
         return transaction.commit()
         
-    def __init__(self, field_element): #placeholder containers, need something smarter.
-        self.stones = persistent.list.PersistentList()
+    def __init__(self, field_element):
+        self.clock = Clock()
+        self.silo = Silo()
         self.weapons = persistent.list.PersistentList()
         self.units = persistent.mapping.PersistentMapping()
         self.squads = persistent.list.PersistentList()
@@ -25,40 +112,46 @@ class Stronghold(persistent.Persistent):
         #needs a value limit based on the value of the grid that contains it.
         self.defenders = Squad(kind='mins', element=field_element) #kind should be nescients.
         self.defender_locs = persistent.list.PersistentList()
-        self.factories = persistent.list.PersistentList()
+        self.stable = None
+        self.armory = None
+        self.home = None
+        self.farm = None
         self.create_factory(field_element)
         return transaction.commit()
-        
-    def _add_stones(self, stones):
-        """Extends self.stones with list of stones FOR TESTING."""
-        #this should only be done by the harvest process.
-        self.stones.extend(stones)
-        self._p_changed = 1
-        return transaction.commit()
-
-    def split_stone(self, stone, comp):
-        """Splits comp from stone and places it in stones."""
-        self.stones.append(stone.split(comp))
-        stone._p_changed = 1
-        self.stones._p_changed = 1
-        return transaction.commit()
-        
-    def _form_weapon(self, element, stone_num, weap_type):
+    
+    def form_weapon(self, element, comp, weap_type):
         """Takes a stone from stronghold and turns it into a Weapon."""
         #for testing!!!!!
         #!!!!!!!!WEAP_TYPE NEEDS TO BE CHECKED BEFORE PASSED TO EVAL!!!!!!!!!!!
         #(or I could just fix Weapon, duh)
-        weapon = eval(weap_type)(element, self.stones.pop(stone_num))
+        weapon = eval(weap_type)(element, self.silo.get(comp))
         self.weapons.append(weapon)
         self._p_changed = 1
         return transaction.commit()
+    
+    def imbue_weapon(self, comp, weapon_num):
+        """Imbue a weapon with stone of comp from silo."""
+        stone = self.silo.get(comp)
+        self.silo._p_changed = 1
+        self.weapons[weapon_num].imbue(stone)
+        self.weapons[weapon_num]._p_changed = 1
+        return transaction.commit()
+    
+    def split_weapon(self, comp, weapon_num):
+        """Splits comp from weapon, places it in silo."""
+        stone = self.weapons[weapon_num].split(comp)
+        self.silo.imbue(stone)
+        self.weapons[weapon_num]._p_changed = 1
+        self.silo._p_changed = 1
+        return transaction.commit()
         
-    def _form_scient(self, element, stone_num, name=None):
+    def form_scient(self, element, comp, name=None):
         """Takes a stone from stronghold and turns it into a Scient."""
         #this should only be done by the production process.
         if name == None: name = rand_string()
-        scient = Scient(element, self.stones.pop(stone_num), name)
+        scient = Scient(element, self.silo.get(comp), name)
         self.units[scient.id] = scient
+        self.feed_unit(scient.id)
         self._p_changed = 1
         return transaction.commit()
         
@@ -70,7 +163,19 @@ class Stronghold(persistent.Persistent):
         scient._p_changed = 1
         self._p_changed = 1
         return transaction.commit()
-    
+        
+    def imbue_scient(self, comp, unit_id):
+        """Imbue a scient with stone of comp from silo."""
+        stone = self.silo.get(comp)
+        self.silo._p_changed = 1
+        scient = self.units[unit_id]
+        scient.imbue(stone)
+        scient._p_changed = 1
+        if scient.container:
+            scient.container.update_value()
+            scient.container._p_changed = 1
+        return transaction.commit()
+        
     def unequip_scient(self, unit_id):
         """Moves a weapon from a scient to the stronghold."""
         scient = self.units[unit_id]
@@ -119,7 +224,7 @@ class Stronghold(persistent.Persistent):
     def set_defender_locs(self, list_of_locs):
         return self.apply_locs_to_squad(self.defenders, list_of_locs)
             
-    def _set_defenders(self, squad_num):
+    def set_defenders(self, squad_num):
         """If defenders is empty set squad as defenders."""
         # I don't remember how transactions work so I broke this function in
         # two, which might actually make it worse...
@@ -133,7 +238,7 @@ class Stronghold(persistent.Persistent):
         self._p_changed = 1
         return transaction.commit()
     
-    def _unset_defenders(self):
+    def unset_defenders(self):
         """Moves old defenders into stronghold"""
         #use wisely.
         self.squads.append(self.defenders)
@@ -160,9 +265,16 @@ class Stronghold(persistent.Persistent):
     def add_unit_to_defenders(self, unit_id):
         return self.add_unit_to(self.defenders, unit_id)
     
-    def add_unit_to_factory(self, factory_num, unit_id):
-        return self.add_unit_to(self.factories[factory_num], unit_id)
-        
+    def add_unit_to_factory(self, kind, unit_id):
+        if kind == 'Stable':
+            return self.add_unit_to(self.stable, unit_id)
+        elif kind == 'Armory':
+            return self.add_unit_to(self.armory, unit_id)
+        elif kind == 'Home':
+            return self.add_unit_to(self.home, unit_id)
+        elif kind == 'Farm':
+            return self.add_unit_to(self.farm, unit_id)
+    
     def add_unit_to_squad(self, squad_num, unit_id):
         return self.add_unit_to(self, self.squads[squad_num], unit_id)
 
@@ -178,23 +290,65 @@ class Stronghold(persistent.Persistent):
     def remove_unit_from_defenders(self, unit_id):
         return self.remove_unit_from(self.defenders, unit_id)
         
-    def remove_unit_from_factory(self, factory_num, unit_id):
-        return self.remove_unit_from(self.factories[factory_num], unit_id)
-        
+    def remove_unit_from_factory(self, kind, unit_id):
+        if kind == 'Stable':
+            return self.remove_unit_from(self.stable, unit_id)
+        elif kind == 'Armory':
+            return self.remove_unit_from(self.armory, unit_id)
+        elif kind == 'Home':
+            return self.remove_unit_from(self.home, unit_id)
+        elif kind == 'Farm':
+            return self.remove_unit_from(self.farm, unit_id)
+    
     def remove_unit_from_squad(self, squad_num, unit_id):
         return self.remove_unit_from(self.squads[squad_num], unit_id)
+    
+    def bury_unit(self, unit_id):
+        """Bury units that die outside of battle."""
+        unit = self.units[unit_id]
+        self.unequip_scient(unit)
+        self.remove_unit_from(unit.container, unit.id)
+        remains = Stone({k: v/2 for k,v in unit.iteritems()})
+        self.silo.imbue(remains)
+        return
         
-    def transmute(self, target_stone):
-        """"Converts stones from one type to another."""
-        #2 to 1 for orth elements
-        #4 to 1 for opp elements (which is the same as doing orth twice :)
-        
-    def feed_units(self, now):
-        """Attempts to feed units. Happens daily."""
-        # A scient eats their composition's worth of stones in 2 months.
+    def feed_unit(self, unit_id): #maybe it should take a clock.
+        """feeds a unit from the silo, most they can be fed is every 60 days"""
+        # A scient eats their composition's worth of stones in 2 months. (60 days)
         # every two months from when the unit was born, discount the inventory the unit's value.
         # Two weeks without food a unit dies.
+    
+        def feed():
+            self.silo.get(unit.comp)
+            self.silo._p_changed = 1
+            unit.fed_on = now
+            unit._p_changed = 1
+            return transaction.commit()
+            
+        if unit.fed_on == None:
+            feed()
+        else:
+            unit = self.units[unit_id]
+            now = now()
+            delta = now - unit.fed_on
+            dsecs = delta.total_seconds()
+            if dsecs > (self.clock.duration['day'] * 60):
+                if dsecs < (self.clock.duration['day'] * 72):
+                    feed()
+                else:
+                    self.bury_unit(unit_id)
+            else:
+                pass #unit already fed.
+    
+    def feed_units(self):
+        """Attempts to feed units. check happens every game day."""
         # 1. feed scients first.
         # 2. feed nescients.
-        
+        now = now()
+        for uid,unit in self.units.iteritems():
+            d = now - unit.fed_on
+            dsecs = d.total_seconds()
+            if dsecs > (self.clock.duration['day'] * 60):
+                self.feed_unit(uid)
+            
         

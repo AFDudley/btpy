@@ -3,6 +3,9 @@ from datetime import datetime, timedelta
 import json
 from equanimity.world_zeo import World_zeo
 
+def now():
+    return datetime.utcnow()
+
 class Clock():
     """World time related functions."""
     def get_name(self, uot):
@@ -29,7 +32,7 @@ class Clock():
         elif num == 5: return "Six"
     
     def update(self):
-        since_dob = (datetime.utcnow() - self.DOB).total_seconds()
+        since_dob = (now() - self.DOB).total_seconds()
         dur = self.duration
         uot_num = {}
         uot_name = {}
@@ -57,7 +60,7 @@ class Clock():
     def since_dob(self, uot=None):
         """Returns total seconds since DOB in game Units of Time. or seconds."""
         if uot == None:
-            return (datetime.utcnow() - self.DOB).total_seconds()
+            return (now() - self.DOB).total_seconds()
         else:
             self.update()
             return self.uot_num[uot]

@@ -12,6 +12,7 @@ from binary_tactics.helpers import *
 
 class Factory(persistent.Persistent, UserList):
     """contains a number of Units. Takes a list of Units"""
+    #TODO properly superclass this and Squad
     def unit_size(self, object):
         if isinstance(object, Unit) == False:
             raise TypeError("Factories can contain only Units")
@@ -63,8 +64,18 @@ class Factory(persistent.Persistent, UserList):
         self.free_spaces -= size
         item.factory = self
 
+    def update_value(self):
+        new_val = 0
+        for u in self.data:
+            new_val += u.value()
+        self.val = new_val
+
     def value(self):
         return self.val
     
     def upgrade(self):
         self.free_spaces += 1
+
+    def produce(self, days = 1):
+        pass
+        

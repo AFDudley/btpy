@@ -26,7 +26,7 @@ class Unit(Stone):
         self.sex = sex
         self.DOB = now
         self.DOD = None
-        self.last_fed = now
+        self.fed_on = None
         self.val = self.value()
         self.id = id(self)
         def __repr__(self):
@@ -203,6 +203,7 @@ class Nescient(Unit):
        
 class Squad(UserList):
     """contains a number of Units. Takes a list of Units"""
+    #TODO properly superclass with factory.
     def unit_size(self, object):
         if isinstance(object, Unit) == False:
             raise TypeError("Squads can contain only Units")
@@ -278,6 +279,12 @@ class Squad(UserList):
         self.free_spaces -= size
         item.container = self
 
+    def update_value(self):
+        new_val = 0
+        for u in self.data:
+            new_val += u.value()
+        self.val = new_val
+    
     def value(self):
         return self.val
         

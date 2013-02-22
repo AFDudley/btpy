@@ -28,16 +28,15 @@ try:
     afs = af.stronghold
 
     #put Fire min stones into stronghold.
-    afs._add_stones([Stone((2,4,0,2)) for n in xrange(4)])
+    afs.silo.imbue_list([Stone((2,4,0,2)) for n in xrange(4)])
 
     #create scients.
-    for n in xrange(4): afs._form_scient('Fire', -1)
+    for n in xrange(4): afs.form_scient('Fire', Stone((2,4,0,2)).comp)
 
     #put empty stones into stronhold.
-    afs._add_stones([Stone() for n in xrange(4)])
 
     #create weapons.
-    for n in WEP_LIST: afs._form_weapon('Fire', -1, n)
+    for n in WEP_LIST: afs.form_weapon('Fire', Stone().comp, n)
 
     #equip scients.
     for n in xrange(4): afs.equip_scient(afs.units.keys()[n], -1)

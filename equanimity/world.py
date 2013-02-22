@@ -64,6 +64,7 @@ class World(object): #this object needs to be refactored.
             pass
         self.root['dayLength'] = 240 #length of game day in seconds.
         self.root['resigntime'] = 21600#amount of time in seconds before attacker is forced to resign.
+        self.root['maxduration'] = 5040 #in gametime days (5040 is one generation, two weeks real-time)
         self.root['version'] = version
         self.root['x'] = x
         self.root['y'] = y
