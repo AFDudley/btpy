@@ -10,8 +10,8 @@ from binary_tactics.weapons import Sword, Bow, Wand, Glove
 from binary_tactics.const import ELEMENTS, E, F, I, W, ORTH, OPP
 
 from binary_tactics.helpers import *
-from equanimity.factory import Factory
-from equanimity.clock import Clock, now
+from equanimity.factory import Factory, Stable
+from equanimity.clock import now
 
 class Silo(Stone):
     """A silo is a really big stone that returns stones when requested."""
@@ -51,7 +51,7 @@ class Silo(Stone):
                     self.comp[ORTH[element][0]] = 0
                     self.comp[ORTH[element][1]] = 0
                     self.comp[OPP[element]] -= new_cost
-
+            
             else:
                 new_remainder = self.comp[ORTH[element][0]] - cost
                 if new_remainder > 0:
@@ -63,7 +63,7 @@ class Silo(Stone):
         #s.limit.update(comp)
         #s.comp = comp #nasty hack for "Big" stones.
         return Stone(comp)
-        
+    
     def get(self, comp):
         """Attempts to split the requsted stone, attempts transmuation if split fails."""
         if sum(comp.values()) > self.value():
@@ -80,34 +80,46 @@ class Silo(Stone):
                 self._p_changed = 1
                 transaction.commit()
                 return s
-                
+    
     def imbue_list(self, loS):
         """surplus is destroyed."""
         for stone in loS:
             self.imbue(stone)
-            
+
 class Stronghold(persistent.Persistent):
     def create_factory(self, kind):
+        """Adds a factory to a stronghold, raises exception if factory already exists."""
         f = Factory(kind)
-        #could eval this...
+        #factories should cost something.
         if f.kind =='Stable':
-            self.stable = f
+            if not self.stable:
+                self.stable = Stable()
+            else:
+                raise Exception("This stronghold already has a stable.")
         elif f.kind == 'Armory':
-            self.armory = f
+            if not self.armory:
+                self.armory = Armory()
+            else:
+                raise Exception("This stronghold already has an armory.")
         elif f.kind == 'Home':
-            self.home = f
+            if not self.home:
+                self.home = Home()
+            else:
+                raise Exception("This stronghold already has a home.")
         elif f.kind == 'Farm':
-            self.farm = f
+            if not self.farm:
+                self.farm = Farm()
+            else:
+                raise Exception("This stronghold already has a farm.")
         self._p_changed = 1
         return transaction.commit()
-        
-    def __init__(self, field_element):
-        self.clock = Clock()
+    
+    def __init__(self, field_element, clock):
+        self.clock = clock
         self.silo = Silo()
         self.weapons = persistent.list.PersistentList()
         self.units = persistent.mapping.PersistentMapping()
         self.squads = persistent.list.PersistentList()
-        self.factories = persistent.list.PersistentList()
         self.capacity = 8 #squad points. scient == 1, nescient == 2
         #needs a value limit based on the value of the grid that contains it.
         self.defenders = Squad(kind='mins', element=field_element) #kind should be nescients.
@@ -144,26 +156,16 @@ class Stronghold(persistent.Persistent):
         self.weapons[weapon_num]._p_changed = 1
         self.silo._p_changed = 1
         return transaction.commit()
-        
+    
     def form_scient(self, element, comp, name=None):
         """Takes a stone from stronghold and turns it into a Scient."""
-        #this should only be done by the production process.
         if name == None: name = rand_string()
         scient = Scient(element, self.silo.get(comp), name)
         self.units[scient.id] = scient
         self.feed_unit(scient.id)
         self._p_changed = 1
         return transaction.commit()
-        
-    def equip_scient(self, unit_id, weapon_num):
-        """Moves a weapon from the weapon list to a scient."""
-        scient = self.units[unit_id]
-        #WARNING! This is destructive.
-        scient.equip(self.weapons.pop(weapon_num))
-        scient._p_changed = 1
-        self._p_changed = 1
-        return transaction.commit()
-        
+    
     def imbue_scient(self, comp, unit_id):
         """Imbue a scient with stone of comp from silo."""
         stone = self.silo.get(comp)
@@ -175,7 +177,16 @@ class Stronghold(persistent.Persistent):
             scient.container.update_value()
             scient.container._p_changed = 1
         return transaction.commit()
-        
+    
+    def equip_scient(self, unit_id, weapon_num):
+        """Moves a weapon from the weapon list to a scient."""
+        scient = self.units[unit_id]
+        #WARNING! This is destructive.
+        scient.equip(self.weapons.pop(weapon_num))
+        scient._p_changed = 1
+        self._p_changed = 1
+        return transaction.commit()
+    
     def unequip_scient(self, unit_id):
         """Moves a weapon from a scient to the stronghold."""
         scient = self.units[unit_id]
@@ -187,7 +198,7 @@ class Stronghold(persistent.Persistent):
     def form_squad(self, unit_id_list=None, name=None):
         """Forms a squad and places it in the stronghold."""
         sq = Squad(name=name)
-        try: 
+        try:
             for unit_id in unit_id_list:
                 unit = self.units[unit_id]
                 if not unit.container:
@@ -199,7 +210,7 @@ class Stronghold(persistent.Persistent):
             return transaction.commit()
         except:
             return transaction.abort()
-            
+    
     def remove_squad(self, squad_num):
         """Removes units from from self.units, effectively moving the squad out of the stronghold."""
         squad = self.squads[squad_num]
@@ -217,13 +228,18 @@ class Stronghold(persistent.Persistent):
             return transaction.commit()
         else:
             raise Exception("The squad and the list of locations must be the same length.")
-            
-    def set_squad_locs(self, squad_num, list_of_locs):
+    
+    def apply_squad_locs(self, squad_num, list_of_locs):
         return self.apply_locs_to_squad(self.squads[squad_num], list_of_locs)
     
     def set_defender_locs(self, list_of_locs):
-        return self.apply_locs_to_squad(self.defenders, list_of_locs)
-            
+        self.defender_locs = list_of_locs
+        self._p_changed = 1
+        return transaction.commit()
+    
+    def apply_defender_locs(self):
+        return self.apply_locs_to_squad(self.defenders, self.defender_locs)
+    
     def set_defenders(self, squad_num):
         """If defenders is empty set squad as defenders."""
         # I don't remember how transactions work so I broke this function in
@@ -261,7 +277,7 @@ class Stronghold(persistent.Persistent):
         self.container.append(self.units[unit_id])
         self.container._p_changed = 1
         return transaction.commit()
-        
+    
     def add_unit_to_defenders(self, unit_id):
         return self.add_unit_to(self.defenders, unit_id)
     
@@ -277,7 +293,7 @@ class Stronghold(persistent.Persistent):
     
     def add_unit_to_squad(self, squad_num, unit_id):
         return self.add_unit_to(self, self.squads[squad_num], unit_id)
-
+    
     def remove_unit_from(self, container, unit_id):
         """remove unit from container."""
         for n in xrange(len(container)):
@@ -289,7 +305,7 @@ class Stronghold(persistent.Persistent):
     
     def remove_unit_from_defenders(self, unit_id):
         return self.remove_unit_from(self.defenders, unit_id)
-        
+    
     def remove_unit_from_factory(self, kind, unit_id):
         if kind == 'Stable':
             return self.remove_unit_from(self.stable, unit_id)
@@ -311,20 +327,20 @@ class Stronghold(persistent.Persistent):
         remains = Stone({k: v/2 for k,v in unit.iteritems()})
         self.silo.imbue(remains)
         return
-        
+    
     def feed_unit(self, unit_id): #maybe it should take a clock.
         """feeds a unit from the silo, most they can be fed is every 60 days"""
         # A scient eats their composition's worth of stones in 2 months. (60 days)
         # every two months from when the unit was born, discount the inventory the unit's value.
         # Two weeks without food a unit dies.
-    
+        
         def feed():
             self.silo.get(unit.comp)
             self.silo._p_changed = 1
             unit.fed_on = now
             unit._p_changed = 1
             return transaction.commit()
-            
+        
         if unit.fed_on == None:
             feed()
         else:
@@ -344,11 +360,11 @@ class Stronghold(persistent.Persistent):
         """Attempts to feed units. check happens every game day."""
         # 1. feed scients first.
         # 2. feed nescients.
+        #should not happen when field is embattled.
         now = now()
         for uid,unit in self.units.iteritems():
             d = now - unit.fed_on
             dsecs = d.total_seconds()
             if dsecs > (self.clock.duration['day'] * 60):
                 self.feed_unit(uid)
-            
         
