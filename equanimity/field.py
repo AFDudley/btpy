@@ -18,7 +18,9 @@ class Field(persistent.Persistent):
         self.grid = Grid()
         self.element = 'Ice' #For testing
         #self.element = get_element(self.grid.comp)
-        self.stronghold  = Stronghold(self.element)
+        self.clock = Clock()
+        self.stronghold  = Stronghold(self.element, clock)
+        self.plantings   = persistent.mapping.PersistentMapping()
         self.battlequeue = persistent.list.PersistentList()
         self.state = 'produce' #Default state
         """
@@ -26,7 +28,7 @@ class Field(persistent.Persistent):
             range between 4 and 360 minutes, default is 4 (in seconds)
         """
         self.ply_time = ply_time
-        
+    
     def set_owner(self, owner):
         self.owner = owner
         return tranaction.commit()
@@ -34,19 +36,19 @@ class Field(persistent.Persistent):
     def change_state(self):
         if self.battleque:
             self.state = 'battle'
-        elif self.element == Clock().get_time('season'):
+        elif self.element == self.clock.get_time('season'):
             self.state = 'harvest'
         else:
             self.state = 'produce'
         return transaction.commit()
-
+    
     def get_defenders(self):
         """gets the defenders of a Field."""
         try:
             return self.stronghold.defenders
         except:
             raise Exception("Stronghold has no defenders.")
-            
+    
     def set_stronghold_capacity(self):
         """Uses grid.value to determine stronghold capacity."""
         #squad points. scient = 1 nescient = 2
@@ -56,7 +58,7 @@ class Field(persistent.Persistent):
         self.stronghold.capacity = int(ceil((self.grid.value() + 4) / 64.0)) * 8
         self.stronghold._p_changed = 1
         return transaction.commit()
-        
+    
     def get_tile_comps(self):
         """returns a list of stones 1/8th the value of the tile comps."""
         stone_list =[]
@@ -68,7 +70,7 @@ class Field(persistent.Persistent):
                 if stone.value() != 0:
                     stone_list += [stone]
         return stone_list
-        
+    
     def set_silo_limit(self):
         """Sets the silo limit to 1 year's worth of stones."""
         #this uses get_tile_comps so the / 8 is only maintained in one place.
@@ -77,17 +79,24 @@ class Field(persistent.Persistent):
             for element in limit.values():
                 limit[element] += stone[element]
         return self.stronghold.silo.set_limit(limit)
-        
-    def plant(self, tileLoc, stone):
-        """Plants a stone on a tile."""
-        self.grid.imbue_tile(tileLoc, stone)
-        self.grid[tileLoc[0]][tileLoc[1]]._p_changed = 1
-        self.grid._p_changed = 1
-        self.element = get_element(self.grid.comp)
-        self._p_changed = 1
-        self.set_stronghold_capacity()
-        self.set_silo_limit()
+    
+    def add_planting(self, tileLoc, comp):
+        self.planting[tileLoc] = comp, sum(comp.values())
         return transaction.commit()
+    
+    def plant(self):
+        """Plants from self.plantlings"""
+        if self.stronghold.farm.produce(self.plantings):
+            for tileLoc, comp  in self.plantings.iteritems():
+                stone = self.stronghold.silo.get(comp)
+                self.grid.imbue_tile(tileLoc, stone)
+                self.grid[tileLoc[0]][tileLoc[1]]._p_changed = 1
+                self.grid._p_changed = 1
+                self.element = get_element(self.grid.comp)
+                self._p_changed = 1
+                self.set_stronghold_capacity()
+                self.set_silo_limit()
+                return transaction.commit()
     
     def harvest(self):
         """returns set of stones generated at harvest"""
@@ -95,5 +104,5 @@ class Field(persistent.Persistent):
         #the stronghold somehow.
         #happens once a year.
         return self.stronghold.silo.imbue_list(self.get_tile_comps())
-        
+
 
