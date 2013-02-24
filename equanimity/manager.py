@@ -6,7 +6,7 @@ from ZODB import DB
 from twisted.python import log
 from twisted.internet import reactor
 from twisted.web import static, proxy, server
-from equanimity.world_zeo import World_zeo
+from equanimity.zeo import Zeo
 import field_server
 import battle_server
 import auth_server
@@ -35,7 +35,7 @@ class Manager():
     def __init__(self, host='127.0.0.1', zeo_host='127.0.0.1', zeo_port='9100'):
         self.host = host
         self.next_port = int(zeo_port)
-        self.world_zeo = World_zeo((zeo_host, zeo_port))
+        self.zeo = Zeo((zeo_host, zeo_port))
         self.site_root = static.File("./web")
         self.site = server.Site(self.site_root)
         self.workers = {}

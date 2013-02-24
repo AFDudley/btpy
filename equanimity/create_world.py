@@ -8,7 +8,6 @@ from equanimity.world import wPlayer, World
 
 w = World()
 wr = w.root
-w.open_connection()
 try:
     w.create()
 
@@ -46,7 +45,8 @@ try:
 
     #set squad locations
     df.stronghold.set_defender_locs([(6,4), (7,4), (8,4,), (9,4)])
-    afs.set_squad_locs(0, [(6,10), (7,10), (8,10), (9,10)])
+    df.stronghold.apply_defender_locs()
+    afs.apply_squad_locs(0, [(6,10), (7,10), (8,10), (9,10)])
 
     #move squad to battlequeue
     w.move_squad(af, -1, df)

@@ -15,7 +15,7 @@ from cyclone import jsonrpc
 from twisted.python import log
 from twisted.internet import reactor, defer, task
 
-from equanimity.world_zeo import World_zeo
+from equanimity.zeo import Zeo
 
 #One day logs of battles will need to go into a database
 #DO NOT UNCOMMENT.
@@ -180,8 +180,8 @@ def main(args):
                 write_battlelog()
                 reactor.stop()
                 
-    world_zeo = World_zeo()
-    world  = world_zeo.root
+    zeo = Zeo()
+    world  = zeo.root
     maxsecs = timedelta(0, world['resigntime'])
     world_coords = coords
     #this copy is really important, copies the objects out of the zeo and into memory.

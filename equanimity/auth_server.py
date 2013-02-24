@@ -3,7 +3,7 @@ import hashlib
 import cyclone.web
 from twisted.python import log
 from twisted.internet import reactor, defer
-from equanimity.world_zeo import World_zeo
+from equanimity.zeo import Zeo
 
 class BaseHandler(cyclone.web.RequestHandler):
     def get_current_user(self):
@@ -82,7 +82,7 @@ class LogoutHandler(BaseHandler):
         #self.redirect("/")
     
 def main():
-    zeo = World_zeo()
+    zeo = Zeo()
     static_path = "./web"
     application = cyclone.web.Application([
         (r"/static/(.*)", cyclone.web.StaticFileHandler, {"path": static_path}),

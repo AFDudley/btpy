@@ -10,7 +10,7 @@ from binary_tactics.weapons import Sword, Bow, Wand, Glove
 from binary_tactics.const import ELEMENTS, E, F, I, W, ORTH, OPP
 
 from binary_tactics.helpers import *
-from equanimity.factory import Factory, Stable
+from equanimity.factory import Stable, Armory, Home, Farm
 from equanimity.clock import now
 
 class Silo(Stone):
@@ -89,24 +89,23 @@ class Silo(Stone):
 class Stronghold(persistent.Persistent):
     def create_factory(self, kind):
         """Adds a factory to a stronghold, raises exception if factory already exists."""
-        f = Factory(kind)
         #factories should cost something.
-        if f.kind =='Stable':
+        if kind =='Stable' or kind =='Earth':
             if not self.stable:
                 self.stable = Stable()
             else:
                 raise Exception("This stronghold already has a stable.")
-        elif f.kind == 'Armory':
+        elif kind == 'Armory' or kind == 'Fire':
             if not self.armory:
                 self.armory = Armory()
             else:
                 raise Exception("This stronghold already has an armory.")
-        elif f.kind == 'Home':
+        elif kind == 'Home' or kind == 'Ice':
             if not self.home:
                 self.home = Home()
             else:
                 raise Exception("This stronghold already has a home.")
-        elif f.kind == 'Farm':
+        elif kind == 'Farm' or kind == 'Wind':
             if not self.farm:
                 self.farm = Farm()
             else:
@@ -334,23 +333,23 @@ class Stronghold(persistent.Persistent):
         # every two months from when the unit was born, discount the inventory the unit's value.
         # Two weeks without food a unit dies.
         
-        def feed():
+        def feed(unit, lnow):
             self.silo.get(unit.comp)
             self.silo._p_changed = 1
             unit.fed_on = now
             unit._p_changed = 1
             return transaction.commit()
         
+        unit = self.units[unit_id]
+        lnow = now()
         if unit.fed_on == None:
-            feed()
+            feed(unit, lnow)
         else:
-            unit = self.units[unit_id]
-            now = now()
-            delta = now - unit.fed_on
+            delta = lnow - unit.fed_on
             dsecs = delta.total_seconds()
             if dsecs > (self.clock.duration['day'] * 60):
                 if dsecs < (self.clock.duration['day'] * 72):
-                    feed()
+                    feed(unit, lnow)
                 else:
                     self.bury_unit(unit_id)
             else:

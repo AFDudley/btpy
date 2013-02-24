@@ -6,14 +6,20 @@ import transaction
 import logging
 logging.basicConfig()
 
-class World_zeo(object):
+class Zeo(object):
+    def open(self):
+        self.conn = self.db.open()
+        self.root = self.conn.root()
+        
     def __init__(self, addr=('localhost', 9100)):
         self.addr = addr
         self.storage = ClientStorage.ClientStorage(self.addr)
         self.db = DB(self.storage)
-        self.conn = self.db.open()
-        self.root = self.conn.root()
+        self.open()
     
+    def close(self):
+        return self.db.close()
+        
     def get_username(self, username): #FIX
         self.conn.sync()
         return self.root['Players'][username].password
@@ -29,4 +35,4 @@ class World_zeo(object):
     
 if __name__ == '__main__':
     from equanimity.world import *
-    world = World_zeo().root
+    world = Zeo().root

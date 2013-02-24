@@ -1,7 +1,7 @@
 import sys
 import cyclone.web
 from twisted.internet import reactor
-from equanimity.world_zeo import World_zeo
+from equanimity.zeo import Zeo
 
 class BaseHandler(cyclone.web.RequestHandler):
     def get_current_user(self):
@@ -17,8 +17,8 @@ def main(args): #improve.
     global world_coords
     world_coords = str(args[2])
     
-    world_zeo = World_zeo(zeo_addr)
-    #world  = world_zeo.root
+    zeo = Zeo(zeo_addr)
+    #world  = zeo.root
     app = cyclone.web.Application([(r"/", Handler)])
     
     reactor.listenTCP(lport, app)

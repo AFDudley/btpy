@@ -19,7 +19,7 @@ class Field(persistent.Persistent):
         self.element = 'Ice' #For testing
         #self.element = get_element(self.grid.comp)
         self.clock = Clock()
-        self.stronghold  = Stronghold(self.element, clock)
+        self.stronghold  = Stronghold(self.element, self.clock)
         self.plantings   = persistent.mapping.PersistentMapping()
         self.battlequeue = persistent.list.PersistentList()
         self.state = 'produce' #Default state

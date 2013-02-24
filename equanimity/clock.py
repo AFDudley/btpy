@@ -1,7 +1,8 @@
 import sys
 from datetime import datetime, timedelta
 import json
-from equanimity.world_zeo import World_zeo
+from equanimity.zeo import Zeo
+import copy
 
 def now():
     return datetime.utcnow()
@@ -44,9 +45,9 @@ class Clock():
         self.uot_name = uot_name
         
     def __init__(self, addr=('localhost', 9100)):
-        self.world = World_zeo(addr).root
-        self.DOB = self.world['DOB']
-        self.duration = {'day': self.world['dayLength']}
+        world = Zeo(addr)
+        self.DOB = copy.deepcopy(world.root['DOB'])
+        self.duration = {'day': copy.deepcopy(world.root['dayLength'])}
         self.duration['week'] = self.duration['day'] * 6
         self.duration['month'] = self.duration['week'] * 5
         self.duration['season'] = self.duration['month'] * 3
@@ -56,7 +57,8 @@ class Clock():
         self.uot_name = {'day': 'one', 'week': 'one', 'month': 'one', 'season': 'Earth', 'year': 'one', 'generation': 'one'}
         #Get uot_num and uot_name correct.
         self.update()
-    
+        world.db.close()
+        
     def since_dob(self, uot=None):
         """Returns total seconds since DOB in game Units of Time. or seconds."""
         if uot == None:
