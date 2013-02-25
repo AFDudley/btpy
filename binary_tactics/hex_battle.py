@@ -231,6 +231,15 @@ class Game(object):
         self.log['owners'] = self.log.get_owners()
         self.state['old_defsquad_hp'] = self.battlefield.defsquad.hp()
     
+    def put_squads_on_field(self):
+        """Puts the squads on the battlefield."""
+        btl = self.battlefield
+        for squad_num in xrange(len(btl.squads)):
+            for unit_num in xrange(len(btl.squads[squad_num])):
+                loc = btl.squads[squad_num][unit_num].location
+                btl.squads[squad_num][unit_num].location = None
+                btl.place_object(btl.squads[squad_num][unit_num], loc)
+    
     def unit_map(self):
         """mapping of unit ids to objects, used for serialization."""
         mapping = {}
@@ -314,7 +323,10 @@ class Game(object):
         # Needs more logic for handling turns/plies.
         action['when'] = now()
         action['num']  = num = self.state['num']
-        curr_unit = action['unit'].id
+        try:
+            curr_unit = action['unit'].id
+        except:
+            curr_unit = None
         try:
             prev_unit = self.log['actions'][-1]['unit']
         except:
