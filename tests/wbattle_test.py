@@ -1,14 +1,5 @@
-#
-#  battle_test.py
-#  
-#
-#  Created by RiX on 3/22/10.
-#  Copyright (c) 2010 A. Frederick Dudley. All rights reserved.
-#
-
-from binary_tactics.zodb_hex_battle import Game, Action
+from equanimity.battle import Game, Action
 from stores.yaml_store import load
-from binary_tactics.hex_battlefield import Battlefield
 from binary_tactics.player import Player
 from binary_tactics.grid import Loc
 

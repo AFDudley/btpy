@@ -1,21 +1,3 @@
-#DO NOT USE!!!!
-#
-#  zodb_hex_battle.py
-#  
-#
-#  Created by RiX on 5/30/12.
-#  Copyright (c) 2012 A. Frederick Dudley. All rights reserved.
-#
-'''
-The $64 question is what holds state?
-The battlefield doesn't hold state. but it has the damage queue :/
-battle currently just takes actions from any ol' place.
-the problem being that auth in fact does need to be outside of battle.py (way outside)
-So... how is the validity of a message determined? 
-Since battle can't really know about players, (the current player object is 
-a placeholder.) it cannot make sure that each player is taking their turns correctly,
-yet it assumes that there are two players... the problems with this code go on...
-'''
 from datetime import datetime
 from collections import namedtuple
 
@@ -24,6 +6,9 @@ from persistent import Persistent
 from persistent.mapping import PersistentMapping
 from persistent.list import PersistentList
 
+import binary_tactics.stone
+from equanimity.wstone import Stone
+binary_tactics.stone.Stone = Stone #Monkey Patch
 from binary_tactics.hex_battlefield import Battlefield, Grid
 from binary_tactics.helpers import rand_squad
 from binary_tactics.units import Unit
@@ -84,12 +69,13 @@ class Initial_state(PersistentMapping):
     def __dict__(self):
         return self'''
             
-class Log(dict):
+class Log(PersistentMapping):
     def __init__(self, players, units, grid):
         """Records initial game state, timestamps log."""
         #dict.__init__(self, start_time=now(), players=players, grsid=grid,
         #              end_time=None, winner=None, states=[], actions=[],
         #              messages=[], applied=[], condition=None)
+        PersistentMapping.__init__(self)
         self['actions']    = PersistentList()
         self['applied']    = PersistentList()
         self['condition']  = None
@@ -127,7 +113,7 @@ class Log(dict):
     def get_owner(self, unit_num):
         """takes unit number returns player/owner."""
         #slow lookup
-        target_squad = self['units'][unit_num].squad.name
+        target_squad = self['units'][unit_num].container.name
         for player in self['players']:
             for squad in player.squads:
                 if squad.name == target_squad:
