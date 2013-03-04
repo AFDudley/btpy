@@ -15,6 +15,7 @@ from cyclone import jsonrpc
 from twisted.python import log
 from twisted.internet import reactor, defer, task
 
+import transaction
 from equanimity.zeo import Zeo
 
 #One day logs of battles will need to go into a database
@@ -26,33 +27,39 @@ import binary_tactics.stone
 from equanimity.wstone import Stone
 binary_tactics.stone.Stone = Stone #Monkey Patch
 
-from binary_tactics.hex_battle import Game, Action
-from binary_tactics.hex_battlefield import Battlefield
-from binary_tactics.player import Player
-from binary_tactics.grid import Loc
+from equanimity.battle import Game, Action
 
-from stores.store import get_persisted
-import copy
+
+from stores.zodb_store import get_persisted
+from copy import deepcopy
 
 class BaseJSONHandler(jsonrpc.JsonrpcRequestHandler):
     def get_current_user(self):
         return self.get_secure_cookie("user")
         
-class BattleHandler(BaseJSONHandler):
     @cyclone.web.authenticated
     @defer.inlineCallbacks
     def jsonrpc_get_username(self):
         """Takes a cookie and returns the username encoded within it."""
         username = yield self.get_current_user().strip('"')
         defer.returnValue(username)
-    
+
+    @defer.inlineCallbacks
+    def jsonrpc_time_left(self):
+        now = datetime.utcnow()
+        ply = datetime.utcfromtimestamp(self.settings.ply_timer.call.getTime())
+        timeleft = yield {'battle': str(self.settings.ART - now), 'ply': str(ply - now)}
+        defer.returnValue(timeleft)
+
+class BattleHandler(BaseJSONHandler):
     @cyclone.web.authenticated
     @defer.inlineCallbacks
     def jsonrpc_initial_state(self):
         #needs to filter 
         if self.settings.init_state == None:
+            #A deep copy does not seem like the most elegant solution.
             self.settings.init_state = \
-            yield get_persisted(self.settings.game.initial_state())
+            yield get_persisted(deepcopy(self.settings.game.initial_state()))
         defer.returnValue(self.settings.init_state)
     
     @cyclone.web.authenticated
@@ -72,14 +79,7 @@ class BattleHandler(BaseJSONHandler):
     def jsonrpc_last_result(self):
         result = yield self.settings.last_result
         defer.returnValue(result)
-        
-    @defer.inlineCallbacks
-    def jsonrpc_time_left(self):
-        now = datetime.utcnow()
-        ply = datetime.utcfromtimestamp(self.settings.ply_timer.call.getTime())
-        timeleft = yield {'battle': str(self.settings.ART - now), 'ply': str(ply - now)}
-        defer.returnValue(timeleft)
-        
+    
     @defer.inlineCallbacks
     def jsonrpc_game_log(self): #FOR TESTING
         log = yield self.settings.game.log
@@ -106,11 +106,11 @@ class BattleHandler(BaseJSONHandler):
                         action = Action(units[unit_num], args[1], tuple(args[2]))
                     else:
                         raise Exception("user cannot command unit, try a different unit.")
-                self.settings.last_result = result = yield self.settings.game.process_action(action)
+                self.settings.last_result = result = yield get_persisted(self.settings.game.process_action(action))
                 #ply_timer needs to change when the ply changes.
                 self.settings.ply_timer.call.reset(self.settings.ply_time)
-                self.settings.get_states  = self.settings.game.get_states()
-                self.settings.get_last_state = self.settings.game.get_last_state()
+                self.settings.get_states  = get_persisted(self.settings.game.get_states())
+                self.settings.get_last_state = get_persisted(self.settings.game.get_last_state())
                 print result
                 defer.returnValue(result)
                     
@@ -172,9 +172,9 @@ def main(args):
             print "Forced pass."
             #print "Pass Count: %s" %(app.settings.game.state["pass_count"])
             action = Action(None, 'timed_out', None)
-            app.settings.last_result = result = yield app.settings.game.process_action(action)
-            app.settings.get_states  = app.settings.game.get_states()
-            app.settings.get_last_state = app.settings.game.get_last_state()
+            app.settings.last_result = result = yield get_persisted(app.settings.game.process_action(action))
+            app.settings.get_states  = get_persisted(app.settings.game.get_states())
+            app.settings.get_last_state = get_persisted(app.settings.game.get_last_state())
         except Exception , e:
             if e.args[0] == 'Game Over':
                 write_battlelog()
@@ -184,36 +184,17 @@ def main(args):
     world  = zeo.root
     maxsecs = timedelta(0, world['resigntime'])
     world_coords = coords
-    #this copy is really important, copies the objects out of the zeo and into memory.
-    f = copy.deepcopy(world['Fields']['(0, 0)'])
-    #f = copy.deepcopy(world['Fields'][world_coords])
+    
+    f = world['Fields']['(0, 0)']
+    if f.game == None:
+        f.setup_battle()
+        f._p_changed = 1
+        transaction.commit()
     ply_time = 600 #for testing ending conditions
     #ply_time = f.ply_time
-    atkr_name, atksquad = f.battlequeue[0]
-    defsquad = f.get_defenders()
-    #TODO rewrite player and hex_battle
-    dfndr = Player(f.owner, [defsquad])
-    atkr  = Player(atkr_name, [atksquad])
-    game  = Game(grid=f.grid, defender=dfndr, attacker=atkr)
-    btl   = game.battlefield
-
-    #!!!obviously for testing only.
-    #The locations should be pushed to world before battle is started.
-    """
-    for s in xrange(2):
-        l = len(btl.squads[s])
-        for x in xrange(l):
-            btl.place_object(btl.squads[s][x], Loc(x, s))
-    """
-    #TODO CLEANUP
-    for s in xrange(2):
-        l = len(btl.squads[s])
-        for x in xrange(l):
-            loc = btl.squads[s][x].location
-            btl.squads[s][x].location = None
-            btl.place_object(btl.squads[s][x], loc)
-            
-    game.log['init_locs'] = game.log.init_locs()
+    #game = deepcopy(f.game)
+    game = f.game
+    
     start_time  = datetime.strptime(game.log['start_time'], "%Y-%m-%d %H:%M:%S.%f")
     ART = start_time + maxsecs #attacker resign time
     static_path = "./web"
@@ -241,7 +222,7 @@ def main(args):
     )
     
     reactor.listenTCP(lport, app)
-    # is there a better way to do this, this will always be late.
+    # is there a better way to do this? this will always be late.
     app.reactor = reactor
     task.deferLater(reactor, maxsecs.seconds, ARTendgame) 
     app.settings.ply_timer.start(ply_time, now=False)

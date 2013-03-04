@@ -5,7 +5,11 @@ from equanimity.wstone import Stone
 binary_tactics.stone.Stone = Stone #Monkey Patch
 from binary_tactics.helpers import *
 from binary_tactics.units import Squad
-from binary_tactics.grid import Grid
+from binary_tactics.grid import Grid, Loc
+from binary_tactics.player import Player
+from binary_tactics.hex_battlefield import Battlefield
+from equanimity.battle import Game
+
 from equanimity.stronghold import Stronghold, Silo
 from equanimity.clock import Clock
 from math import ceil
@@ -22,20 +26,40 @@ class Field(persistent.Persistent):
         self.stronghold  = Stronghold(self.element, self.clock)
         self.plantings   = persistent.mapping.PersistentMapping()
         self.battlequeue = persistent.list.PersistentList()
+        self.game = None
         self.state = 'produce' #Default state
         """
         ply_time: user definable time before a pass is automatically sent for a battle action.
             range between 4 and 360 minutes, default is 4 (in seconds)
         """
         self.ply_time = ply_time
-    
+
+    def setup_battle(self):
+        #load the battlefield with players (and squads)
+        atkr_name, atksquad = self.battlequeue[0] #TODO change to pop 
+        defsquad = self.get_defenders()
+        dfndr = Player(self.owner, [defsquad])
+        atkr = Player(atkr_name, [atksquad])
+        #TODO write a new game object.
+        self.game = Game(grid=self.grid, defender=dfndr, attacker=atkr)
+        #place units on battlefield
+        self.game.put_squads_on_field()
+        return transaction.commit()
+        
     def set_owner(self, owner):
         self.owner = owner
         return tranaction.commit()
     
     def change_state(self):
+        #called everyday by world?
+        #should be a proper state machine, too focused to find one.
         if self.battleque:
-            self.state = 'battle'
+            if self.state == 'produce':
+                self.state = 'battle'
+                self.setup_battle()
+            else:
+                pass
+        
         elif self.element == self.clock.get_time('season'):
             self.state = 'harvest'
         else:
