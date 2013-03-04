@@ -78,7 +78,7 @@ class Stone(Mapping):
     
     def split(self, comp):
         """subtracts comp from self, returns new stone"""
-        if sum(comp.values()) >= self.value():
+        if sum(comp.values()) > self.value(): # > instead of >= for the silo case.
             raise ValueError("Sum of comp must be less than value of stone.")
         else:
             s = Stone()
