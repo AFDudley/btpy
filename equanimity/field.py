@@ -17,6 +17,7 @@ from math import ceil
 class Field(persistent.Persistent):
     """Player owned field logic."""
     def __init__(self, world_coord, ply_time=240):
+        self.locked = False
         self.world_coord = world_coord
         self.owner = 'World'
         self.grid = Grid()
@@ -88,7 +89,7 @@ class Field(persistent.Persistent):
         stone_list =[]
         for x in xrange(self.grid.x):
             for y in xrange(self.grid.y):
-                s = Stone()
+                stone = Stone()
                 for suit, value in self.grid[x][y].comp.iteritems():
                     stone[suit] += value / 8 #this 8 will need to be tweaked.
                 if stone.value() != 0:
@@ -100,7 +101,7 @@ class Field(persistent.Persistent):
         #this uses get_tile_comps so the / 8 is only maintained in one place.
         limit = {'Earth': 0, 'Fire': 0, 'Ice': 0, 'Wind':0}
         for stone in self.get_tile_comps():
-            for element in limit.values():
+            for element in limit.keys():
                 limit[element] += stone[element]
         return self.stronghold.silo.set_limit(limit)
     
@@ -128,5 +129,3 @@ class Field(persistent.Persistent):
         #the stronghold somehow.
         #happens once a year.
         return self.stronghold.silo.imbue_list(self.get_tile_comps())
-
-

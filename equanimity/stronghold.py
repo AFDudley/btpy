@@ -348,7 +348,7 @@ class Stronghold(persistent.Persistent):
         def feed(unit, lnow):
             self.silo.get(unit.comp)
             self.silo._p_changed = 1
-            unit.fed_on = now
+            unit.fed_on = now()
             unit._p_changed = 1
             return transaction.commit()
         

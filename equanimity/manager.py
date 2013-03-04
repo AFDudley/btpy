@@ -13,7 +13,7 @@ import auth_server
 
         
 class Manager():
-    """Starts and monitors all the services required for a game equanimity."""
+    """Starts and monitors all the services required for a game of equanimity."""
     #TODO using twisted and subprocess/multiprocess seems redundant.
     
 

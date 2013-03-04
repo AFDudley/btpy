@@ -26,8 +26,8 @@ try:
     #get stronghold.
     afs = af.stronghold
 
-    #put Fire min stones into stronghold.
-    afs.silo.imbue_list([Stone((2,4,0,2)) for n in xrange(4)])
+    #put Fire min stones into stronghold. err, not taking food into account correctly.
+    afs.silo.imbue_list([Stone((20,40,0,20)) for n in xrange(4)])
 
     #create scients.
     for n in xrange(4): afs.form_scient('Fire', Stone((2,4,0,2)).comp)
