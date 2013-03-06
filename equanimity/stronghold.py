@@ -94,6 +94,12 @@ class Stronghold(persistent.Persistent):
         self._p_changed = 1
         return transaction.commit()
     
+    def name_unit(self, unit_id, name):
+        unit = self.units[unit_id]
+        unit.name = str(name)
+        unit._p_changed = 1
+        return transaction.commit()
+    
     def imbue_unit(self, comp, unit_id):
         """Imbue a unit with stone of comp from silo."""
         stone = self.silo.get(comp)
@@ -106,19 +112,20 @@ class Stronghold(persistent.Persistent):
             unit.container._p_changed = 1
         return transaction.commit()
     
-    def equip_scient(self, unit_id, weapon_num):
-        """Moves a weapon from the weapon list to a scient."""
-        scient = self.units[unit_id]
-        #WARNING! This is destructive.
-        scient.equip(self.weapons.pop(weapon_num))
-        scient._p_changed = 1
-        self._p_changed = 1
-        return transaction.commit()
-    
     def unequip_scient(self, unit_id):
         """Moves a weapon from a scient to the stronghold."""
         scient = self.units[unit_id]
         self.weapons.append(scient.unequip())
+        scient._p_changed = 1
+        self._p_changed = 1
+        return transaction.commit()
+    
+    def equip_scient(self, unit_id, weapon_num):
+        """Moves a weapon from the weapon list to a scient."""
+        scient = self.units[unit_id]
+        if scient.weapon:
+            self.unequip_scient(unit_id)
+        scient.equip(self.weapons.pop(weapon_num))
         scient._p_changed = 1
         self._p_changed = 1
         return transaction.commit()
@@ -139,8 +146,15 @@ class Stronghold(persistent.Persistent):
         except:
             return transaction.abort()
     
+    def name_squad(self, squad_num, name):
+        squad = self.sqauds[squad_num]
+        squad.name = str(name)
+        squad._p_changed = 1
+        return transaction.commit()
+    
     def remove_squad(self, squad_num):
-        """Removes units from from self.units, effectively moving the squad out of the stronghold."""
+        """Removes units from from self.units, effectively moving the squad out
+         of the stronghold."""
         squad = self.squads[squad_num]
         for unit in squad:
             del self.units[unit.id]
@@ -193,8 +207,8 @@ class Stronghold(persistent.Persistent):
     def move_squad_to_defenders(self, squad_num):
         """Moves a squad from self.squads to self.defenders"""
         try:
-            self._unset_defenders()
-            self._set_defenders(squad_num)
+            self.unset_defenders()
+            self.set_defenders(squad_num)
             return
         except:
             raise("There was an error moving squad to defenders.")
