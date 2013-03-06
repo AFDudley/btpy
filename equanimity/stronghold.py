@@ -5,7 +5,8 @@ import transaction
 import binary_tactics.stone
 from equanimity.wstone import Stone
 binary_tactics.stone.Stone = Stone #Monkey Patch
-from binary_tactics.units import Squad, Scient
+from binary_tactics.units import Scient
+from binary_tactics.unit_container import Squad
 from binary_tactics.weapons import Sword, Bow, Wand, Glove
 from binary_tactics.const import ELEMENTS, E, F, I, W, ORTH, OPP
 

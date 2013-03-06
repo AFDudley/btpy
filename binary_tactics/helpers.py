@@ -3,7 +3,8 @@ import random
 import string
 from const import ELEMENTS, E, F, W, I, ORTH, KINDS, OPP, COMP
 from stone import Stone
-from units import Scient, Nescient, Squad
+from units import Scient, Nescient
+from unit_container import Squad
 from operator import itemgetter
 
 def rand_string(len=8):

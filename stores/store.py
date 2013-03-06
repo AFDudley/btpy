@@ -6,7 +6,8 @@
 #  Copyright (c) 2010 A. Frederick Dudley. All rights reserved.
 #
 """Functions shared between yaml_ and mongo_ store.py"""
-from binary_tactics.units import Scient, Squad, Nescient, Part
+from binary_tactics.units import Scient, Nescient, Part
+from binary_tactics.unit_container import Squad
 from binary_tactics.hex_battlefield import Grid, Tile, Loc
 from binary_tactics.player import Player
 from binary_tactics.weapons import *

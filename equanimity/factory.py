@@ -6,12 +6,13 @@ import binary_tactics.stone
 from equanimity.wstone import Stone
 binary_tactics.stone.Stone = Stone #Monkey Patch
 from binary_tactics.const import SEX, OPPSEX
-from binary_tactics.units import Squad, Scient, Nescient
+from binary_tactics.units import Scient, Nescient
+from binary_tactics.unit_container import Container
 from binary_tactics.weapons import Sword, Bow, Wand, Glove
 
 from binary_tactics.helpers import *
 
-class Factory(persistent.Persistent, UserList):
+class Factory(persistent.Persistent, Container):
     """contains a number of Units. Takes a list of Units"""
     #TODO properly superclass this and Squad
     def unit_size(self, object):
@@ -24,50 +25,21 @@ class Factory(persistent.Persistent, UserList):
                 return 2
     
     def __init__(self):
-        self.val = 0
-        self.free_spaces = 1
+        Container.__init__(self, free_spaces=1)
         self.produced = {}
-        UserList.__init__(self)
     
     def __setitem__(self, key, val):
-        size = self.unit_size(key)
-        if self.free_spaces < size:
-            raise Exception( \
-            "There is not enough space in the factory for this unit")
-        list.__setitem__(self, key, val)
-        self.val += val.value()
-        self.free_spaces -= size
+        Container.__setitem__(self,key, val)
         self.produced.update({key.id: False})
-        key.container = self
-    
+        
     def __delitem__(self, key):
+        Container.__delitem__(self, key)
         del self.produced[key.id]
-        del self.data[key].container
-        temp = self[key].value()
-        self.free_spaces += self.unit_size(self[key])
-        self.data.__delitem__(key)
-        self.val -= temp
     
     def append(self, item):
-        size = self.unit_size(item)
-        if self.free_spaces < size:
-            raise Exception( \
-            "There is not enough space in the factory for this unit")
-        self.data.append(item)
-        self.val += item.value()
-        self.free_spaces -= size
-        item.container = self
+        Container.append(self, item)
         self.produced.update({key.id: False})
-    
-    def update_value(self):
-        new_val = 0
-        for u in self.data:
-            new_val += u.value()
-        self.val = new_val
-    
-    def value(self):
-        return self.val
-    
+        
     def upgrade(self):
         self.free_spaces += 1
     

@@ -1,5 +1,5 @@
 from binary_tactics.player import Player
-from binary_tactics.units import Squad
+from unit_container import Squad
 from stores.store import get_persisted #which is actually buggy in this case.
 import pycassa
 

@@ -15,7 +15,8 @@ from binary_tactics.hex_battlefield import Tile, Grid, Battlefield, Loc, noloc
 import binary_tactics.hex_battle as battle
 
 from binary_tactics.const import E,F,I,W, ELEMENTS, OPP, ORTH
-from binary_tactics.units import Scient, Nescient, Squad
+from binary_tactics.units import Scient, Nescient
+from unit_container import Squad
 from binary_tactics.helpers import rand_comp, rand_element
 import stores.yaml_store as yaml_store
 

@@ -4,7 +4,7 @@ import binary_tactics.stone
 from equanimity.wstone import Stone
 binary_tactics.stone.Stone = Stone #Monkey Patch
 from binary_tactics.helpers import *
-from binary_tactics.units import Squad
+from binary_tactics.unit_container import Squad
 from binary_tactics.grid import Grid, Loc
 from binary_tactics.player import Player
 from binary_tactics.hex_battlefield import Battlefield
@@ -34,7 +34,7 @@ class Field(persistent.Persistent):
             range between 4 and 360 minutes, default is 4 (in seconds)
         """
         self.ply_time = ply_time
-
+    
     def setup_battle(self):
         #load the battlefield with players (and squads)
         atkr_name, atksquad = self.battlequeue[0] #TODO change to pop 
@@ -46,7 +46,7 @@ class Field(persistent.Persistent):
         #place units on battlefield
         self.game.put_squads_on_field()
         return transaction.commit()
-        
+    
     def set_owner(self, owner):
         self.owner = owner
         return tranaction.commit()
@@ -129,3 +129,4 @@ class Field(persistent.Persistent):
         #the stronghold somehow.
         #happens once a year.
         return self.stronghold.silo.imbue_list(self.get_tile_comps())
+    
