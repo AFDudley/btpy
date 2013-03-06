@@ -93,16 +93,16 @@ class Stronghold(persistent.Persistent):
         self._p_changed = 1
         return transaction.commit()
     
-    def imbue_scient(self, comp, unit_id):
-        """Imbue a scient with stone of comp from silo."""
+    def imbue_unit(self, comp, unit_id):
+        """Imbue a unit with stone of comp from silo."""
         stone = self.silo.get(comp)
         self.silo._p_changed = 1
-        scient = self.units[unit_id]
-        scient.imbue(stone)
-        scient._p_changed = 1
-        if scient.container:
-            scient.container.update_value()
-            scient.container._p_changed = 1
+        unit = self.units[unit_id]
+        unit.imbue(stone)
+        unit._p_changed = 1
+        if unit.container:
+            unit.container.update_value()
+            unit.container._p_changed = 1
         return transaction.commit()
     
     def equip_scient(self, unit_id, weapon_num):
@@ -294,4 +294,4 @@ class Stronghold(persistent.Persistent):
             dsecs = d.total_seconds()
             if dsecs > (self.clock.duration['day'] * 60):
                 self.feed_unit(uid)
-        
+    

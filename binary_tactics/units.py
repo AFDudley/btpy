@@ -92,8 +92,8 @@ class Scient(Unit):
                  weapon_bonus=None, location=None, sex='female'):
         for orth in ORTH[element]:
             if comp[orth] > comp[element] / 2:
-                raise ValueError("Scients' orthogonal elements cannot be \
-                                  more than half the primary element's value.")
+                raise ValueError("Scients' orthogonal elements cannot be"
+                                 "more than half the primary element's value.")
         Unit.__init__(self, element, comp, name, location, sex)
         self.move = 4
         self.weapon = weapon
@@ -111,6 +111,20 @@ class Scient(Unit):
         
         #equiping weapons should be done someplace else.
         self.equip(self.weapon)
+    
+    def imbue(self, stone):
+        """add stone to scient's comp, if legal"""
+        comp = stone.comp
+        if comp[OPP[self.element]] == 0:
+            for orth in ORTH[self.element]:
+                if (comp[orth] + self.comp[orth]) > \
+                    ((comp[self.element] + self.comp[self.element]) / 2):
+                    raise ValueError("Scients' orthogonal elements cannot be"
+                                     "more than half the primary element's value.")
+            Stone.imbue(self, stone)
+        else:
+            raise Exception("Primary element of stone must match that of"
+                            " scient")
 
 class Part(object):
     '''
