@@ -19,7 +19,6 @@ class WorldHandler(object):
         self.world = world
         
     def view(self, request, params):
-            
         return Response(str(self.world))
     
 class FieldHandler(object):
