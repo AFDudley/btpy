@@ -8,10 +8,7 @@ from twisted.web import static, proxy, server
 def setup(ip='127.0.0.1'):
     path = "./web"  # path to static resources (html, js etc..)
     root = static.File(path)     # will be served under '/'
-    # http://166.84.136.68:8888/auth redirects to http://166.84.136.68:8889/
     root.putChild('auth', proxy.ReverseProxyResource(ip, 8889, ''))
-    
-    # http://166.84.136.68:8888/battle redirects to http://166.84.136.68:8890/
     root.putChild('battle', proxy.ReverseProxyResource(ip, 8890, ''))
     return server.Site(root)
 

@@ -6,7 +6,7 @@ rm dojo-release-1.7.0.tar.gz
 ln -s dojo-release-1.7.0 dojo
 
 ###
-wget https://github.com/documentcloud/underscore/tarball/1.2.2
+wget --no-check-certificate https://github.com/documentcloud/underscore/tarball/1.2.2
 tar zxvf 1.2.2
 rm 1.2.2
 ln -s documentcloud-underscore-8c34614 underscore
