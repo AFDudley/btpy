@@ -218,7 +218,7 @@ class TopPane(Pane):
             for x in reversed(sorted(self.squad, key=lambda t: t.hp)): squad.append(x)
             self.squad = squad
             self.text = []
-            self.title = self.squad.name + " Inital Value: " + str(self.squad.value)
+            self.title = self.squad.name + " Inital Value: " + str(self.squad.val)
             self.last_line = - 1
             #cpu time < human time:
             self.squad.text = []
@@ -469,8 +469,8 @@ class BattlePane(Pane, Battlefield):
         self.contentimgs = pygame.sprite.RenderUpdates()
         self.defender = battle.Player()
         self.attacker = battle.Player()
-        self.defender.squads = [self.trans_squad(yaml_store.load('yaml/ice_mins.yaml'))]
-        self.attacker.squads = [self.trans_squad(yaml_store.load('yaml/fire_mins.yaml'))]
+        self.defender.squads = [self.trans_squad(yaml_store.load('yaml/pt_0.yaml'))]
+        self.attacker.squads = [self.trans_squad(yaml_store.load('yaml/pt_1.yaml'))]
         
         self.defsquad = self.defender.squads[0]
         self.atksquad = self.attacker.squads[0]
@@ -826,11 +826,10 @@ class View:
     def send_action(self):
         """sends the current action to the game"""
         #if first action in ply is pass, set second to same
-        text = []
         if self.current_action['type'] == 'pass':
             if view.game.state['num'] % 2 == 1:
-                text += self.game.process_action(self.current_action)
-        text += self.game.process_action(self.current_action)
+                print self.game.process_action(self.current_action)
+        print self.game.process_action(self.current_action)
         '''
         send_action is only called from the bottom pane and we should move to
         the top pane only when the ply is full, otherwise, move to the middle.

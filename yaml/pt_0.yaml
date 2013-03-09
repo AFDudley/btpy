@@ -1,0 +1,109 @@
+squad:
+  data:
+  - scient:
+      comp: {Earth: 2, Fire: 4, Ice: 0, Wind: 2}
+      element: Fire
+      location: ( 4, 4)
+      name: null
+      sex: female
+      weapon:
+        sword:
+          comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+          element: Fire
+      weapon_bonus:
+        stone:
+          comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+  - scient:
+      comp: {Earth: 2, Fire: 4, Ice: 0, Wind: 2}
+      element: Fire
+      location: ( 5, 4)
+      name: null
+      sex: female
+      weapon:
+        sword:
+          comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+          element: Fire
+      weapon_bonus:
+        stone:
+          comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+  - scient:
+      comp: {Earth: 2, Fire: 4, Ice: 0, Wind: 2}
+      element: Fire
+      location: ( 6, 4)
+      name: null
+      sex: female
+      weapon:
+        sword:
+          comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+          element: Fire
+      weapon_bonus:
+        stone:
+          comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+  - scient:
+      comp: {Earth: 0, Fire: 2, Ice: 2, Wind: 4}
+      element: Wind
+      location: ( 7, 4)
+      name: null
+      sex: female
+      weapon:
+        wand:
+          comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+          element: Wind
+      weapon_bonus:
+        stone:
+          comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+  - scient:
+      comp: {Earth: 0, Fire: 2, Ice: 2, Wind: 4}
+      element: Wind
+      location: ( 8, 4)
+      name: null
+      sex: female
+      weapon:
+        wand:
+          comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+          element: Wind
+      weapon_bonus:
+        stone:
+          comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+  - scient:
+      comp: {Earth: 2, Fire: 0, Ice: 4, Wind: 2}
+      element: Ice
+      location: ( 9, 4)
+      name: null
+      sex: female
+      weapon:
+        glove:
+          comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+          element: Ice
+      weapon_bonus:
+        stone:
+          comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+  - scient:
+      comp: {Earth: 2, Fire: 0, Ice: 4, Wind: 2}
+      element: Ice
+      location: (10, 4)
+      name: null
+      sex: female
+      weapon:
+        glove:
+          comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+          element: Ice
+      weapon_bonus:
+        stone:
+          comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+  - scient:
+      comp: {Earth: 2, Fire: 0, Ice: 4, Wind: 2}
+      element: Ice
+      location: (11, 4)
+      name: null
+      sex: female
+      weapon:
+        glove:
+          comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+          element: Ice
+      weapon_bonus:
+        stone:
+          comp: {Earth: 0, Fire: 0, Ice: 0, Wind: 0}
+  free_spaces: 0
+  name: pt_0
+  val: 64
