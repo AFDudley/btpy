@@ -6,14 +6,49 @@ import binary_tactics.stone
 from equanimity.wstone import Stone
 binary_tactics.stone.Stone = Stone #Monkey Patch
 from binary_tactics.units import Scient
-from binary_tactics.unit_container import Squad
+from binary_tactics.unit_container import Container, Squad
 from binary_tactics.weapons import Sword, Bow, Wand, Glove
-from binary_tactics.const import ELEMENTS, E, F, I, W, ORTH, OPP
+from binary_tactics.const import ELEMENTS, E, F, I, W, ORTH, OPP, WEP_LIST
 
 from binary_tactics.helpers import *
 from equanimity.factory import Stable, Armory, Home, Farm
 from equanimity.silo import Silo
+from copy import deepcopy
 from equanimity.clock import now
+
+class mappedContainer(persistent.Persistent, Container):
+    def __init__(self):
+        Container.__init__(self, data=None, free_spaces=8)
+        #maybe map should actually return the key and method
+        #should be added instead of using .map
+        self.map = persistent.mapping.PersistentMapping()
+        self.name = 'stronghold'
+    
+    def __setitem__(self, key, val):
+        Container.__setitem__(self, key, val)
+        self.map.update({key.id: key})
+    
+    def __delitem__(self, key):
+        del self.map[self.data[key].id]
+        if self.data[key].container.name == 'stronghold':
+            self.data[key].container = None
+        temp = self[key].value()
+        self.free_spaces += self.unit_size(self[key])
+        self.data.__delitem__(key)
+        self.val -= temp
+    
+    def append(self, item):
+        Container.append(self, item)
+        self.map.update({item.id: item})
+    
+    #FIX
+    def remove_by_id(self, unit_id):
+        k = None
+        for u_key in reversed(xrange(len(self))):
+            if self[u_key].id == unit_id:
+                k = u_key
+        del self[k]
+    
 
 class Stronghold(persistent.Persistent):
     def create_factory(self, kind):
@@ -46,11 +81,10 @@ class Stronghold(persistent.Persistent):
         self.clock = clock
         self.silo = Silo()
         self.weapons = persistent.list.PersistentList()
-        self.units = persistent.mapping.PersistentMapping()
+        self.units = mappedContainer()
         self.squads = persistent.list.PersistentList()
-        self.capacity = 8 #squad points. scient == 1, nescient == 2
-        #needs a value limit based on the value of the grid that contains it.
-        self.defenders = Squad(kind='mins', element=field_element) #kind should be nescients.
+        self.defenders = Squad(name='Defenders')
+        self.make_defenders(field_element)
         self.defender_locs = persistent.list.PersistentList()
         self.stable = None
         self.armory = None
@@ -89,13 +123,13 @@ class Stronghold(persistent.Persistent):
         """Takes a stone from stronghold and turns it into a Scient."""
         if name == None: name = rand_string()
         scient = Scient(element, self.silo.get(comp), name)
-        self.units[scient.id] = scient
+        self.units.append(scient)
         self.feed_unit(scient.id)
         self._p_changed = 1
         return transaction.commit()
     
     def name_unit(self, unit_id, name):
-        unit = self.units[unit_id]
+        unit = self.units.map[unit_id]
         unit.name = str(name)
         unit._p_changed = 1
         return transaction.commit()
@@ -104,39 +138,44 @@ class Stronghold(persistent.Persistent):
         """Imbue a unit with stone of comp from silo."""
         stone = self.silo.get(comp)
         self.silo._p_changed = 1
-        unit = self.units[unit_id]
+        unit = self.units.map[unit_id]
         unit.imbue(stone)
         unit._p_changed = 1
-        if unit.container:
+        if unit.container.name != 'stronghold':
             unit.container.update_value()
             unit.container._p_changed = 1
         return transaction.commit()
     
     def unequip_scient(self, unit_id):
         """Moves a weapon from a scient to the stronghold."""
-        scient = self.units[unit_id]
+        scient = self.units.map[unit_id]
         self.weapons.append(scient.unequip())
+        self.weapons._p_changed = 1
         scient._p_changed = 1
         self._p_changed = 1
         return transaction.commit()
     
     def equip_scient(self, unit_id, weapon_num):
         """Moves a weapon from the weapon list to a scient."""
-        scient = self.units[unit_id]
+        scient = self.units.map[unit_id]
         if scient.weapon:
             self.unequip_scient(unit_id)
-        scient.equip(self.weapons.pop(weapon_num))
+        weapon = self.weapons[weapon_num]
+        del self.weapons[weapon_num]
+        scient.equip(weapon)
+        self.weapons_p_changed =1
         scient._p_changed = 1
         self._p_changed = 1
         return transaction.commit()
     
     def form_squad(self, unit_id_list=None, name=None):
         """Forms a squad and places it in the stronghold."""
+        if name == None: name = rand_string()
         sq = Squad(name=name)
         try:
             for unit_id in unit_id_list:
-                unit = self.units[unit_id]
-                if not unit.container:
+                unit = self.units.map[unit_id]
+                if unit.container.name == 'stronghold':
                     sq.append(unit) #DOES NOT REMOVE UNIT FROM LIST.
                 else:
                     raise Exception("%s is already in a container." %unit)
@@ -144,7 +183,7 @@ class Stronghold(persistent.Persistent):
             self._p_changed = 1
             return transaction.commit()
         except:
-            return transaction.abort()
+            raise
     
     def name_squad(self, squad_num, name):
         squad = self.sqauds[squad_num]
@@ -157,7 +196,7 @@ class Stronghold(persistent.Persistent):
          of the stronghold."""
         squad = self.squads[squad_num]
         for unit in squad:
-            del self.units[unit.id]
+            self.units.remove_by_id(unit.id)
         return transaction.commit()
     
     def apply_locs_to_squad(self, squad, list_of_locs):
@@ -182,6 +221,14 @@ class Stronghold(persistent.Persistent):
     def apply_defender_locs(self):
         return self.apply_locs_to_squad(self.defenders, self.defender_locs)
     
+    def unset_defenders(self):
+        """Moves old defenders into stronghold"""
+        #use wisely.
+        self.squads.append(self.defenders)
+        self.defenders = None;
+        self._p_changed = 1
+        return transaction.commit()
+    
     def set_defenders(self, squad_num):
         """If defenders is empty set squad as defenders."""
         # I don't remember how transactions work so I broke this function in
@@ -196,13 +243,24 @@ class Stronghold(persistent.Persistent):
         self._p_changed = 1
         return transaction.commit()
     
-    def unset_defenders(self):
-        """Moves old defenders into stronghold"""
-        #use wisely.
-        self.squads.append(self.defenders)
-        self.defenders = None;
-        self._p_changed = 1
-        return transaction.commit()
+    def make_defenders(self, element):
+        """FIX"""
+        s = Stone()
+        s[element] = 4
+        s[OPP[element]] = 0
+        for o in ORTH[element]:
+            s[o] = 2
+        for n in xrange(8): self.silo.imbue(deepcopy(s))
+        wcomp = Stone().comp
+        for n in xrange(len(WEP_LIST)):
+            wep = WEP_LIST[n]
+            self.form_scient(element, s.comp)
+            #you wanna race?
+            unit_id = self.units[-1].id
+            self.form_weapon(element, wcomp, wep)
+            self.name_unit(unit_id , "Ms. " + wep)
+            self.equip_scient(unit_id, -1)
+            self.add_unit_to_defenders(unit_id)
     
     def move_squad_to_defenders(self, squad_num):
         """Moves a squad from self.squads to self.defenders"""
@@ -216,8 +274,8 @@ class Stronghold(persistent.Persistent):
     def add_unit_to(self, container, unit_id):
         """Add unit to container."""
         #wrapper to keep containers private.
-        self.container.append(self.units[unit_id])
-        self.container._p_changed = 1
+        container.append(self.units.map[unit_id])
+        container._p_changed = 1
         return transaction.commit()
     
     def add_unit_to_defenders(self, unit_id):
@@ -241,8 +299,8 @@ class Stronghold(persistent.Persistent):
         for n in xrange(len(container)):
             if container[n].id == unit_id:
                 container[n].container = None
-                container.pop(n)
-        self.container._p_changed = 1
+                del container[n]
+        container._p_changed = 1
         return transaction.commit()
     
     def remove_unit_from_defenders(self, unit_id):
@@ -263,7 +321,7 @@ class Stronghold(persistent.Persistent):
     
     def bury_unit(self, unit_id):
         """Bury units that die outside of battle."""
-        unit = self.units[unit_id]
+        unit = self.units.map[unit_id]
         self.unequip_scient(unit)
         self.remove_unit_from(unit.container, unit.id)
         remains = Stone({k: v/2 for k,v in unit.iteritems()})
@@ -283,7 +341,7 @@ class Stronghold(persistent.Persistent):
             unit._p_changed = 1
             return transaction.commit()
         
-        unit = self.units[unit_id]
+        unit = self.units.map[unit_id]
         lnow = now()
         if unit.fed_on == None:
             feed(unit, lnow)
@@ -304,9 +362,12 @@ class Stronghold(persistent.Persistent):
         # 2. feed nescients.
         #should not happen when field is embattled.
         now = now()
-        for uid,unit in self.units.iteritems():
+        for unit in self.units:
             d = now - unit.fed_on
             dsecs = d.total_seconds()
             if dsecs > (self.clock.duration['day'] * 60):
-                self.feed_unit(uid)
+                self.feed_unit(unit.id)
     
+
+    def process_action(self, action):
+        pass

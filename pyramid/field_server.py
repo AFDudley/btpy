@@ -1,52 +1,34 @@
-import sys
-import cyclone.web
-from twisted.internet import reactor
-from equanimity.zeo import Zeo
+from wsgiref.simple_server import make_server
+from pyramid.config import Configurator
+from pyramid.response import Response
+from datetime import datetime
 
-class BaseJSONHandler(jsonrpc.JsonrpcRequestHandler):
-    def get_current_user(self):
-        return self.get_secure_cookie("user")
-        
-    @cyclone.web.authenticated
-    @defer.inlineCallbacks
-    def jsonrpc_get_username(self):
-        """Takes a cookie and returns the username encoded within it."""
-        username = yield self.get_current_user().strip('"')
-        defer.returnValue(username)
+def now():
+    return datetime.utcnow()
 
-    @defer.inlineCallbacks
-    def jsonrpc_time_left(self):
-        now = datetime.utcnow()
-        ply = datetime.utcfromtimestamp(self.settings.ply_timer.call.getTime())
-        timeleft = yield {'battle': str(self.settings.ART - now), 'ply': str(ply - now)}
+global d
+#works as expected. d = datetime(2013, 2, 24, 14, 11, 45, 57143)
+d = datetime.utcnow() #works as expected
 
-class Handler(cyclone.web.RequestHandler):
-    def get(self):
-        self.write(str(world_coords))
+def hello_world(request):
+    return Response('Hello %(name)s!' % request.matchdict)
 
-
-class BattleHandler(jsonrpc.JsonrpcRequestHandler):
-    def __init__(self):
-        pass
-def main(args): #improve.
-    lport = args[0]
-    zeo_addr = list(args[1])
-    global world_coords
-    world_coords = str(args[2])
+def time(request):
+    return Response('The time is %s' %now())
     
-    zeo = Zeo(zeo_addr)
-    #world  = zeo.root
-    app = cyclone.web.Application([(r"/", Handler),
-                                   (r"/battle",BattleHandler),
-                                   (r"/produce", ProduceHandler),
-                                   (r"/view", ViewHandler),])
+def then(request):
+    return Response('The time was %s' %d)
+
     
-    reactor.listenTCP(lport, app)
-    reactor.run()
+if __name__ == '__main__':
+    config = Configurator()
+    config.add_route('hello', '/hello/{name}')
+    config.add_view(hello_world, route_name='hello')
+    config.add_route('time', '/time/')
+    config.add_view(time, route_name='time')
+    config.add_route('then', '/then/')
+    config.add_view(then, route_name='then')
+    app = config.make_wsgi_app()
     
-if __name__ == "__main__":
-    #if sys.argv[1]:
-    #    args = sys.argv[1:]
-    
-    args = [9101, ('localhost', 9100), '(0, 0)']
-    main(args)
+    server = make_server('0.0.0.0', 9090, app)
+    server.serve_forever()

@@ -34,6 +34,16 @@ class Field(persistent.Persistent):
             range between 4 and 360 minutes, default is 4 (in seconds)
         """
         self.ply_time = ply_time
+        self.battle_actions = ['attack', 'move', 'pass', 'timed_out']
+        self.stronghold_actions = ['add_planting', 'name_unit', 'imbue_unit',
+                            'unequip_scient', 'equip_scient', 'move_unit',
+                            'imbue_weapon', 'split_weapon', 'form_squad',
+                            'name_suqad', 'remove_squad', 'set_squad_locations',
+                            'set_defender_locations', 'move_squad_to_defenders',
+                            'unset_defenders',]
+        self.world_actions = ['move_squad']
+        self.actions = self.battle_actions + self.stronghold_actions + self.world_actions
+        
     
     def setup_battle(self):
         #load the battlefield with players (and squads)
@@ -80,8 +90,8 @@ class Field(persistent.Persistent):
         #capacity increases at:
         # [61, 125, 189, 253, 317, 381, 445, 509, 573, 637, 701, 765, 829,
         #  893, 957,]
-        self.stronghold.capacity = int(ceil((self.grid.value() + 4) / 64.0)) * 8
-        self.stronghold._p_changed = 1
+        self.stronghold.units.free_spaces = int(ceil((self.grid.value() + 4) / 64.0)) * 8
+        self.stronghold.units._p_changed = 1
         return transaction.commit()
     
     def get_tile_comps(self):
@@ -130,3 +140,35 @@ class Field(persistent.Persistent):
         #happens once a year.
         return self.stronghold.silo.imbue_list(self.get_tile_comps())
     
+"""
+--- In battle
+pass
+attack
+move
+timed_out
+--- In stronghold
+add_planting (imbue_tile) - tile_coord, comp
+
+name_unit  - unit_id, name
+imbue_unit - unit_id, comp
+unequip_scient - unit_id
+equip_scient - unit_id, weapon_num
+move_unit (add_unit_to) - unit_id, container
+
+imbue_weapon
+split_weapon
+
+form_squad
+name_squad
+
+remove_squad
+set_squad_locations
+
+set_defender_locations
+move_squad_to_defenders
+unset_defenders
+
+--- In world
+move_squad
+TODO: send_stone, stone, field
+"""

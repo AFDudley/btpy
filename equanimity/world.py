@@ -78,6 +78,9 @@ class World(Zeo): #this object needs to be refactored.
         del self.root['Players'][player]
         return transaction.commit()
     
+    def set_password(self, player, new_hash): pass
+    def set_email(self, player, email): pass
+    
     def award_field(self, old_owner, Field_coords, new_owner):
         """Transfers a field from one owner to another."""
         #is this atomic?
@@ -97,3 +100,5 @@ class World(Zeo): #this object needs to be refactored.
         src.stronghold.remove_squad(squad_num)
         return transaction.commit()
     
+    def process_action(self, action):
+        pass

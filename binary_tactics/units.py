@@ -57,29 +57,9 @@ class Scient(Unit):
       F: fire, I: ice, W: wind}
     """
     
-    def equip(self, weapon): #TODO move to battlefield
-        """
-        A function that automagically equips items based on element.
-        should be moved someplace else.
-        """
-        if weapon == None:
-            if self.element == 'Earth':
-                self.weapon = Sword(self.element, Stone())
-            elif self.element == 'Fire':
-                self.weapon = Bow(self.element, Stone())
-            elif self.element == 'Ice':
-                self.weapon = Wand(self.element, Stone())
-            else:
-                self.weapon = Glove(self.element, Stone())
-        
-        else:
-            '''
-            if weapon.value() > self.equip_limit[weapon.type]:
-                raise Exception("This unit cannot equip this weapon")
-            else:
-                self.weapon = weapon
-            '''
-            self.weapon = weapon
+    def equip(self, weapon):
+        self.weapon = weapon
+        return
     
     def unequip(self):
         """removes weapon from scient, returns weapon."""

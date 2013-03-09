@@ -14,18 +14,8 @@ from binary_tactics.helpers import *
 
 class Factory(persistent.Persistent, Container):
     """contains a number of Units. Takes a list of Units"""
-    #TODO properly superclass this and Squad
-    def unit_size(self, object):
-        if isinstance(object, Unit) == False:
-            raise TypeError("Factories can contain only Units")
-        else:
-            if isinstance(object, Scient):
-                return 1
-            else:
-                return 2
-    
-    def __init__(self):
-        Container.__init__(self, free_spaces=1)
+    def __init__(self, data=None):
+        Container.__init__(self, data=None, free_spaces=1)
         self.produced = {}
     
     def __setitem__(self, key, val):
@@ -38,7 +28,7 @@ class Factory(persistent.Persistent, Container):
     
     def append(self, item):
         Container.append(self, item)
-        self.produced.update({key.id: False})
+        self.produced.update({item.id: False})
         
     def upgrade(self):
         self.free_spaces += 1

@@ -5,6 +5,7 @@ import binary_tactics.stone
 from equanimity.wstone import Stone
 binary_tactics.stone.Stone = Stone #Monkey Patch
 from equanimity.world import wPlayer, World
+import transaction
 
 w = World()
 wr = w.root
@@ -27,21 +28,23 @@ try:
     afs = af.stronghold
 
     #put Fire min stones into stronghold. err, not taking food into account correctly.
-    afs.silo.imbue_list([Stone((20,40,0,20)) for n in xrange(4)])
+    afs.silo.imbue_list([Stone((16,32,0,16)) for n in xrange(4)])
 
     #create scients.
     for n in xrange(4): afs.form_scient('Fire', Stone((2,4,0,2)).comp)
 
-    #put empty stones into stronhold.
 
     #create weapons.
     for n in WEP_LIST: afs.form_weapon('Fire', Stone().comp, n)
 
+    #create list of last 4 unit_ids
+    ln = len(afs.units)
+    uids = [afs.units[n].id for n in range(ln)[ln - 4:ln]]
     #equip scients.
-    for n in xrange(4): afs.equip_scient(afs.units.keys()[n], -1)
-
+    for uid in uids: afs.equip_scient(uid, -1) #equip removes weapons from list.
+        
     #form squad
-    afs.form_squad([afs.units.keys()[n] for n in xrange(4)] , 'Fire Attackers')
+    afs.form_squad(uids, 'Fire Attackers')
 
     #set squad locations
     df.stronghold.set_defender_locs([(6,4), (7,4), (8,4,), (9,4)])

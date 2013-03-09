@@ -21,7 +21,7 @@ class Container(UserList):
             else:
                 return 2
     
-    def __init__(self, free_spaces):
+    def __init__(self, data=None, free_spaces=8):
         UserList.__init__(self)
         self.val = 0
         self.free_spaces = free_spaces
@@ -69,7 +69,7 @@ class Squad(Container):
         return sum([unit.hp for unit in self])
     
     def __init__(self, data=None, name=None, kind=None, element=None):
-        Container.__init__(self, free_spaces=8)
+        Container.__init__(self, data=None, free_spaces=8)
         self.name = name
         if data == None:
             # The code below creates 4 units of element with a comp
