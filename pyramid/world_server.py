@@ -29,8 +29,13 @@ class FieldHandler(object):
     def view(self, request, params):
         action = params.matchdict['action']
         if len(action) > 0:
-            if action[0].lower() == 'stronghold':
+            lowered = action[0].lower()
+            if lowered == 'stronghold':
                 return Response(str(vars(self.field.stronghold)))
+            elif lowered == 'battle':
+                return Response(str(vars(self.field.game)))
+            elif lowered == 'factories':
+                return "fix me"
         else:
             return Response(str(self.field.owner))
 
