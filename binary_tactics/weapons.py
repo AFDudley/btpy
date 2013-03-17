@@ -1,12 +1,13 @@
 from stone import Stone
 class Weapon(Stone):
     """Scients Equip weapons to do damage"""
-    def __init__(self, element, comp, wep_type):
+    def __init__(self, element, comp, wep_type, kind=None):
         #this should return the correct weapon based on . (?)
         Stone.__init__(self, comp)
         self.type = wep_type
         self.element = element
-    
+        self.kind = kind
+
     def map_to_grid(self, origin, grid_size):
         #TODO move to battlefield
         """maps pattern to grid centered on origin.
@@ -16,12 +17,12 @@ class Weapon(Stone):
         if self.type != 'Wand':
             if self.type == 'Bow':
                 no_hit = 4 #the scient move value
-                min = -(2 * no_hit)
-                max = -min + 1
-                dist = range(min,max)
+                mini = -(2 * no_hit)
+                maxi = -mini + 1
+                dist = range(mini,maxi)
                 attack_pattern = []
                 #???
-                [[attack_pattern.append((x,y)) for y in dist if (no_hit < (abs(x) + abs(y)) < max) ] for x in dist]
+                [[attack_pattern.append((x,y)) for y in dist if (no_hit < (abs(x) + abs(y)) < maxi) ] for x in dist]
             else:
                 attack_pattern = [(0,-1),(1,0),(0,1),(-1,0),(-1,-1),(-1,1),(1,1),(1,-1)]
             
@@ -72,6 +73,7 @@ class Sword(Weapon):
     def __init__(self, element, comp):
         Weapon.__init__(self, element, comp, 'Sword')
         self.kind = 'p'
+
 class Bow(Weapon):
     """Long range physical weapon"""
     def __init__(self, element, comp):
