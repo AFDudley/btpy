@@ -48,6 +48,12 @@ class Unit(Stone):
         #does this make sense? It was wrong for a long time.
         self.hp   = 4 * ((self.pdef + self.mdef) + self.value())
         
+    def stats(self):
+        return {'p': self.p, 'm': self.m, 'atk': self.atk, 'defe': self.defe, 
+                 'pdef': self.pdef, 'patk':self.patk, 'mdef': self.mdef, 
+                 'matk': self.matk, 'hp':self.hp}
+        
+        
 class Scient(Unit):
     """A Scient (playable character) unit.
     
