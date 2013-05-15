@@ -16,7 +16,7 @@ import binary_tactics.hex_battle as battle
 
 from binary_tactics.const import E,F,I,W, ELEMENTS, OPP, ORTH
 from binary_tactics.units import Scient, Nescient
-from unit_container import Squad
+from binary_tactics.unit_container import Squad
 from binary_tactics.helpers import rand_comp, rand_element
 import stores.yaml_store as yaml_store
 
@@ -641,7 +641,7 @@ class BattlePane(Pane, Battlefield):
             """a crude, crude hack."""
             self.font = FONT
             self.font_color = [0, 0, 0]
-            textrect = self.font.render(self.squad.num, True, self.font_color, \
+            textrect = self.font.render(self.container.num, True, self.font_color, \
             COLORS[self.element])
             self.image.blit(textrect, (self.size[0]/2 - 4, self.size[1]/3))
     

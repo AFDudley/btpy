@@ -78,7 +78,7 @@ class Scient(Unit):
         for orth in ORTH[element]:
             if comp[orth] > comp[element] / 2:
                 raise ValueError("Scients' orthogonal elements cannot be"
-                                 "more than half the primary element's value.")
+                                 " more than half the primary element's value.")
         Unit.__init__(self, element, comp, name, location, sex)
         self.move = 4
         self.weapon = weapon

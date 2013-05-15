@@ -53,7 +53,8 @@ class Grid(Stone):
                     self.comp[suit] /= self.x * self.y 
                 self.tiles = tiles
         else:
-            #needs to check for comp/tiles match currently assumes if comp, no tiles.
+            '''TODO: check for comp/tiles match. Currently assumes if comp,
+            no tiles.'''
             #creates a pool of comp points to pull from.
             pool = {}
             for suit, value in self.comp.iteritems():
