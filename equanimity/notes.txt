@@ -16,19 +16,16 @@ $ ipython equanimity/create_world.py
 3. get the JS sources:
 $ cd web; sh get_js.sh
 
-4. set res/js/host.js to the correct IP
-
-5. stop runzeo:
+4. stop runzeo:
 $ pkill -f runzeo
 
-6. start all the services at once:
+5. start all the services at once:
 $ ipython equanimity/start.py 
 
 (pkill -f python to stop all services... if you stop one it will auto
 restart.)
 
-7. http://<host>:8888/auth/login
+6. http://<host>:8888/auth/login
 u: atkr, p: atkr or u: defndr, p: defndr
 
-8. http://<host>:8888/battle/static/jsonrpc.html
-
+7. http://<host>:8888/battle/static/jsonrpc.html
