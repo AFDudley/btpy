@@ -70,7 +70,7 @@ class LoginHandler(BaseHandler):
                 
         except Exception, e:
             log.err("Login Failed: %r" % e)
-            self.write('{login: "failed"}')
+            self.write('{"login": "failed"}')
             self.flush()
             raise cyclone.web.HTTPError(503)
         
