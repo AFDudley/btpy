@@ -76,7 +76,7 @@ class LoginHandler(BaseHandler):
         
         if u:
             self.set_secure_cookie("user", cyclone.escape.json_encode(u))
-            self.write('{login: "successful"}')
+            self.write('{"login": "successful"}')
             self.flush()
         else:
             self.redirect("/auth/login?e=invalid")
