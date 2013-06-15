@@ -1,6 +1,7 @@
 from ZEO import ClientStorage
 from ZODB import DB
 import transaction
+from equanimity.wplayer import wPlayer
 
 #ZODB needs to log stuff
 import logging
@@ -22,7 +23,10 @@ class Zeo(object):
         
     def get_username(self, username): #FIX
         self.conn.sync()
-        return self.root['Players'][username].password
+        try:
+            return self.root['Players'][username].password
+        except:
+            return None
     
     def set_username(self, username, password): #FIX
         try:
@@ -35,4 +39,6 @@ class Zeo(object):
     
 if __name__ == '__main__':
     from equanimity.world import *
-    world = Zeo().root
+    zc = Zeo()
+    world = zc.root
+
