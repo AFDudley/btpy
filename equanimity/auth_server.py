@@ -38,6 +38,7 @@ class SignupHandler(BaseHandler):
         
         except Exception, e:
             self.settings.zeo.set_username(u, password.encode("utf-8"))
+            #This should have redirected to login, not returned a cookie :(
             self.set_secure_cookie("user", cyclone.escape.json_encode(u))
             #self.redirect("/")
     
@@ -64,13 +65,13 @@ class LoginHandler(BaseHandler):
                 
         except Exception, e:
             log.err("Login Failed: %r" % e)
-            self.write('{login: "failed"}')
+            self.write('{"login": "failed"}')
             self.flush()
             raise cyclone.web.HTTPError(503)
         
         if u:
             self.set_secure_cookie("user", cyclone.escape.json_encode(u))
-            self.write('{login: "successful"}')
+            self.write('{"login": "successful"}')
             self.flush()
         else:
             self.redirect("/auth/login?e=invalid")
