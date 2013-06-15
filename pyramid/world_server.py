@@ -6,19 +6,46 @@ from datetime import datetime
 from equanimity.zeo import Zeo
 from copy import deepcopy
 
+import hashlib
+import transaction
+
 class AuthHandler(object):
-    def __init__(self, world):
-        self.world = world
-    #@jsonrpc_method(endpoint='signup')
-    def signup(self, request, params):
+    def __init__(self, zeo):
+        self.zeo = zeo
+        self.world = zeo.root
+    
+    def signup(self, request):
         """Signup via json-rpc post"""
-        #{"jsonrpc": "2.0", "method": "signup", "params": [tom], "id": 1}
-        return Response(params)
-    def login(self): pass
-    def logout(self): pass
-    def view(self, request):
+        #example: {"jsonrpc": "2.0", "method": "signup", "params": {"username": "tom", "password": "silly"}, "id": 1}
+        try:
+            username = request.rpc_args['username']
+            password = request.rpc_args['password']
+            if self.zeo.get_username(username):
+                return {"error": "Already a user with that name."}
+            else:
+                p = hashlib.md5(password).hexdigest()
+                p = p.encode("utf-8")
+                print "password: %s \n hash: %s" %(password, p)
+                self.zeo.set_username(str(username), p)
+                request.response.set_cookie('user', value=p)
+            return {"sucess": "Username created."}
+        
+        except Exception as e:
+            error = str(e)
+            print error
+            if error == "'password'":
+                message = 'signup requires password'
+            elif error == "'username'":
+                message = 'signup requires username'
+            else:
+                message = error
+            return {"error": message}
+    
+    def login(self, request): pass
+    def logout(self, request): pass
+    """def view(self, request):
         action = request.matchdict['action'].lower()
-        return Response(action)
+        return Response(action)"""
         
 class WorldHandler(object):
     def __init__(self, world):
@@ -76,7 +103,7 @@ if __name__ == '__main__':
     zeo = Zeo()
     wr = zeo.root
     world = WorldHandler(wr)
-    auth = AuthHandler(wr)
+    auth = AuthHandler(zeo)
     players = PlayerHandler(wr)
     config = Configurator()
     config.include('pyramid_rpc.jsonrpc')
@@ -96,8 +123,6 @@ if __name__ == '__main__':
     
     config.add_route('world', '/world')
     config.add_view(world.view, route_name='world')
-    #config.add_route('auth', '/auth/{action}')
-    #config.add_view(auth.view, route_name='auth')
     config.add_route('players', '/players/*stuff')
     config.add_view(players.view, route_name='players')
     app = config.make_wsgi_app()
