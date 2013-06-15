@@ -23,7 +23,7 @@ parser.add_argument('-t', '--target', type=tuple, default=None,
 args = parser.parse_args()
 import sys, os
 sys.path.append(os.getcwd())
-from equanimity.equanimity_client import test_client
+from equanimity_client import test_client
 t = test_client(args.host)
 cookie = t.login(args.player, args.player)[0]['set-cookie']
 print t.battle("process_action", [[args.uid, args.action, args.target]], cookie)[1]
