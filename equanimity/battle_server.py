@@ -127,7 +127,7 @@ class BattleHandler(BaseJSONHandler):
             
 class TimeLeftHandler(cyclone.web.RequestHandler):
     #DOS prevention needs to be added.
-    #should be optimized for accuracy. 
+    #should be optimized for accuracy.
     def get(self):
         now = datetime.utcnow()
         ply = datetime.utcfromtimestamp(self.settings.ply_timer.call.getTime())
