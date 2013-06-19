@@ -180,40 +180,34 @@ class Battlefield(object):
         else:
             raise Exception('nescient cannot rotate to that direction')
     
-    def make_pattern(self, location, distance, pointing):
-        """generates a pattern based on an origin, distance, and
-        direction. Returns a set of coords"""
+    def make_triangle(self, location, distance, pointing):
+        """generates an equilateral triangle pattern with 'location' at one
+        point. The other two points are 'distance' away from 'location'
+        toward 'pointing'. Returns a set of coords"""
         location  = location
         dist = distance
         pointing = pointing
-        tiles = []
-        pattern = []
-        head = self.get_adjacent(location, pointing)
+        triangle = []
+        head = self.get_adjacent(location, pointing) #get first two points.
         cols = 1 #maintain dist = 1 behavior.
         while cols != dist:
-            pattern += list(head)
+            triangle += list(head)
             temp_head = head
             head = set()
             for loc in temp_head:
                 head |= self.get_adjacent(loc, pointing)
             cols += 1
-        return pattern
+        return triangle
     
     def map_to_grid(self, location, weapon):
         """returns tiles within range of location using weapon. called in hex_view.py"""
         weapon = weapon
         xpos, ypos = location = location
-        tiles = []
-        if weapon.type in self.ranged:
+        if weapon.type in (self.ranged + self.AOE):
             move = 4
             no_hit = self.make_range(location, move)
             hit    = self.make_range(location, 2*move)
             return hit - no_hit
-        elif weapon.type in self.AOE:
-            #lazy hack: AOE can now hit everywhere.
-            tiles  = set([(x, y) for x in xrange(self.grid.x) for y in xrange(self.grid.y)])
-            tiles -= set(((location),),)
-            return list(tiles)
         else:
             return self.get_adjacent(location)
     
@@ -394,7 +388,7 @@ class Battlefield(object):
         else:
             raise Exception("Defender is off grid")
     
-    def make_distances(self, src, dest):
+    def make_distances(self, src, dest, direction='all'):
         ax,ay = src
         dx,dy = dest
         xdist = abs(dx - ax)
@@ -411,8 +405,11 @@ class Battlefield(object):
         else:
             if dy & 1:
                 ranges.update({1:zdist + 1, 2:zdist + 1,})
-        return ranges
-    
+        if direction == 'all':
+            return ranges
+        else:
+            return ranges[direction]
+        
     def maxes(self, src):
         '''NOTE: Currently, AOE weapons can hit every tile on the grid so this is
                  really quite moot.
@@ -434,19 +431,21 @@ class Battlefield(object):
     
     def calc_AOE(self, atkr, target):
         """Returns the AOE of a spell. Called once in hex_view.py"""
+        #Optimize. Currently makes a triangle only to discard 7/8ths of it.
         xpos, ypos = aloc = atkr.location
-        dloc = Loc._make(target)
-        dists = self.make_distances(aloc, dloc)
+        tloc = Loc._make(target)
+        dists = self.make_distances(aloc, tloc)
         maxes = self.maxes(aloc)
         for i in self.direction:
-            pat = self.make_pattern(aloc, maxes[i], self.direction[i])
-            if dloc in pat:
-                #all of this could be done in-place.
-                pat_ = self.make_pattern(aloc, dists[i], self.direction[i])
+            pat = self.make_triangle(aloc, maxes[i], self.direction[i])
+            if tloc in pat:
+                pat_ = self.make_triangle(aloc, dists[i], self.direction[i])
                 new_pat = []
-                for i in pat_:
-                    if self.on_grid(i):
-                        new_pat.append(i)
+                for tile in pat_:
+                    if self.on_grid(tile):
+                        if dists[i] == self.make_distances(aloc, tile, i):
+                            new_pat.append(tile)
+                new_pat = set(new_pat)
                 return new_pat
     
     def calc_ranged(self, atkr, target):
