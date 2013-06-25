@@ -89,6 +89,9 @@ def get_persisted(obj):
                         ps.append(get_persisted(p))
                 new_dict['players'] = ps
             
+            elif key == 'player_names':
+                new_dict['player_names'] = tuple(obj.__dict__[key])
+            
             #special case for the .data of Squad:
             elif key == 'data':
                 data = []
