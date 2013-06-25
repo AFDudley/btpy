@@ -1,9 +1,11 @@
-from wsgiref.simple_server import make_server
+import threading
+from gevent import monkey; monkey.patch_all()
 from pyramid.config import Configurator
 from pyramid.response import Response
 from pyramid_rpc.jsonrpc import jsonrpc_method
 from datetime import datetime
 from equanimity.zeo import Zeo
+from equanimity import field
 from copy import deepcopy
 
 import hashlib
@@ -25,11 +27,11 @@ class AuthHandler(object):
             else:
                 p = hashlib.md5(password).hexdigest()
                 p = p.encode("utf-8")
-                print "password: %s \n hash: %s" %(password, p)
+                print "password: %s \nhash: %s" %(password, p)
                 self.zeo.set_username(str(username), p)
                 request.response.set_cookie('user', value=p)
             return {"sucess": "Username created."}
-        
+    
         except Exception as e:
             error = str(e)
             print error
@@ -40,7 +42,7 @@ class AuthHandler(object):
             else:
                 message = error
             return {"error": message}
-    
+
     def login(self, request): pass
     def logout(self, request): pass
     """def view(self, request):
@@ -60,17 +62,24 @@ class FieldHandler(object):
         self.field = deepcopy(self.world['Fields'][worldcoord])
             
     def view(self, request, params):
-        action = params.matchdict['action']
-        if len(action) > 0:
-            lowered = action[0].lower()
-            if lowered == 'stronghold':
-                return Response(str(vars(self.field.stronghold)))
+        attribute = params.matchdict['attribute']
+        if len(attribute) > 0:
+            lowered = attribute[0].lower()
+        
+            if lowered == 'locked':
+                return Response(self.locked())
+            elif lowered == 'stronghold':
+                return Response(str(vars(self.field.stronghold).keys()))
+            elif lowered == 'state':
+                return Response(self.field.state)
             elif lowered == 'battle':
-                return Response(str(vars(self.field.game)))
-            elif lowered == 'factories':
-                return "fix me"
+                return Response(str(vars(self.field.game).keys()))
+            elif lowered == 'plantings':
+                return Response(str(self.field.plantings))
         else:
             return Response(str(self.field.owner))
+    
+    def stronghold(self, request): pass
 
 class PlayerHandler(object):
     def __init__(self, world):
@@ -99,25 +108,30 @@ class PlayerHandler(object):
             return Response(str(stuff.matchdict))
 
 if __name__ == '__main__':
-
+    from pyramid_sockjs.paster import gevent_server_runner
+    #if using async workers, each object needs it's own zeo instance.
     zeo = Zeo()
     wr = zeo.root
     world = WorldHandler(wr)
     auth = AuthHandler(zeo)
     players = PlayerHandler(wr)
     config = Configurator()
+    config.include('pyramid_sockjs')
     config.include('pyramid_rpc.jsonrpc')
     config.add_jsonrpc_endpoint('signup', '/auth/signup')
+    config.add_jsonrpc_endpoint('login', '/auth/login')
     config.add_jsonrpc_method(auth.signup, endpoint='signup', method='signup')
+    config.add_jsonrpc_method(auth.login, endpoint='login', method='login')
     #We don't need no sinking decorators.
     fieldhandlers = {}
+    #should fields have exclusive workers?
     for x in xrange(wr['x']):
         fieldhandlers[x] = {}
         for y in xrange(wr['y']):
             worldcoord = str((x,y))
             fieldhandlers[x][y] = FieldHandler(wr, worldcoord)
             base =  str(x) + '/' + str(y)
-            pattern = '/' + base + '/*action'
+            pattern = '/' + base + '/*attribute'
             config.add_route('%s/%s'%(x,y), pattern)
             config.add_view(fieldhandlers[x][y].view, route_name=base)
     
@@ -126,6 +140,4 @@ if __name__ == '__main__':
     config.add_route('players', '/players/*stuff')
     config.add_view(players.view, route_name='players')
     app = config.make_wsgi_app()
-    
-    server = make_server('0.0.0.0', 9090, app)
-    server.serve_forever()
+    gevent_server_runner(app, {}, port=9090, host='127.0.0.1')
