@@ -1,4 +1,3 @@
-import hashlib
 import persistent
 
 class wPlayer(persistent.Persistent):
@@ -7,9 +6,9 @@ class wPlayer(persistent.Persistent):
         persistent.Persistent.__init__(self)
         self.username = username
         self.email = None
-        #this is not secure, need to figure that out sometime
+        #NOT SECURE!
         if password != None:
-            self.password = hashlib.md5(password).hexdigest()
+            self.password = password
         else:
             self.password = None
         self.Fields  = persistent.mapping.PersistentMapping()

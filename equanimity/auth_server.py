@@ -1,5 +1,4 @@
 import sys
-import hashlib
 import cyclone.web
 from twisted.python import log
 from twisted.internet import reactor, defer
@@ -29,8 +28,7 @@ class SignupHandler(BaseHandler):
     @defer.inlineCallbacks
     def post(self):
         u = self.get_argument("u")
-        p = self.get_argument("p")
-        password = hashlib.md5(p).hexdigest() #NOT SECURE!!!
+        password = self.get_argument("p")
         try:
             assert self.settings.zeo.get_password(u)
             log.err("User already exists")
@@ -57,8 +55,7 @@ class LoginHandler(BaseHandler):
     @defer.inlineCallbacks
     def post(self):
         u = self.get_argument("u")
-        p = self.get_argument("p")
-        password = hashlib.md5(p).hexdigest()
+        password = self.get_argument("p")
         try:
             stored_pw = yield self.settings.zeo.get_password(u)
             assert password == stored_pw

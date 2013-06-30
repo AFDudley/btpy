@@ -8,7 +8,6 @@ from equanimity.zeo import Zeo
 from equanimity import field
 from copy import deepcopy
 
-import hashlib
 import transaction
 
 class AuthHandler(object):
@@ -25,11 +24,9 @@ class AuthHandler(object):
             if self.zeo.get_password(username):
                 return {"error": "Already a user with that name."}
             else:
-                p = hashlib.md5(password).hexdigest()
-                p = p.encode("utf-8")
-                print "password: %s \nhash: %s" %(password, p)
+                print "password: %s" %password
                 self.zeo.set_username(str(username), p)
-                request.response.set_cookie('user', value=p)
+                request.response.set_cookie('user', value=password)
             return {"sucess": "Username created."}
     
         except Exception as e:
