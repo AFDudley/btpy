@@ -39,7 +39,7 @@ class BaseJSONHandler(jsonrpc.JsonrpcRequestHandler):
         
     @cyclone.web.authenticated
     @defer.inlineCallbacks
-    def jsonrpc_get_password(self):
+    def jsonrpc_get_username(self):
         """Takes a cookie and returns the username encoded within it."""
         username = yield self.get_current_user().strip('"')
         defer.returnValue(username)
