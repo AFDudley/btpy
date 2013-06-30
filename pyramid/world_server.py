@@ -22,7 +22,7 @@ class AuthHandler(object):
         try:
             username = request.rpc_args['username']
             password = request.rpc_args['password']
-            if self.zeo.get_username(username):
+            if self.zeo.get_password(username):
                 return {"error": "Already a user with that name."}
             else:
                 p = hashlib.md5(password).hexdigest()

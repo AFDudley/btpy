@@ -32,7 +32,7 @@ class SignupHandler(BaseHandler):
         p = self.get_argument("p")
         password = hashlib.md5(p).hexdigest() #NOT SECURE!!!
         try:
-            assert self.settings.zeo.get_username(u)
+            assert self.settings.zeo.get_password(u)
             log.err("User already exists")
             raise cyclone.web.HTTPError(400, "User already Exists")
         
@@ -60,7 +60,7 @@ class LoginHandler(BaseHandler):
         p = self.get_argument("p")
         password = hashlib.md5(p).hexdigest()
         try:
-            stored_pw = yield self.settings.zeo.get_username(u)
+            stored_pw = yield self.settings.zeo.get_password(u)
             assert password == stored_pw
                 
         except Exception, e:

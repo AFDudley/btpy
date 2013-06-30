@@ -21,7 +21,7 @@ class Zeo(object):
     def close(self):
         return self.db.close()
         
-    def get_username(self, username): #FIX
+    def get_password(self, username): #FIX
         self.conn.sync()
         try:
             return self.root['Players'][username].password
