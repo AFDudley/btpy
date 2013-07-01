@@ -19,6 +19,7 @@ class AuthHandler(object):
         """Signup via json-rpc post"""
         #example: {"jsonrpc": "2.0", "method": "signup", "params": {"username": "tom", "password": "silly"}, "id": 1}
         try:
+            print request.cookies
             username = request.rpc_args['username']
             password = request.rpc_args['password']
             if self.zeo.get_password(username):
@@ -41,7 +42,11 @@ class AuthHandler(object):
             return {"error": message}
 
     def login(self, request): pass
+    """attempts to log a user in."""
+    
     def logout(self, request): pass
+    """Logout user."""
+    
     """def view(self, request):
         action = request.matchdict['action'].lower()
         return Response(action)"""
