@@ -10,7 +10,7 @@ import sys
 from datetime import datetime, timedelta
 import json
 import cyclone.web
-from cyclone import jsonrpc
+from cyclone.jsonrpc import JsonrpcRequestHandler
 
 from twisted.python import log
 from twisted.internet import reactor, defer, task
@@ -33,7 +33,7 @@ from equanimity.battle import Game, Action
 from stores.zodb_store import get_persisted
 from copy import deepcopy
 
-class BaseJSONHandler(jsonrpc.JsonrpcRequestHandler):
+class BaseJSONHandler(JsonrpcRequestHandler):
     def get_current_user(self):
         return self.get_secure_cookie("user")
         

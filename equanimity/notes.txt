@@ -2,8 +2,7 @@ THESE ARE NOTES NOT PERFECT INSTRUCTIONS, USE BRAIN ACCORDINGLY.
 from binary-tactics dir
 
 0. install dependencies
-pip install ipython cyclone==0.7 zeo httplib2 twisted
-(link to cyclone: https://github.com/fiorix/cyclone/commit/4a508168540946389ac021600ecb9d5254fe2adb)
+pip install ipython cyclone==1.1 zeo httplib2 twisted
 
 1. prepare zodb:
 $ mkdir logs
