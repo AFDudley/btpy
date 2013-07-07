@@ -10,6 +10,7 @@ import sys
 from datetime import datetime, timedelta
 import json
 import cyclone.web
+from cyclone.jsonrpc import JsonrpcRequestHandler
 
 from twisted.python import log
 from twisted.internet import reactor, defer, task
@@ -35,7 +36,7 @@ import copy
 #For testing
 from os import fork
 
-class BaseJSONHandler(cyclone.web.JsonrpcRequestHandler):
+class BaseJSONHandler(JsonrpcRequestHandler):
     def get_current_user(self):
         return self.get_secure_cookie("user")
         
