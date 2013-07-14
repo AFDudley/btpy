@@ -96,7 +96,7 @@ class World(Zeo): #this object needs to be refactored.
         #src and dest are both Fields
         #TODO: check for adjacency.
         squad = src.stronghold.squads[squad_num]
-        dest.battlequeue.append((src.owner, squad))
+        dest.attackerqueue.append((src.owner, squad))
         src.stronghold.remove_squad(squad_num)
         return transaction.commit()
     

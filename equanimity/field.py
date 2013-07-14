@@ -26,7 +26,7 @@ class Field(persistent.Persistent):
         self.clock = Clock()
         self.stronghold  = Stronghold(self.element, self.clock)
         self.plantings   = persistent.mapping.PersistentMapping()
-        self.battlequeue = persistent.list.PersistentList()
+        self.attackerqueue = persistent.list.PersistentList()
         self.game = None
         self.state = 'produce' #Default state
         """
@@ -47,7 +47,7 @@ class Field(persistent.Persistent):
     
     def setup_battle(self):
         #load the battlefield with players (and squads)
-        atkr_name, atksquad = self.battlequeue[0] #TODO change to pop 
+        atkr_name, atksquad = self.attackerqueue[0] #TODO change to pop 
         defsquad = self.get_defenders()
         dfndr = Player(self.owner, [defsquad])
         atkr = Player(atkr_name, [atksquad])

@@ -51,7 +51,7 @@ try:
     df.stronghold.apply_defender_locs()
     afs.apply_squad_locs(0, [(6,10), (7,10), (8,10), (9,10)])
 
-    #move squad to battlequeue
+    #move squad to attackerqueue
     w.move_squad(af, -1, df)
 except:
     raise
